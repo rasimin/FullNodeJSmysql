@@ -4,7 +4,7 @@ import {
   Search, Plus, Car, Tag, MapPin, 
   Calendar, Info, Edit, Trash2, Filter, Eye,
   ChevronRight, ArrowUpDown, Bookmark, Smartphone, User as UserIcon,
-  CreditCard
+  CreditCard, XCircle, CheckCircle, Clock
 } from 'lucide-react';
 import Modal from '../components/Modal';
 import DynamicIsland from '../components/DynamicIsland';
@@ -24,6 +24,10 @@ const Vehicles = () => {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [isViewOnly, setIsViewOnly] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [bookingHistory, setBookingHistory] = useState([]);
+  const [isConfirmActionModalOpen, setIsConfirmActionModalOpen] = useState(false);
+  const [actionType, setActionType] = useState(''); // 'sold' or 'cancel'
+  const [activeBooking, setActiveBooking] = useState(null);
   const [bookingData, setBookingData] = useState({
     vehicle_id: '', customer_name: '', customer_phone: '', id_number: '', 
     booking_date: new Date().toISOString().split('T')[0], down_payment: '', notes: ''
@@ -120,9 +124,61 @@ const Vehicles = () => {
     setEditingVehicle(vehicle);
     setFormData(vehicle 
       ? { ...vehicle } 
-      : { type: 'Motor', brand: '', model: '', year: '', plate_number: '', price: '', status: 'Available', entry_date: new Date().toISOString().split('T')[0], description: '' }
+      : { type: 'Motor', brand: '', model: '', year: (new Date().getFullYear()).toString(), plate_number: '', price: '', status: 'Available', entry_date: new Date().toISOString().split('T')[0], description: '' }
     );
+    if (readOnly && vehicle) {
+      fetchBookingHistory(vehicle.id);
+    } else {
+      setBookingHistory([]);
+    }
     setIsModalOpen(true);
+  };
+
+  const fetchBookingHistory = async (vehicleId) => {
+    try {
+      const r = await api.get(`/bookings/vehicle/${vehicleId}/history`);
+      setBookingHistory(r.data);
+    } catch (e) {
+      console.error('History fetch failed', e);
+    }
+  };
+
+  const preConfirmAction = async (vehicle, type) => {
+    setEditingVehicle(vehicle);
+    setActionType(type);
+    try {
+      const r = await api.get(`/bookings/vehicle/${vehicle.id}`);
+      setActiveBooking(r.data);
+      setIsConfirmActionModalOpen(true);
+    } catch (e) {
+      notify('error', 'Failed to fetch active booking details');
+    }
+  };
+
+  const handleCancelBooking = async () => {
+    if (!editingVehicle) return;
+    notify('loading', 'Cancelling booking...');
+    try {
+      await api.put(`/bookings/vehicle/${editingVehicle.id}/cancel`);
+      notify('success', 'Booking cancelled!');
+      setIsConfirmActionModalOpen(false);
+      fetchVehicles();
+    } catch (err) {
+      notify('error', err.response?.data?.message || 'Cancellation failed');
+    }
+  };
+
+  const handleConfirmSale = async () => {
+    if (!editingVehicle) return;
+    notify('loading', 'Confirming sale...');
+    try {
+      await api.put(`/bookings/vehicle/${editingVehicle.id}/sold`);
+      notify('success', 'Unit marked as Sold!');
+      setIsConfirmActionModalOpen(false);
+      fetchVehicles();
+    } catch (err) {
+      notify('error', err.response?.data?.message || 'Failed to mark as sold');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -326,6 +382,16 @@ const Vehicles = () => {
                               <Bookmark size={16} />
                             </button>
                           )}
+                          {v.status === 'Pending' && (
+                            <>
+                              <button onClick={() => preConfirmAction(v, 'sold')} className="btn-icon text-gray-400 hover:text-green-600" title="Mark as Sold">
+                                <CheckCircle size={16} />
+                              </button>
+                              <button onClick={() => preConfirmAction(v, 'cancel')} className="btn-icon text-gray-400 hover:text-red-500" title="Cancel Booking">
+                                <XCircle size={16} />
+                              </button>
+                            </>
+                          )}
                           <button onClick={() => openModal(v, true)} className="btn-icon text-gray-400 hover:text-purple-600" title="View Details">
                             <Eye size={16} />
                           </button>
@@ -383,6 +449,64 @@ const Vehicles = () => {
           </div>
         </div>
       </div>
+
+      {/* Confirm Action Modal (Sold/Cancel) */}
+      <Modal 
+        isOpen={isConfirmActionModalOpen} 
+        onClose={() => setIsConfirmActionModalOpen(false)} 
+        title={actionType === 'sold' ? 'Confirm Unit Sale' : 'Confirm Cancel Booking'}
+      >
+        <div className="space-y-6">
+          <div className={`p-4 rounded-xl border ${actionType === 'sold' ? 'bg-green-50 border-green-100 dark:bg-green-900/10 dark:border-green-800' : 'bg-red-50 border-red-100 dark:bg-red-900/10 dark:border-red-800'}`}>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">You are about to {actionType === 'sold' ? 'mark this unit as SOLD' : 'CANCEL the booking for'}:</p>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">{editingVehicle?.brand} {editingVehicle?.model} ({editingVehicle?.plate_number})</h3>
+          </div>
+
+          {activeBooking && (
+            <div className="grid grid-cols-1 gap-4 text-sm">
+              <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl space-y-3">
+                <div className="flex justify-between items-center border-b border-gray-100 dark:border-gray-800 pb-2">
+                  <span className="text-gray-500">Customer Name</span>
+                  <span className="font-bold">{activeBooking.customer_name}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-gray-100 dark:border-gray-800 pb-2">
+                  <span className="text-gray-500">Phone Number</span>
+                  <span className="font-bold">{activeBooking.customer_phone}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-gray-100 dark:border-gray-800 pb-2">
+                  <span className="text-gray-500">Down Payment</span>
+                  <span className="font-bold text-green-600 font-mono">{formatPrice(activeBooking.down_payment)}</span>
+                </div>
+                {activeBooking.notes && (
+                  <div className="pt-1">
+                    <span className="text-gray-500 block mb-1">Notes:</span>
+                    <p className="p-2 bg-white dark:bg-gray-800 rounded-lg text-xs italic">{activeBooking.notes}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3 pt-2">
+            <button 
+              onClick={actionType === 'sold' ? handleConfirmSale : handleCancelBooking}
+              className={`w-full py-3 rounded-xl font-bold text-white shadow-lg transition-all ${
+                actionType === 'sold' 
+                ? 'bg-green-600 hover:bg-green-700 shadow-green-500/20' 
+                : 'bg-red-600 hover:bg-red-700 shadow-red-500/20'
+              }`}
+            >
+              {actionType === 'sold' ? 'YES, CONFIRM SOLD' : 'YES, CANCEL THIS BOOKING'}
+            </button>
+            <button 
+              onClick={() => setIsConfirmActionModalOpen(false)}
+              className="w-full py-3 rounded-xl font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200"
+            >
+              Go Back
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Booking Modal */}
       <Modal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} title="Booking Reservation">
@@ -533,6 +657,59 @@ const Vehicles = () => {
               />
             </div>
           </fieldset>
+
+          {isViewOnly && (
+            <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-2 mb-4 text-blue-600">
+                <Clock size={18} />
+                <h3 className="font-bold uppercase text-xs tracking-wider">Booking & Status History</h3>
+              </div>
+              
+              <div className="overflow-hidden rounded-xl border border-gray-100 dark:border-gray-800">
+                <table className="w-full text-xs">
+                  <thead className="bg-gray-50 dark:bg-gray-900/50">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-bold text-gray-500 uppercase">Customer</th>
+                      <th className="px-4 py-3 text-left font-bold text-gray-500 uppercase">Date</th>
+                      <th className="px-4 py-3 text-left font-bold text-gray-500 uppercase">Status</th>
+                      <th className="px-4 py-3 text-left font-bold text-gray-500 uppercase">Admin</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                    {bookingHistory.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="px-4 py-6 text-center text-gray-400 italic">No booking records found for this unit.</td>
+                      </tr>
+                    ) : (
+                      bookingHistory.map((bh) => (
+                        <tr key={bh.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-colors">
+                          <td className="px-4 py-3">
+                            <p className="font-bold text-gray-900 dark:text-white">{bh.customer_name}</p>
+                            <p className="text-[10px] text-gray-500">{bh.customer_phone}</p>
+                          </td>
+                          <td className="px-4 py-3">
+                            {new Date(bh.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
+                              bh.status === 'Active' ? 'bg-blue-50 text-blue-600' :
+                              bh.status === 'Sold' ? 'bg-green-50 text-green-600' :
+                              'bg-gray-100 text-gray-500'
+                            }`}>
+                              {bh.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-gray-500">
+                            {bh.User?.name}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {!isViewOnly && (
             <button type="submit" className="btn-primary w-full py-3 mt-2 shadow-lg shadow-blue-500/20">
