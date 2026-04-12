@@ -1,0 +1,291 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #2563eb;
+}
+
+/* Tailwind v4 Dark Mode */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ============================================
+   FLAT DESIGN SYSTEM
+   ============================================ */
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    @apply bg-slate-50 dark:bg-gray-950 min-h-screen text-gray-800 dark:text-gray-100 antialiased;
+  }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-gray-300 dark:bg-gray-700 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-gray-400 dark:bg-gray-600; }
+}
+
+@layer components {
+
+  /* ——— LAYOUT ——— */
+  .app-sidebar {
+    background-color: white;
+    border-right: 1px solid #e5e7eb;
+  }
+  .dark .app-sidebar {
+    background-color: #111827;
+    border-right-color: #1f2937;
+  }
+
+  .app-header {
+    background-color: white;
+    border-bottom: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .dark .app-header {
+    background-color: #111827;
+    border-bottom-color: #1f2937;
+  }
+
+  /* ——— CARD ——— */
+  .card {
+    background-color: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+  }
+  .dark .card {
+    background-color: #111827;
+    border-color: #1f2937;
+  }
+
+  .card-hover {
+    background-color: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .card-hover:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    border-color: #93c5fd;
+  }
+  .dark .card-hover {
+    background-color: #111827;
+    border-color: #1f2937;
+  }
+  .dark .card-hover:hover {
+    border-color: #1e3a5f;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+
+  /* ——— NAV ITEMS ——— */
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #4b5563;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .nav-link:hover {
+    background-color: #f3f4f6;
+    color: #111827;
+  }
+  .dark .nav-link {
+    color: #9ca3af;
+  }
+  .dark .nav-link:hover {
+    background-color: #1f2937;
+    color: #f3f4f6;
+  }
+
+  .nav-link-active {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1d4ed8;
+    background-color: #eff6ff;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .dark .nav-link-active {
+    color: #93c5fd;
+    background-color: #1e3a5f;
+  }
+
+  /* ——— INPUTS ——— */
+  .input {
+    display: block;
+    width: 100%;
+    padding: 10px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    background-color: white;
+    color: #111827;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  }
+  .input::placeholder { color: #9ca3af; }
+  .dark .input {
+    background-color: #1f2937;
+    border-color: #374151;
+    color: #f3f4f6;
+  }
+  .dark .input::placeholder { color: #6b7280; }
+  .dark .input:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
+  }
+
+  /* ——— BUTTONS ——— */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: 1px solid #d1d5db;
+    background-color: white;
+    color: #374151;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+  .btn:hover { background-color: #f9fafb; border-color: #9ca3af; }
+  .btn:active { transform: scale(0.97); }
+  .dark .btn { background-color: #1f2937; border-color: #374151; color: #d1d5db; }
+  .dark .btn:hover { background-color: #374151; }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    background-color: #2563eb;
+    color: white;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background-color 0.15s ease;
+  }
+  .btn-primary:hover { background-color: #1d4ed8; }
+  .btn-primary:active { transform: scale(0.97); }
+
+  .btn-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    background-color: #ef4444;
+    color: white;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background-color 0.15s ease;
+  }
+  .btn-danger:hover { background-color: #dc2626; }
+
+  .btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 7px;
+    border-radius: 8px;
+    color: #6b7280;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+  .btn-icon:hover { background-color: #f3f4f6; color: #111827; }
+  .dark .btn-icon { color: #9ca3af; }
+  .dark .btn-icon:hover { background-color: #1f2937; color: #f3f4f6; }
+
+  /* ——— STAT ICON BOXES ——— */
+  .icon-box {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .icon-blue   { background-color: #eff6ff; color: #2563eb; }
+  .icon-purple { background-color: #f5f3ff; color: #7c3aed; }
+  .icon-orange { background-color: #fff7ed; color: #ea580c; }
+  .icon-green  { background-color: #f0fdf4; color: #16a34a; }
+  .dark .icon-blue   { background-color: #1e3a5f; color: #93c5fd; }
+  .dark .icon-purple { background-color: #2e1065; color: #c4b5fd; }
+  .dark .icon-orange { background-color: #431407; color: #fdba74; }
+  .dark .icon-green  { background-color: #052e16; color: #86efac; }
+
+  /* ——— BADGES ——— */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+  .badge-blue   { background-color: #eff6ff; color: #1d4ed8; }
+  .badge-green  { background-color: #f0fdf4; color: #15803d; }
+  .badge-red    { background-color: #fef2f2; color: #dc2626; }
+  .badge-gray   { background-color: #f3f4f6; color: #4b5563; }
+  .dark .badge-blue   { background-color: #1e3a5f; color: #93c5fd; }
+  .dark .badge-green  { background-color: #052e16; color: #86efac; }
+  .dark .badge-red    { background-color: #450a0a; color: #fca5a5; }
+  .dark .badge-gray   { background-color: #1f2937; color: #9ca3af; }
+
+  /* ——— TABLE ROWS ——— */
+  .table-row {
+    border-bottom: 1px solid #f3f4f6;
+    transition: background-color 0.12s ease;
+  }
+  .table-row:hover { background-color: #f9fafb; }
+  .dark .table-row { border-bottom-color: #1f2937; }
+  .dark .table-row:hover { background-color: #1f2937; }
+
+  /* ——— TOOLTIP ——— */
+  .tooltip {
+    position: absolute;
+    left: 100%;
+    margin-left: 8px;
+    padding: 4px 8px;
+    background-color: #111827;
+    color: white;
+    font-size: 0.75rem;
+    border-radius: 6px;
+    opacity: 0;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 50;
+    transition: opacity 0.15s ease;
+  }
+  .dark .tooltip { background-color: #f9fafb; color: #111827; }
+}

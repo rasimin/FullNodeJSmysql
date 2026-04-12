@@ -1,0 +1,76 @@
+const sequelize = require('../config/database');
+const Role = require('./Role');
+const Office = require('./Office');
+const User = require('./User');
+const AuditTrail = require('./AuditTrail');
+const ActivityLog = require('./ActivityLog');
+
+// User Relationships
+User.belongsTo(Role, { foreignKey: 'role_id' });
+Role.hasMany(User, { foreignKey: 'role_id' });
+
+User.belongsTo(Office, { foreignKey: 'office_id' });
+Office.hasMany(User, { foreignKey: 'office_id' });
+
+// Office Hierarchy
+Office.belongsTo(Office, { as: 'parent', foreignKey: 'parent_id' });
+Office.hasMany(Office, { as: 'branches', foreignKey: 'parent_id' });
+
+// Activity Log Relationship
+ActivityLog.belongsTo(User, { foreignKey: 'user_id' });
+User.hasMany(ActivityLog, { foreignKey: 'user_id' });
+
+// Audit Trail Relationship (Optional, as user_id can be null)
+AuditTrail.belongsTo(User, { foreignKey: 'user_id' });
+
+// Global Hook for Audit Trails
+const createAuditLog = async (options) => {
+  const { model, action, instance, options: queryOptions } = options;
+  const userId = queryOptions.userId; // Must be passed in options when calling save/destroy
+
+  if (!userId) return; 
+
+  try {
+    await AuditTrail.create({
+      table_name: model.tableName,
+      record_id: instance.id,
+      action: action,
+      old_values: action === 'UPDATE' ? instance._previousDataValues : null,
+      new_values: action === 'DELETE' ? null : instance.dataValues,
+      user_id: userId,
+      ip_address: queryOptions.ipAddress || null,
+    });
+  } catch (err) {
+    console.error('Audit Log Error:', err);
+  }
+};
+
+const setupHooks = (model) => {
+  model.afterCreate(async (instance, options) => {
+    await createAuditLog({ model, action: 'INSERT', instance, options });
+  });
+
+  model.afterUpdate(async (instance, options) => {
+    if (instance.changed()) {
+      await createAuditLog({ model, action: 'UPDATE', instance, options });
+    }
+  });
+
+  model.afterDestroy(async (instance, options) => {
+    await createAuditLog({ model, action: 'DELETE', instance, options });
+  });
+};
+
+// Apply hooks to critical models
+setupHooks(User);
+setupHooks(Role);
+setupHooks(Office);
+
+module.exports = {
+  sequelize,
+  Role,
+  Office,
+  User,
+  AuditTrail,
+  ActivityLog,
+};
