@@ -1,5 +1,8 @@
-const { Vehicle, Office, User, VehicleBrand, sequelize } = require('../models');
+const { Vehicle, Office, User, VehicleBrand, VehicleImage, sequelize } = require('../models');
 const { Op } = require('sequelize');
+const sharp = require('sharp');
+const path = require('path');
+const fs = require('fs');
 
 const { getPagination, getPagingData } = require('../utils/pagination');
 
@@ -43,7 +46,8 @@ const getVehicles = async (req, res) => {
       offset,
       include: [
         { model: Office, attributes: ['name'] },
-        { model: User, attributes: ['name'] }
+        { model: User, attributes: ['name'] },
+        { model: VehicleImage, as: 'images', attributes: ['id', 'image_url', 'is_primary'] }
       ],
       order: [['created_at', 'DESC']]
     });
@@ -93,6 +97,89 @@ const updateVehicle = async (req, res) => {
     });
 
     res.json({ message: 'Vehicle updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const uploadVehicleImages = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const vehicle = await Vehicle.findByPk(id);
+    
+    if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
+    if (!req.files || req.files.length === 0) return res.status(400).json({ message: 'No files uploaded' });
+
+    // Cek batas total gambar 10
+    const currentImagesCount = await VehicleImage.count({ where: { vehicle_id: id } });
+    if (currentImagesCount + req.files.length > 10) {
+      return res.status(400).json({ message: `Max 10 images allowed. You can only upload ${10 - currentImagesCount} more.` });
+    }
+
+    const uploadDir = path.join(__dirname, '../../uploads/vehicles');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    const uploadedImages = [];
+    
+    for (const [index, file] of req.files.entries()) {
+      const filename = `vehicle-${id}-${Date.now()}-${index}.webp`;
+      const filepath = path.join(uploadDir, filename);
+
+      // Resize, kompres jadi WebP agar hemat tempat  
+      await sharp(file.buffer)
+        .resize({ width: 800, height: 600, fit: 'inside' })
+        .webp({ quality: 80 })
+        .toFile(filepath);
+
+      // Simpan path ke db
+      const is_primary = currentImagesCount === 0 && index === 0; // yg pertama otomatis jadi primary jika kosong
+      const vehicleImage = await VehicleImage.create({
+        vehicle_id: id,
+        image_url: `/uploads/vehicles/${filename}`,
+        is_primary
+      });
+      uploadedImages.push(vehicleImage);
+    }
+
+    res.json({ message: 'Images uploaded successfully', images: uploadedImages });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const deleteVehicleImage = async (req, res) => {
+  try {
+    const { id, imageId } = req.params;
+    const image = await VehicleImage.findOne({ where: { id: imageId, vehicle_id: id } });
+    
+    if (!image) return res.status(404).json({ message: 'Image not found' });
+
+    // Hapus fisik
+    const filepath = path.join(__dirname, '../..', image.image_url);
+    if (fs.existsSync(filepath)) {
+      fs.unlinkSync(filepath);
+    }
+
+    await image.destroy();
+    res.json({ message: 'Image deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const setPrimaryImage = async (req, res) => {
+  try {
+    const { id, imageId } = req.params;
+    
+    // Reset semua primary jadi false
+    await VehicleImage.update({ is_primary: false }, { where: { vehicle_id: id } });
+    
+    // Set yang dipilih jadi true
+    await VehicleImage.update({ is_primary: true }, { where: { id: imageId, vehicle_id: id } });
+    
+    res.json({ message: 'Primary image updated' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -157,6 +244,9 @@ module.exports = {
   getVehicles,
   createVehicle,
   updateVehicle,
+  uploadVehicleImages,
+  deleteVehicleImage,
+  setPrimaryImage,
   getBrands,
   getModelHistory,
   createBrand,

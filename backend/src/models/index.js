@@ -7,6 +7,7 @@ const ActivityLog = require('./ActivityLog');
 const Vehicle = require('./Vehicle');
 const VehicleBrand = require('./VehicleBrand');
 const Booking = require('./Booking');
+const VehicleImage = require('./VehicleImage');
 
 // User Relationships
 User.belongsTo(Role, { foreignKey: 'role_id' });
@@ -28,6 +29,9 @@ Vehicle.belongsTo(Office, { foreignKey: 'office_id' });
 Vehicle.belongsTo(User, { foreignKey: 'user_id' });
 Office.hasMany(Vehicle, { foreignKey: 'office_id' });
 User.hasMany(Vehicle, { foreignKey: 'user_id' });
+
+Vehicle.hasMany(VehicleImage, { foreignKey: 'vehicle_id', as: 'images' });
+VehicleImage.belongsTo(Vehicle, { foreignKey: 'vehicle_id' });
 
 // Booking Relationships
 Booking.belongsTo(Vehicle, { foreignKey: 'vehicle_id' });
@@ -87,6 +91,7 @@ setupHooks(Office);
 setupHooks(Vehicle);
 setupHooks(VehicleBrand);
 setupHooks(Booking);
+setupHooks(VehicleImage);
 
 module.exports = {
   sequelize,
@@ -97,5 +102,6 @@ module.exports = {
   ActivityLog,
   Vehicle,
   VehicleBrand,
-  Booking
+  Booking,
+  VehicleImage
 };

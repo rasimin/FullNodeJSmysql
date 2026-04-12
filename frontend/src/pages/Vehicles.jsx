@@ -4,7 +4,7 @@ import {
   Search, Plus, Car, Tag, MapPin, 
   Calendar, Info, Edit, Trash2, Filter, Eye,
   ChevronRight, ArrowUpDown, Bookmark, Smartphone, User as UserIcon,
-  CreditCard, XCircle, CheckCircle, Clock
+  CreditCard, XCircle, CheckCircle, Clock, Camera, Image as ImageIcon, X
 } from 'lucide-react';
 import Modal from '../components/Modal';
 import DynamicIsland from '../components/DynamicIsland';
@@ -28,6 +28,7 @@ const Vehicles = () => {
   const [isConfirmActionModalOpen, setIsConfirmActionModalOpen] = useState(false);
   const [actionType, setActionType] = useState(''); // 'sold' or 'cancel'
   const [activeBooking, setActiveBooking] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const [bookingData, setBookingData] = useState({
     vehicle_id: '', customer_name: '', customer_phone: '', id_number: '', 
     booking_date: new Date().toISOString().split('T')[0], down_payment: '', notes: ''
@@ -122,6 +123,7 @@ const Vehicles = () => {
   const openModal = (vehicle = null, readOnly = false) => {
     setIsViewOnly(readOnly);
     setEditingVehicle(vehicle);
+    setSelectedFiles([]);
     setFormData(vehicle 
       ? { ...vehicle } 
       : { type: 'Motor', brand: '', model: '', year: (new Date().getFullYear()).toString(), plate_number: '', price: '', status: 'Available', entry_date: new Date().toISOString().split('T')[0], description: '' }
@@ -181,17 +183,70 @@ const Vehicles = () => {
     }
   };
 
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    // Maksimal 10 file yang dipilih
+    const currentUploaded = editingVehicle?.images?.length || 0;
+    if (files.length + currentUploaded > 10) {
+      notify('error', `Max 10 images total. You can only add ${10 - currentUploaded} more.`);
+      return;
+    }
+    setSelectedFiles(files);
+  };
+
+  const handleDeleteImage = async (imageId) => {
+    if (!window.confirm('Delete this image?')) return;
+    try {
+      await api.delete(`/vehicles/${editingVehicle.id}/images/${imageId}`);
+      // Update local state by removing the image
+      setEditingVehicle(prev => ({
+        ...prev,
+        images: prev.images.filter(img => img.id !== imageId)
+      }));
+      fetchVehicles(); // refresh grid list as well
+    } catch (err) {
+      notify('error', err.response?.data?.message || 'Failed to delete image');
+    }
+  };
+
+  const handleSetPrimaryImage = async (imageId) => {
+    try {
+      await api.put(`/vehicles/${editingVehicle.id}/images/${imageId}/primary`);
+      setEditingVehicle(prev => ({
+        ...prev,
+        images: prev.images.map(img => ({ ...img, is_primary: img.id === imageId }))
+      }));
+      fetchVehicles();
+    } catch (err) {
+      notify('error', err.response?.data?.message || 'Failed to set primary image');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     notify('loading', editingVehicle ? 'Updating...' : 'Adding...');
     try {
+      let vehicleId = editingVehicle?.id;
       if (editingVehicle) {
         await api.put(`/vehicles/${editingVehicle.id}`, formData);
-        notify('success', 'Vehicle updated!');
       } else {
-        await api.post('/vehicles', formData);
-        notify('success', 'Vehicle added!');
+        const res = await api.post('/vehicles', formData);
+        vehicleId = res.data.id;
       }
+      
+      // Upload Images if any
+      if (selectedFiles.length > 0) {
+        const uploadData = new FormData();
+        selectedFiles.forEach(file => {
+          uploadData.append('images', file);
+        });
+        
+        await api.post(`/vehicles/${vehicleId}/images`, uploadData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      }
+
+      notify('success', editingVehicle ? 'Vehicle updated!' : 'Vehicle added!');
       setIsModalOpen(false);
       fetchVehicles();
     } catch (err) {
@@ -655,6 +710,93 @@ const Vehicles = () => {
                 onChange={e => setFormData({...formData, description: e.target.value})}
                 placeholder="Detail tambahan kendaraan..."
               />
+            </div>
+
+            {/* Vehicle Images Section */}
+            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-2 mb-3 text-blue-600">
+                <ImageIcon size={18} />
+                <h3 className="font-bold uppercase text-xs tracking-wider">Vehicle Images (Max 10)</h3>
+              </div>
+              
+              {/* Existing Images Gallery */}
+              {editingVehicle?.images && editingVehicle.images.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                  {editingVehicle.images.map((img) => (
+                    <div key={img.id} className="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 aspect-video">
+                      <img src={`http://localhost:5001${img.image_url}`} alt="vehicle" className="w-full h-full object-cover" />
+                      
+                      {img.is_primary && (
+                        <div className="absolute top-1 left-1 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                          Primary
+                        </div>
+                      )}
+
+                      {!isViewOnly && (
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          {!img.is_primary && (
+                            <button 
+                              type="button" 
+                              onClick={() => handleSetPrimaryImage(img.id)}
+                              className="p-1.5 bg-blue-600 text-white rounded hover:bg-blue-700" 
+                              title="Set as Primary"
+                            >
+                              <CheckCircle size={14} />
+                            </button>
+                          )}
+                          <button 
+                            type="button" 
+                            onClick={() => handleDeleteImage(img.id)}
+                            className="p-1.5 bg-red-600 text-white rounded hover:bg-red-700"
+                            title="Delete"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Upload Input */}
+              {!isViewOnly && (
+                <div className="space-y-3">
+                  <div className="relative border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-4 text-center hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                    <input 
+                      type="file" 
+                      multiple 
+                      accept="image/*" 
+                      onChange={handleFileChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      disabled={editingVehicle?.images?.length >= 10}
+                    />
+                    <div className="flex flex-col items-center gap-1 text-gray-500">
+                      <Camera size={24} className="text-blue-500 mb-1" />
+                      <p className="text-sm font-bold">Click or drag images here to upload</p>
+                      <p className="text-xs">JPG, PNG, WEBP (Max 10 files)</p>
+                    </div>
+                  </div>
+
+                  {/* Preview Selected Files */}
+                  {selectedFiles.length > 0 && (
+                    <div className="flex overflow-x-auto gap-2 pb-2">
+                      {selectedFiles.map((file, idx) => (
+                        <div key={idx} className="relative shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-gray-200">
+                          <img src={URL.createObjectURL(file)} alt="preview" className="w-full h-full object-cover" />
+                          <button 
+                            type="button"
+                            onClick={() => setSelectedFiles(files => files.filter((_, i) => i !== idx))}
+                            className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full p-0.5"
+                          >
+                            <X size={10} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </fieldset>
 

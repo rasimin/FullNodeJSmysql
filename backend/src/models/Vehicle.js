@@ -52,10 +52,6 @@ const Vehicle = sequelize.define('Vehicle', {
   description: {
     type: DataTypes.TEXT,
     allowNull: true,
-  },
-  images: {
-    type: DataTypes.JSON, // Menyimpan array path gambar
-    allowNull: true,
   }
 }, {
   tableName: 'vehicles',
