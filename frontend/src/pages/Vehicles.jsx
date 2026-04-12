@@ -3,7 +3,8 @@ import api from '../services/api';
 import { 
   Search, Plus, Car, Tag, MapPin, 
   Calendar, Info, Edit, Trash2, Filter, Eye,
-  ChevronRight, ArrowUpDown
+  ChevronRight, ArrowUpDown, Bookmark, Smartphone, User as UserIcon,
+  CreditCard
 } from 'lucide-react';
 import Modal from '../components/Modal';
 import DynamicIsland from '../components/DynamicIsland';
@@ -22,6 +23,11 @@ const Vehicles = () => {
   const [notification, setNotification] = useState({ status: 'idle', message: '' });
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [isViewOnly, setIsViewOnly] = useState(false);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [bookingData, setBookingData] = useState({
+    vehicle_id: '', customer_name: '', customer_phone: '', id_number: '', 
+    booking_date: new Date().toISOString().split('T')[0], down_payment: '', notes: ''
+  });
   
   // Filter & Pagination State
   const [search, setSearch] = useState('');
@@ -134,6 +140,33 @@ const Vehicles = () => {
       fetchVehicles();
     } catch (err) {
       notify('error', err.response?.data?.message || 'Operation failed');
+    }
+  };
+
+  const openBookingModal = (vehicle) => {
+    setBookingData({
+      vehicle_id: vehicle.id, 
+      customer_name: '', 
+      customer_phone: '', 
+      id_number: '', 
+      booking_date: new Date().toISOString().split('T')[0], 
+      down_payment: '', 
+      notes: ''
+    });
+    setEditingVehicle(vehicle);
+    setIsBookingModalOpen(true);
+  };
+
+  const handleBookingSubmit = async (e) => {
+    e.preventDefault();
+    notify('loading', 'Processing booking...');
+    try {
+      await api.post('/bookings', bookingData);
+      notify('success', 'Booking confirmed!');
+      setIsBookingModalOpen(false);
+      fetchVehicles();
+    } catch (err) {
+      notify('error', err.response?.data?.message || 'Booking failed');
     }
   };
 
@@ -281,13 +314,18 @@ const Vehicles = () => {
                       <td className="px-6 py-4">
                         <span className={`badge ${
                           v.status === 'Available' ? 'badge-green' : 
-                          v.status === 'Sold' ? 'badge-red' : 'badge-orange'
+                          v.status === 'Sold' ? 'badge-red' : 'badge-yellow'
                         }`}>
                           {v.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2">
+                          {v.status === 'Available' && (
+                            <button onClick={() => openBookingModal(v)} className="btn-icon text-gray-400 hover:text-orange-500" title="Book Now">
+                              <Bookmark size={16} />
+                            </button>
+                          )}
                           <button onClick={() => openModal(v, true)} className="btn-icon text-gray-400 hover:text-purple-600" title="View Details">
                             <Eye size={16} />
                           </button>
@@ -345,6 +383,89 @@ const Vehicles = () => {
           </div>
         </div>
       </div>
+
+      {/* Booking Modal */}
+      <Modal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} title="Booking Reservation">
+        <form onSubmit={handleBookingSubmit} className="space-y-4">
+          <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-100 dark:border-orange-800 flex items-center gap-3 mb-2">
+            <div className="p-2 bg-white dark:bg-gray-900 rounded-lg text-orange-600 shadow-sm">
+              <Car size={20} />
+            </div>
+            <div>
+              <p className="text-xs text-orange-600 font-bold uppercase tracking-wider">Vehicle Selected</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-white">
+                {editingVehicle?.brand} {editingVehicle?.model} ({editingVehicle?.plate_number})
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input 
+              label="Customer Name" 
+              icon={UserIcon} 
+              required 
+              value={bookingData.customer_name}
+              onChange={e => setBookingData({...bookingData, customer_name: e.target.value})} 
+              placeholder="Nama Calon Pembeli" 
+            />
+            <Input 
+              label="Phone Number" 
+              icon={Smartphone} 
+              required 
+              value={bookingData.customer_phone}
+              onChange={e => setBookingData({...bookingData, customer_phone: e.target.value})} 
+              placeholder="0812..." 
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input 
+              label="KTP / ID Number" 
+              icon={CreditCard} 
+              value={bookingData.id_number}
+              onChange={e => setBookingData({...bookingData, id_number: e.target.value})} 
+              placeholder="No KTP" 
+            />
+            <Input 
+              label="Booking Date" 
+              icon={Calendar} 
+              type="date" 
+              required 
+              value={bookingData.booking_date}
+              onChange={e => setBookingData({...bookingData, booking_date: e.target.value})} 
+            />
+          </div>
+
+          <div>
+            <Input 
+              label="Down Payment (DP)" 
+              icon={Tag} 
+              type="number" 
+              value={bookingData.down_payment}
+              onChange={e => setBookingData({...bookingData, down_payment: e.target.value})} 
+              placeholder="Minimal nominal DP" 
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">Booking Notes</label>
+            <textarea 
+              className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+              rows={3} 
+              value={bookingData.notes}
+              onChange={e => setBookingData({...bookingData, notes: e.target.value})}
+              placeholder="Catatan tambahan (misal: janjian jam 10 pagi)..."
+            />
+          </div>
+
+          <button 
+            type="submit" 
+            className="btn-primary w-full py-3 mt-2 shadow-lg shadow-orange-500/20 bg-orange-600 hover:bg-orange-700 border-none"
+          >
+            Confirm Booking
+          </button>
+        </form>
+      </Modal>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isViewOnly ? 'Vehicle Details' : (editingVehicle ? 'Edit Vehicle' : 'Register Vehicle')}>
         <form onSubmit={handleSubmit} className="space-y-4">
