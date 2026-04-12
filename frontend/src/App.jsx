@@ -7,8 +7,10 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import UserManagement from './pages/UserManagement';
 import OfficeManagement from './pages/OfficeManagement';
-import ActivityLog from './pages/ActivityLog';
+import Vehicles from './pages/Vehicles';
+import BrandManagement from './pages/BrandManagement';
 import RoleManagement from './pages/RoleManagement';
+import ActivityLog from './pages/ActivityLog';
 import AuditTrail from './pages/AuditTrail';
 import Profile from './pages/Profile';
 
@@ -23,6 +25,8 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/users" element={<UserManagement />} />
+              <Route path="/vehicles" element={<Vehicles />} />
+              <Route path="/brands" element={<BrandManagement />} />
               <Route path="/offices" element={<OfficeManagement />} />
               <Route path="/activities" element={<ActivityLog />} />
               <Route path="/roles" element={<RoleManagement />} />

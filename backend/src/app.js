@@ -21,6 +21,7 @@ const roleRoutes = require('./routes/roleRoutes');
 const officeRoutes = require('./routes/officeRoutes');
 const userRoutes = require('./routes/userRoutes');
 const logRoutes = require('./routes/logRoutes');
+const vehicleRoutes = require('./routes/vehicleRoutes');
 const exportRoutes = require('./routes/exportRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 
@@ -29,6 +30,7 @@ app.use('/api/roles', roleRoutes);
 app.use('/api/offices', officeRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/logs', logRoutes);
+app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 

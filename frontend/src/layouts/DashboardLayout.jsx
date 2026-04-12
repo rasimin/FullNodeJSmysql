@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { 
   LayoutDashboard, Users, Building2, ShieldCheck, LogOut,
-  Menu, X, History, FileText, Sun, Moon, ChevronLeft, ChevronRight, UserCircle
+  Menu, X, History, FileText, Sun, Moon, ChevronLeft, ChevronRight, UserCircle, Car, Tags
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -36,6 +36,8 @@ const DashboardLayout = () => {
   const menuItems = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/users', icon: Users, label: 'User Management' },
+    { to: '/vehicles', icon: Car, label: 'Vehicles' },
+    { to: '/brands', icon: Tags, label: 'Brand Management' },
     { to: '/offices', icon: Building2, label: 'Office Management' },
   ];
 

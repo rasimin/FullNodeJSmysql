@@ -4,6 +4,8 @@ const Office = require('./Office');
 const User = require('./User');
 const AuditTrail = require('./AuditTrail');
 const ActivityLog = require('./ActivityLog');
+const Vehicle = require('./Vehicle');
+const VehicleBrand = require('./VehicleBrand');
 
 // User Relationships
 User.belongsTo(Role, { foreignKey: 'role_id' });
@@ -19,6 +21,12 @@ Office.hasMany(Office, { as: 'branches', foreignKey: 'parent_id' });
 // Activity Log Relationship
 ActivityLog.belongsTo(User, { foreignKey: 'user_id' });
 User.hasMany(ActivityLog, { foreignKey: 'user_id' });
+
+// Vehicle Relationships
+Vehicle.belongsTo(Office, { foreignKey: 'office_id' });
+Vehicle.belongsTo(User, { foreignKey: 'user_id' });
+Office.hasMany(Vehicle, { foreignKey: 'office_id' });
+User.hasMany(Vehicle, { foreignKey: 'user_id' });
 
 // Audit Trail Relationship (Optional, as user_id can be null)
 AuditTrail.belongsTo(User, { foreignKey: 'user_id' });
@@ -65,6 +73,8 @@ const setupHooks = (model) => {
 setupHooks(User);
 setupHooks(Role);
 setupHooks(Office);
+setupHooks(Vehicle);
+setupHooks(VehicleBrand);
 
 module.exports = {
   sequelize,
@@ -73,4 +83,6 @@ module.exports = {
   User,
   AuditTrail,
   ActivityLog,
+  Vehicle,
+  VehicleBrand,
 };
