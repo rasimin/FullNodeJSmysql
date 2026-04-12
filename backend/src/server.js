@@ -11,8 +11,8 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log('Database connected successfully.');
     
-    // Sync models
-    await sequelize.sync(); 
+    // Sync models - using alter: true to update schema with new fields like sold_date
+    await sequelize.sync({ alter: true }); 
     
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);

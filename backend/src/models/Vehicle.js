@@ -52,6 +52,10 @@ const Vehicle = sequelize.define('Vehicle', {
   description: {
     type: DataTypes.TEXT,
     allowNull: true,
+  },
+  sold_date: {
+    type: DataTypes.DATEONLY,
+    allowNull: true,
   }
 }, {
   tableName: 'vehicles',

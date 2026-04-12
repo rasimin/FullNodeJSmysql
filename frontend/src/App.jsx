@@ -13,6 +13,7 @@ import RoleManagement from './pages/RoleManagement';
 import ActivityLog from './pages/ActivityLog';
 import AuditTrail from './pages/AuditTrail';
 import Profile from './pages/Profile';
+import Reports from './pages/Reports';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
               <Route path="/activities" element={<ActivityLog />} />
               <Route path="/roles" element={<RoleManagement />} />
               <Route path="/audit-trails" element={<AuditTrail />} />
+              <Route path="/reports" element={<Reports />} />
               <Route path="/profile" element={<Profile />} />
               {/* Add other protected routes here */}
             </Route>

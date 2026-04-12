@@ -91,7 +91,16 @@ const updateVehicle = async (req, res) => {
     const vehicle = await Vehicle.findByPk(id);
     if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
 
-    await vehicle.update(req.body, { 
+    const updateData = { ...req.body };
+    
+    // Auto-manage sold_date based on status change
+    if (updateData.status === 'Sold' && vehicle.status !== 'Sold' && !updateData.sold_date) {
+      updateData.sold_date = new Date().toISOString().split('T')[0];
+    } else if (updateData.status && updateData.status !== 'Sold' && vehicle.status === 'Sold') {
+      updateData.sold_date = null;
+    }
+
+    await vehicle.update(updateData, { 
       userId: req.user.id,
       individualHooks: true 
     });

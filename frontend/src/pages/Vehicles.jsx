@@ -3,8 +3,8 @@ import api from '../services/api';
 import { 
   Search, Plus, Car, Tag, MapPin, 
   Calendar, Info, Edit, Trash2, Filter, Eye,
-  ChevronRight, ArrowUpDown, Bookmark, Smartphone, User as UserIcon,
-  CreditCard, XCircle, CheckCircle, Clock, Camera, Image as ImageIcon, X
+  ChevronRight, ChevronLeft, ArrowUpDown, Bookmark, Smartphone, User as UserIcon,
+  CreditCard, XCircle, CheckCircle, Clock, Camera, Image as ImageIcon, X, Maximize2
 } from 'lucide-react';
 import Modal from '../components/Modal';
 import DynamicIsland from '../components/DynamicIsland';
@@ -48,6 +48,9 @@ const Vehicles = () => {
     entry_date: new Date().toISOString().split('T')[0],
     description: ''
   });
+
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const { user } = JSON.parse(localStorage.getItem('user_data') || '{}');
   const isHeadOffice = !user?.office_id || user?.Office?.parent_id === null;
@@ -96,7 +99,6 @@ const Vehicles = () => {
 
   // Combined listener for search, branch, and page
   useEffect(() => {
-    // Only debounce if searching, otherwise fetch immediately (like pagination)
     const isSearchAction = search !== '' || selectedBranch !== '';
     const delay = isSearchAction ? 500 : 0;
 
@@ -106,6 +108,17 @@ const Vehicles = () => {
 
     return () => clearTimeout(timer);
   }, [currentPage, search, selectedBranch]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!isLightboxOpen) return;
+      if (e.key === 'Escape') setIsLightboxOpen(false);
+      if (e.key === 'ArrowLeft') setActiveImageIndex(prev => (prev === 0 ? editingVehicle.images.length - 1 : prev - 1));
+      if (e.key === 'ArrowRight') setActiveImageIndex(prev => (prev === editingVehicle.images.length - 1 ? 0 : prev + 1));
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isLightboxOpen, editingVehicle?.images?.length]);
 
   const handleDelete = async () => {
     if (!confirmDeleteId) return;
@@ -174,7 +187,9 @@ const Vehicles = () => {
     if (!editingVehicle) return;
     notify('loading', 'Confirming sale...');
     try {
-      await api.put(`/bookings/vehicle/${editingVehicle.id}/sold`);
+      await api.put(`/bookings/vehicle/${editingVehicle.id}/sold`, { 
+        sold_date: bookingData.sold_date || new Date().toISOString().split('T')[0] 
+      });
       notify('success', 'Unit marked as Sold!');
       setIsConfirmActionModalOpen(false);
       fetchVehicles();
@@ -408,7 +423,10 @@ const Vehicles = () => {
                             <p className="font-bold text-gray-900 dark:text-white">{v.brand} {v.model}</p>
                             <p className="text-xs text-gray-500">
                               {v.type} • {v.year} • {v.plate_number} 
-                              <span className="block mt-0.5 text-blue-500 font-medium">Masuk: {new Date(v.entry_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                              <span className="block mt-0.5 text-blue-500 font-medium whitespace-nowrap">Masuk: {new Date(v.entry_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                              {v.status === 'Sold' && v.sold_date && (
+                                <span className="block mt-0.5 text-red-500 font-bold whitespace-nowrap">Terjual: {new Date(v.sold_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                              )}
                             </p>
                           </div>
                         </div>
@@ -539,6 +557,18 @@ const Vehicles = () => {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+          
+          {actionType === 'sold' && (
+            <div className="p-4 bg-orange-50 dark:bg-orange-900/10 rounded-xl border border-orange-100 dark:border-orange-800">
+              <label className="text-xs font-bold text-orange-600 uppercase tracking-wider block mb-2">Tanggal Penjualan (Bisa Backdate)</label>
+              <input 
+                type="date" 
+                className="input h-10 bg-white/50 dark:bg-gray-900 border-orange-200" 
+                value={bookingData.sold_date || new Date().toISOString().split('T')[0]}
+                onChange={(e) => setBookingData({...bookingData, sold_date: e.target.value})}
+              />
             </div>
           )}
 
@@ -702,6 +732,13 @@ const Vehicles = () => {
                 onChange={e => setFormData({...formData, entry_date: e.target.value})} />
             </div>
 
+            {formData.status === 'Sold' && (
+              <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
+                <Input label="Tanggal Terjual" icon={CheckCircle} type="date" value={formData.sold_date || ''}
+                  onChange={e => setFormData({...formData, sold_date: e.target.value})} />
+              </div>
+            )}
+
             <div className="space-y-1">
               <label className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">Description</label>
               <textarea 
@@ -722,9 +759,9 @@ const Vehicles = () => {
               {/* Existing Images Gallery */}
               {editingVehicle?.images && editingVehicle.images.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                  {editingVehicle.images.map((img) => (
-                    <div key={img.id} className="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 aspect-video">
-                      <img src={`http://localhost:5001${img.image_url}`} alt="vehicle" className="w-full h-full object-cover" />
+                  {editingVehicle.images.map((img, idx) => (
+                    <div key={img.id} className="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 aspect-video cursor-zoom-in" onClick={() => { setActiveImageIndex(idx); setIsLightboxOpen(true); }}>
+                      <img src={`http://localhost:5001${img.image_url}`} alt="vehicle" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
                       
                       {img.is_primary && (
                         <div className="absolute top-1 left-1 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
@@ -860,6 +897,91 @@ const Vehicles = () => {
           )}
         </form>
       </Modal>
+
+      {/* Lightbox / Image Zoom */}
+      <AnimatePresence>
+        {isLightboxOpen && editingVehicle?.images && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-sm flex flex-col items-center justify-center p-4"
+            onClick={() => setIsLightboxOpen(false)}
+          >
+            {/* Close Button */}
+            <button 
+              className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all"
+              onClick={() => setIsLightboxOpen(false)}
+            >
+              <X size={24} />
+            </button>
+
+            {/* Main Content */}
+            <div className="relative w-full max-w-5xl h-[80vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+              <motion.img 
+                key={activeImageIndex}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                src={`http://localhost:5001${editingVehicle.images[activeImageIndex].image_url}`} 
+                alt="zoomed vehicle" 
+                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl shadow-white/5"
+              />
+
+              {/* Navigation Arrows */}
+              {editingVehicle.images.length > 1 && (
+                <>
+                  <button 
+                    className="absolute left-0 p-4 bg-black/20 hover:bg-black/40 text-white rounded-full transition-all -translate-x-12 hidden md:block"
+                    onClick={() => setActiveImageIndex((prev) => (prev === 0 ? editingVehicle.images.length - 1 : prev - 1))}
+                  >
+                    <ChevronLeft size={32} />
+                  </button>
+                  <button 
+                    className="absolute right-0 p-4 bg-black/20 hover:bg-black/40 text-white rounded-full transition-all translate-x-12 hidden md:block"
+                    onClick={() => setActiveImageIndex((prev) => (prev === editingVehicle.images.length - 1 ? 0 : prev + 1))}
+                  >
+                    <ChevronRight size={32} />
+                  </button>
+
+                  {/* Mobile Nav */}
+                  <div className="absolute -bottom-12 flex gap-8 md:hidden">
+                    <button 
+                      className="p-3 bg-white/10 text-white rounded-full"
+                      onClick={() => setActiveImageIndex((prev) => (prev === 0 ? editingVehicle.images.length - 1 : prev - 1))}
+                    >
+                      <ChevronLeft size={24} />
+                    </button>
+                    <button 
+                      className="p-3 bg-white/10 text-white rounded-full"
+                      onClick={() => setActiveImageIndex((prev) => (prev === editingVehicle.images.length - 1 ? 0 : prev + 1))}
+                    >
+                      <ChevronRight size={24} />
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Thumbnail Strip */}
+            <div className="absolute bottom-8 left-0 right-0 overflow-x-auto flex justify-center gap-2 p-4" onClick={(e) => e.stopPropagation()}>
+              {editingVehicle.images.map((img, idx) => (
+                <button 
+                  key={img.id}
+                  onClick={() => setActiveImageIndex(idx)}
+                  className={`relative w-16 h-12 rounded-lg overflow-hidden border-2 transition-all ${activeImageIndex === idx ? 'border-blue-500 scale-110 shadow-lg shadow-blue-500/20' : 'border-transparent opacity-50 hover:opacity-100'}`}
+                >
+                  <img src={`http://localhost:5001${img.image_url}`} className="w-full h-full object-cover" alt="thumb" />
+                </button>
+              ))}
+            </div>
+
+            {/* Info Badge */}
+            <div className="absolute top-8 left-1/2 -translate-x-1/2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full text-white text-xs font-bold tracking-widest uppercase">
+              {activeImageIndex + 1} / {editingVehicle.images.length}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

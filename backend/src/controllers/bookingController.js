@@ -123,7 +123,10 @@ exports.confirmSale = async (req, res) => {
       await booking.update({ status: 'Sold' }, { userId: req.user.id });
     }
 
-    await vehicle.update({ status: 'Sold' }, { userId: req.user.id });
+    await vehicle.update({ 
+      status: 'Sold',
+      sold_date: req.body.sold_date || new Date().toISOString().split('T')[0]
+    }, { userId: req.user.id });
 
     res.json({ message: 'Unit successfully marked as Sold' });
   } catch (err) {
