@@ -42,6 +42,10 @@ const Booking = sequelize.define('Booking', {
   sales_agent_id: {
     type: DataTypes.INTEGER,
     allowNullable: true
+  },
+  booked_by_agent_id: {
+    type: DataTypes.INTEGER,
+    allowNullable: true
   }
 }, {
   tableName: 'bookings',

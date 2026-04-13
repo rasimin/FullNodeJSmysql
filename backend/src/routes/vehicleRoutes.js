@@ -3,7 +3,7 @@ const router = express.Router();
 const { 
   getVehicles, createVehicle, updateVehicle, deleteVehicle,
   getBrands, getModelHistory, createBrand, updateBrand, deleteBrand,
-  uploadVehicleImages, deleteVehicleImage, setPrimaryImage
+  uploadVehicleImages, deleteVehicleImage, setPrimaryImage, getVehicleSummary
 } = require('../controllers/vehicleController');
 const { authenticate, authorize } = require('../middlewares/authMiddleware');
 const upload = require('../middlewares/uploadMiddleware');
@@ -11,6 +11,7 @@ const upload = require('../middlewares/uploadMiddleware');
 router.use(authenticate);
 
 router.get('/', getVehicles);
+router.get('/summary', getVehicleSummary);
 router.get('/brands', getBrands);
 router.post('/brands', authorize(['Super Admin', 'Admin Pusat']), createBrand);
 router.put('/brands/:id', authorize(['Super Admin', 'Admin Pusat']), updateBrand);

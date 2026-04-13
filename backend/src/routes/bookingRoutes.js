@@ -11,6 +11,7 @@ router.get('/vehicle/:vehicleId', bookingController.getVehicleBooking);
 router.get('/vehicle/:vehicleId/history', bookingController.getVehicleBookingHistory);
 router.put('/vehicle/:vehicleId/sold', bookingController.confirmSale);
 router.put('/vehicle/:vehicleId/cancel', bookingController.cancelVehicleBooking);
+router.put('/:id', bookingController.updateBooking);
 router.put('/:id/cancel', bookingController.cancelBooking);
 
 module.exports = router;

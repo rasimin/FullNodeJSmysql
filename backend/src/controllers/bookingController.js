@@ -1,4 +1,4 @@
-const { Booking, Vehicle, User, Office } = require('../models');
+const { Booking, Vehicle, User, Office, SalesAgent } = require('../models');
 
 exports.createBooking = async (req, res) => {
   try {
@@ -20,6 +20,7 @@ exports.createBooking = async (req, res) => {
       down_payment: down_payment || 0,
       notes,
       sales_agent_id: req.body.sales_agent_id,
+      booked_by_agent_id: req.body.sales_agent_id,
       user_id: req.user.id,
       office_id: vehicle.office_id,
       status: 'Active'
@@ -121,7 +122,10 @@ exports.confirmSale = async (req, res) => {
     if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
 
     if (booking) {
-      await booking.update({ status: 'Sold' }, { userId: req.user.id });
+      await booking.update({ 
+        status: 'Sold',
+        sales_agent_id: req.body.sales_agent_id || booking.sales_agent_id 
+      }, { userId: req.user.id });
     }
 
     await vehicle.update({ 
@@ -143,11 +147,40 @@ exports.getVehicleBookingHistory = async (req, res) => {
       include: [
         { model: User, attributes: ['name'] },
         { model: Office, attributes: ['name'] },
-        { model: SalesAgent, as: 'salesAgent', attributes: ['name'] }
+        { model: SalesAgent, as: 'salesAgent', attributes: ['name'] },
+        { model: SalesAgent, as: 'bookedByAgent', attributes: ['name'] }
       ],
-      order: [['createdAt', 'DESC']]
+      order: [['created_at', 'DESC']]
     });
     res.json(history);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.updateBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findByPk(req.params.id);
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+    
+    // Hanya booking Active yang bisa diedit (atau sesuai business logic)
+    if (booking.status !== 'Active') {
+      return res.status(400).json({ message: 'Only active bookings can be edited' });
+    }
+
+    await booking.update({
+      customer_name: req.body.customer_name,
+      customer_phone: req.body.customer_phone,
+      id_number: req.body.id_number,
+      booking_date: req.body.booking_date,
+      expiry_date: req.body.expiry_date,
+      down_payment: req.body.down_payment,
+      notes: req.body.notes,
+      sales_agent_id: req.body.sales_agent_id,
+      booked_by_agent_id: req.body.sales_agent_id // Update also booked_by if it's still being edited
+    }, { userId: req.user.id });
+
+    res.json(booking);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

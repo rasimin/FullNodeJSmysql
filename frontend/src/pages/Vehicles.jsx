@@ -41,6 +41,8 @@ const Vehicles = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [selectedBranch, setSelectedBranch] = useState('');
+  const [filterStatus, setFilterStatus] = useState(''); // New: status filter
+  const [summary, setSummary] = useState({ available: 0, booking: 0, sold: 0, total: 0 }); // New: counts
 
   // Form State
   const [formData, setFormData] = useState({
@@ -86,7 +88,8 @@ const Vehicles = () => {
         page: page,
         size: 10,
         search,
-        officeId: selectedBranch
+        officeId: selectedBranch,
+        status: filterStatus // Added filterStatus
       };
       const r = await api.get('/vehicles', { params });
       setVehicles(r.data.items);
@@ -99,21 +102,32 @@ const Vehicles = () => {
     setLoading(false);
   };
 
+  const fetchSummary = async () => {
+    try {
+      const params = { officeId: selectedBranch };
+      const r = await api.get('/vehicles/summary', { params });
+      setSummary(r.data);
+    } catch (e) {
+      console.error('Summary fetch error', e);
+    }
+  };
+
   useEffect(() => { 
     fetchMetadata();
   }, []);
 
-  // Combined listener for search, branch, and page
+  // Combined listener for search, branch, status and page
   useEffect(() => {
-    const isSearchAction = search !== '' || selectedBranch !== '';
+    const isSearchAction = search !== '' || selectedBranch !== '' || filterStatus !== '';
     const delay = isSearchAction ? 500 : 0;
 
     const timer = setTimeout(() => {
       fetchVehicles(currentPage);
+      fetchSummary(); // Refresh summary too
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [currentPage, search, selectedBranch]);
+  }, [currentPage, search, selectedBranch, filterStatus]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -134,6 +148,7 @@ const Vehicles = () => {
       notify('success', 'Vehicle removed');
       setConfirmDeleteId(null);
       fetchVehicles();
+      fetchSummary();
     } catch (e) { notify('error', 'Delete failed'); }
   };
 
@@ -175,10 +190,28 @@ const Vehicles = () => {
     setActionType(type);
     try {
       const r = await api.get(`/bookings/vehicle/${vehicle.id}`);
-      setActiveBooking(r.data);
+      const booking = r.data;
+      setActiveBooking(booking);
+      
+      // Pre-fill bookingData for confirmation forms
+      setBookingData({
+        ...bookingData,
+        sold_date: new Date().toISOString().split('T')[0],
+        sales_agent_id: booking?.sales_agent_id || ''
+      });
+      
       setIsConfirmActionModalOpen(true);
     } catch (e) {
       notify('error', 'Failed to fetch active booking details');
+    }
+  };
+
+  const fetchAndEditBooking = async (vehicle) => {
+    try {
+      const r = await api.get(`/bookings/vehicle/${vehicle.id}`);
+      openBookingModal(vehicle, r.data);
+    } catch (e) {
+      notify('error', 'Failed to fetch booking details');
     }
   };
 
@@ -190,6 +223,7 @@ const Vehicles = () => {
       notify('success', 'Booking cancelled!');
       setIsConfirmActionModalOpen(false);
       fetchVehicles();
+      fetchSummary();
     } catch (err) {
       notify('error', err.response?.data?.message || 'Cancellation failed');
     }
@@ -206,6 +240,7 @@ const Vehicles = () => {
       notify('success', 'Unit marked as Sold!');
       setIsConfirmActionModalOpen(false);
       fetchVehicles();
+      fetchSummary();
     } catch (err) {
       notify('error', err.response?.data?.message || 'Failed to mark as sold');
     }
@@ -277,35 +312,61 @@ const Vehicles = () => {
       notify('success', editingVehicle ? 'Vehicle updated!' : 'Vehicle added!');
       setIsModalOpen(false);
       fetchVehicles();
+      fetchSummary();
     } catch (err) {
       notify('error', err.response?.data?.message || 'Operation failed');
     }
   };
 
-  const openBookingModal = (vehicle) => {
-    setBookingData({
-      vehicle_id: vehicle.id, 
-      customer_name: '', 
-      customer_phone: '', 
-      id_number: '', 
-      booking_date: new Date().toISOString().split('T')[0], 
-      down_payment: '', 
-      notes: ''
-    });
+  const openBookingModal = (vehicle, existingBooking = null) => {
+    if (existingBooking) {
+      setBookingData({
+        id: existingBooking.id,
+        vehicle_id: vehicle.id,
+        customer_name: existingBooking.customer_name,
+        customer_phone: existingBooking.customer_phone,
+        id_number: existingBooking.id_number || '',
+        booking_date: existingBooking.booking_date,
+        expiry_date: existingBooking.expiry_date || '',
+        down_payment: existingBooking.down_payment,
+        notes: existingBooking.notes || '',
+        sales_agent_id: existingBooking.sales_agent_id || ''
+      });
+    } else {
+      setBookingData({
+        vehicle_id: vehicle.id, 
+        customer_name: '', 
+        customer_phone: '', 
+        id_number: '', 
+        booking_date: new Date().toISOString().split('T')[0], 
+        down_payment: '', 
+        notes: '',
+        sales_agent_id: ''
+      });
+    }
     setEditingVehicle(vehicle);
     setIsBookingModalOpen(true);
   };
 
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
-    notify('loading', 'Processing booking...');
+    const isEdit = !!bookingData.id;
+    notify('loading', isEdit ? 'Updating booking...' : 'Processing booking...');
     try {
-      await api.post('/bookings', bookingData);
-      notify('success', 'Booking confirmed!');
+      if (isEdit) {
+        await api.put(`/bookings/${bookingData.id}`, bookingData);
+      } else {
+        await api.post('/bookings', bookingData);
+      }
+      notify('success', isEdit ? 'Booking updated!' : 'Booking confirmed!');
       setIsBookingModalOpen(false);
       fetchVehicles();
+      fetchSummary();
+      if (isEdit && editingVehicle) {
+        fetchBookingHistory(editingVehicle.id);
+      }
     } catch (err) {
-      notify('error', err.response?.data?.message || 'Booking failed');
+      notify('error', err.response?.data?.message || 'Operation failed');
     }
   };
 
@@ -358,35 +419,59 @@ const Vehicles = () => {
         )}
       </div>
 
-      {/* Stats Quick View */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="card p-4 flex items-center gap-4 shadow-sm border-0">
+      {/* Stats Quick View - Clickable Filters */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <button 
+          onClick={() => { setFilterStatus(''); setCurrentPage(1); }}
+          className={`card p-4 flex items-center gap-4 shadow-sm border-b-4 transition-all text-left ${!filterStatus ? 'border-b-blue-500 bg-blue-50/10' : 'border-b-transparent opacity-70 hover:opacity-100'}`}
+        >
           <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-blue-600">
             <Car size={24} />
           </div>
           <div>
-            <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Total Inventory</p>
-            <p className="text-xl font-bold">{totalItems} Units</p>
+            <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-0.5">Total Inventory</p>
+            <p className="text-xl font-black text-gray-800 dark:text-gray-100">{summary.total || 0}</p>
           </div>
-        </div>
-        <div className="card p-4 flex items-center gap-4 shadow-sm border-0">
+        </button>
+
+        <button 
+          onClick={() => { setFilterStatus('Available'); setCurrentPage(1); }}
+          className={`card p-4 flex items-center gap-4 shadow-sm border-b-4 transition-all text-left ${filterStatus === 'Available' ? 'border-b-green-500 bg-green-50/10' : 'border-b-transparent opacity-70 hover:opacity-100'}`}
+        >
           <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-xl text-green-600">
             <Tag size={24} />
           </div>
           <div>
-            <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Stock Status</p>
-            <p className="text-xl font-bold">Active Records</p>
+            <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-0.5">Available</p>
+            <p className="text-xl font-black text-green-600">{summary.available || 0}</p>
           </div>
-        </div>
-        <div className="card p-4 flex items-center gap-4 shadow-sm border-0">
-          <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl text-purple-600">
-            <MapPin size={24} />
+        </button>
+
+        <button 
+          onClick={() => { setFilterStatus('Booked'); setCurrentPage(1); }}
+          className={`card p-4 flex items-center gap-4 shadow-sm border-b-4 transition-all text-left ${filterStatus === 'Booked' ? 'border-b-orange-500 bg-orange-50/10' : 'border-b-transparent opacity-70 hover:opacity-100'}`}
+        >
+          <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-xl text-orange-600">
+            <Clock size={24} />
           </div>
           <div>
-            <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Availability</p>
-            <p className="text-xl font-bold">{isHeadOffice ? 'Multi-Branch' : 'Local Cabang'}</p>
+            <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-0.5">Booking</p>
+            <p className="text-xl font-black text-orange-600">{summary.booking || 0}</p>
           </div>
-        </div>
+        </button>
+
+        <button 
+          onClick={() => { setFilterStatus('Sold'); setCurrentPage(1); }}
+          className={`card p-4 flex items-center gap-4 shadow-sm border-b-4 transition-all text-left ${filterStatus === 'Sold' ? 'border-b-purple-500 bg-purple-50/10' : 'border-b-transparent opacity-70 hover:opacity-100'}`}
+        >
+          <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl text-purple-600">
+            <CheckCircle size={24} />
+          </div>
+          <div>
+            <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-0.5">Units Sold</p>
+            <p className="text-xl font-black text-purple-600">{summary.sold || 0}</p>
+          </div>
+        </button>
       </div>
 
       {/* Main Table */}
@@ -473,6 +558,9 @@ const Vehicles = () => {
                             <>
                               <button onClick={() => preConfirmAction(v, 'sold')} className="btn flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/10 hover:bg-green-100 dark:hover:bg-green-500/20 rounded-lg transition-colors border border-green-200 dark:border-green-500/30">
                                 <CheckCircle size={14} /> Confirm Sold
+                              </button>
+                              <button onClick={() => fetchAndEditBooking(v)} className="btn flex items-center px-1.5 py-1.5 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10 hover:bg-orange-100 dark:hover:bg-orange-500/20 rounded-lg border border-orange-200 dark:border-orange-500/30" title="Edit Booking">
+                                <Edit size={14} />
                               </button>
                               <button onClick={() => preConfirmAction(v, 'cancel')} className="btn flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-lg transition-colors border border-red-200 dark:border-red-500/30">
                                 <XCircle size={14} /> Cancel
@@ -641,7 +729,11 @@ const Vehicles = () => {
       </Modal>
 
       {/* Booking Modal */}
-      <Modal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} title="Booking Reservation">
+      <Modal 
+        isOpen={isBookingModalOpen} 
+        onClose={() => setIsBookingModalOpen(false)} 
+        title={bookingData.id ? 'Edit Booking Record' : 'Create Booking Reservation'}
+      >
         <form onSubmit={handleBookingSubmit} className="space-y-4">
           <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-100 dark:border-orange-800 flex items-center gap-3 mb-2">
             <div className="p-2 bg-white dark:bg-gray-900 rounded-lg text-orange-600 shadow-sm">
@@ -744,7 +836,7 @@ const Vehicles = () => {
             type="submit" 
             className="btn-primary w-full py-3 mt-2 shadow-lg shadow-orange-500/20 bg-orange-600 hover:bg-orange-700 border-none"
           >
-            Confirm Booking
+            {bookingData.id ? 'Save Changes' : 'Confirm Booking'}
           </button>
         </form>
       </Modal>
@@ -953,36 +1045,60 @@ const Vehicles = () => {
                 <h3 className="font-bold uppercase text-xs tracking-wider">Booking & Status History</h3>
               </div>
               
-              {/* Highlight Active Booking */}
-              {editingVehicle?.status === 'Booked' && bookingHistory.find(b => b.status === 'Active') && (
-                <div className="mb-6 p-4 bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-800 rounded-2xl">
-                  <div className="flex justify-between items-start mb-3">
-                    <span className="bg-orange-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase">Current Active Booking</span>
-                    <span className="text-xs font-bold text-orange-600">Expires: {new Date(bookingHistory.find(b => b.status === 'Active').expiry_date).toLocaleDateString()}</span>
+              {/* Highlight Active/Sold Booking */}
+              {(() => {
+                const relevantBooking = (editingVehicle?.status === 'Booked' && bookingHistory.find(b => b.status === 'Active')) || 
+                                        (editingVehicle?.status === 'Sold' && bookingHistory.find(b => b.status === 'Sold'));
+                if (!relevantBooking) return null;
+                
+                return (
+                  <div className={`mb-6 p-4 border rounded-2xl ${relevantBooking.status === 'Sold' ? 'bg-green-50 dark:bg-green-900/10 border-green-100 dark:border-green-800' : 'bg-orange-50 dark:bg-orange-900/10 border-orange-100 dark:border-orange-800'}`}>
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className={`${relevantBooking.status === 'Sold' ? 'bg-green-600' : 'bg-orange-600'} text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase`}>
+                          {relevantBooking.status === 'Sold' ? 'Unit Sold via Booking' : 'Current Active Booking'}
+                        </span>
+                        {relevantBooking.status === 'Active' && (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openBookingModal(editingVehicle, relevantBooking);
+                            }}
+                            className="bg-white/50 dark:bg-black/20 hover:bg-white dark:hover:bg-black/40 text-orange-600 dark:text-orange-400 p-1 rounded-md transition-colors"
+                            title="Edit Booking Data"
+                          >
+                            <Edit size={12} />
+                          </button>
+                        )}
+                      </div>
+                      {relevantBooking.status !== 'Sold' && (
+                        <span className="text-xs font-bold text-orange-600">Expires: {new Date(relevantBooking.expiry_date).toLocaleDateString()}</span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      <div>
+                        <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Customer</p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-white">{relevantBooking.customer_name}</p>
+                        <p className="text-xs text-gray-500">{relevantBooking.customer_phone}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Down Payment</p>
+                        <p className="text-sm font-bold text-green-600">Rp {Number(relevantBooking.down_payment).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Sales Agent</p>
+                        <p className="text-sm font-bold text-blue-600">{relevantBooking.salesAgent?.name || 'N/A'}</p>
+                      </div>
+                    </div>
+                    {relevantBooking.notes && (
+                      <div className={`mt-3 pt-3 border-t ${relevantBooking.status === 'Sold' ? 'border-green-100 dark:border-green-800/50' : 'border-orange-100 dark:border-orange-800/50'}`}>
+                        <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Notes</p>
+                        <p className="text-xs italic text-gray-600 dark:text-gray-400">"{relevantBooking.notes}"</p>
+                      </div>
+                    )}
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Customer</p>
-                      <p className="text-sm font-bold text-gray-900 dark:text-white">{bookingHistory.find(b => b.status === 'Active').customer_name}</p>
-                      <p className="text-xs text-gray-500">{bookingHistory.find(b => b.status === 'Active').customer_phone}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Down Payment</p>
-                      <p className="text-sm font-bold text-green-600">Rp {Number(bookingHistory.find(b => b.status === 'Active').down_payment).toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Sales Agent</p>
-                      <p className="text-sm font-bold text-blue-600">{bookingHistory.find(b => b.status === 'Active').salesAgent?.name || 'N/A'}</p>
-                    </div>
-                  </div>
-                  {bookingHistory.find(b => b.status === 'Active').notes && (
-                    <div className="mt-3 pt-3 border-t border-orange-100 dark:border-orange-800/50">
-                      <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Notes</p>
-                      <p className="text-xs italic text-gray-600 dark:text-gray-400">"{bookingHistory.find(b => b.status === 'Active').notes}"</p>
-                    </div>
-                  )}
-                </div>
-              )}
+                );
+              })()}
               
               <div className="overflow-hidden rounded-xl border border-gray-100 dark:border-gray-800">
                 <table className="w-full text-xs">
@@ -1007,11 +1123,16 @@ const Vehicles = () => {
                             <p className="font-bold text-gray-900 dark:text-white">{bh.customer_name}</p>
                             <p className="text-[10px] text-gray-500">{bh.customer_phone}</p>
                           </td>
-                          <td className="px-4 py-3 text-blue-600 font-medium">
-                            {bh.salesAgent?.name || '-'}
+                          <td className="px-4 py-3">
+                            <div className="flex flex-col">
+                              <span className="text-blue-600 font-bold">{bh.salesAgent?.name || '-'}</span>
+                              {bh.bookedByAgent && bh.salesAgent?.id !== bh.bookedByAgent?.id && (
+                                <span className="text-[9px] text-gray-500 italic">Booked by: {bh.bookedByAgent.name}</span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-4 py-3">
-                            {new Date(bh.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            {new Date(bh.created_at || bh.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                           </td>
                           <td className="px-4 py-3">
                             <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${

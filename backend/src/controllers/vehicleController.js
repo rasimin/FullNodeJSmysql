@@ -329,6 +329,59 @@ const deleteBrand = async (req, res) => {
     await brand.destroy({ userId: req.user.id });
     res.json({ message: 'Brand deleted successfully' });
   } catch (error) {
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+const getVehicleSummary = async (req, res) => {
+  try {
+    const user = req.user;
+    const isSuperAdmin = user.Role?.name === 'Super Admin';
+    const currentOffice = await Office.findByPk(user.office_id);
+    let officeIds = [];
+
+    // Gunakan logika hierarki yang sama dengan getVehicles
+    if (isSuperAdmin) {
+      const allOffices = await Office.findAll({ attributes: ['id'] });
+      officeIds = allOffices.map(o => o.id);
+    } else if (currentOffice && !currentOffice.parent_id) {
+       const allowedOffices = await Office.findAll({
+         where: { [Op.or]: [{ id: user.office_id }, { parent_id: user.office_id }] },
+         attributes: ['id']
+       });
+       officeIds = allowedOffices.map(o => o.id);
+    } else {
+       officeIds = [user.office_id];
+    }
+
+    const summary = await Vehicle.findAll({
+      where: { office_id: officeIds },
+      attributes: [
+        'status',
+        [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+      ],
+      group: ['status']
+    });
+
+    const response = {
+      available: 0,
+      booking: 0,
+      sold: 0,
+      total: 0
+    };
+
+    summary.forEach(item => {
+      const status = item.get('status');
+      const count = parseInt(item.get('count'));
+      if (status === 'Available') response.available = count;
+      if (status === 'Booked') response.booking = count;
+      if (status === 'Sold') response.sold = count;
+      response.total += count;
+    });
+
+    res.json(response);
+  } catch (error) {
+    console.error('Summary Error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -337,6 +390,7 @@ module.exports = {
   getVehicles,
   createVehicle,
   updateVehicle,
+  deleteVehicle,
   uploadVehicleImages,
   deleteVehicleImage,
   setPrimaryImage,
@@ -345,5 +399,5 @@ module.exports = {
   createBrand,
   updateBrand,
   deleteBrand,
-  deleteVehicle
+  getVehicleSummary
 };

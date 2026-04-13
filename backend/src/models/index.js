@@ -52,6 +52,7 @@ Booking.belongsTo(User, { foreignKey: 'user_id' });
 User.hasMany(Booking, { foreignKey: 'user_id' });
 
 Booking.belongsTo(SalesAgent, { foreignKey: 'sales_agent_id', as: 'salesAgent' });
+Booking.belongsTo(SalesAgent, { foreignKey: 'booked_by_agent_id', as: 'bookedByAgent' });
 SalesAgent.hasMany(Booking, { foreignKey: 'sales_agent_id', as: 'bookings' });
 
 // Audit Trail Relationship (Optional, as user_id can be null)
