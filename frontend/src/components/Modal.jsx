@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 
-const Modal = ({ isOpen, onClose, title, children }) => (
+const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' }) => (
   <AnimatePresence>
     {isOpen && (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -19,7 +19,7 @@ const Modal = ({ isOpen, onClose, title, children }) => (
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.97, y: 12 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
-          className="card w-full max-w-lg z-50 shadow-xl overflow-hidden"
+          className={`card w-full ${maxWidth} z-50 shadow-xl overflow-hidden`}
         >
           {/* Header */}
           <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50 dark:bg-gray-900">

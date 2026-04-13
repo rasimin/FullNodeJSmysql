@@ -4,7 +4,8 @@ import {
   Search, Plus, Car, Tag, MapPin, 
   Calendar, Info, Edit, Trash2, Filter, Eye,
   ChevronRight, ChevronLeft, ArrowUpDown, Bookmark, Smartphone, User as UserIcon,
-  CreditCard, XCircle, CheckCircle, Clock, Camera, Image as ImageIcon, X, Maximize2, Users
+  CreditCard, XCircle, CheckCircle, Clock, Camera, Image as ImageIcon, X, Maximize2, Users,
+  PlusCircle, TrendingUp, Download
 } from 'lucide-react';
 import Modal from '../components/Modal';
 import DynamicIsland from '../components/DynamicIsland';
@@ -51,7 +52,9 @@ const Vehicles = () => {
     entry_date: new Date().toISOString().split('T')[0],
     description: '',
     office_id: '',
-    sales_agent_id: ''
+    sales_agent_id: '',
+    color: '',
+    odometer: ''
   });
 
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -165,7 +168,11 @@ const Vehicles = () => {
           plate_number: '', price: '', status: 'Available', 
           entry_date: new Date().toISOString().split('T')[0], 
           description: '',
-          office_id: user?.office_id || ''
+          office_id: user?.office_id || '',
+          purchase_price: '',
+          service_cost: '',
+          color: '',
+          odometer: ''
         }
     );
     if (readOnly && vehicle) {
@@ -370,7 +377,23 @@ const Vehicles = () => {
     }
   };
 
-  const formatPrice = (p) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(p);
+  const formatPrice = (p) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0
+    }).format(p || 0);
+  };
+
+  const displayCurrency = (val) => {
+    if (!val || val === '0') return '';
+    return parseInt(val).toLocaleString('id-ID');
+  };
+
+  const handleCurrencyChange = (setter, state, field, val) => {
+    const numericValue = val.replace(/\D/g, ''); 
+    setter({ ...state, [field]: numericValue });
+  };
 
   return (
     <div className="space-y-6">
@@ -521,7 +544,9 @@ const Vehicles = () => {
                           <div>
                             <p className="font-bold text-gray-900 dark:text-white">{v.brand} {v.model}</p>
                             <p className="text-xs text-gray-500">
-                              {v.type} • {v.year} • {v.plate_number} 
+                              {v.type} • {v.year} • {v.plate_number}
+                              {v.color && <span className="ml-1 text-gray-400">• {v.color}</span>}
+                              {v.odometer > 0 && <span className="ml-1 text-gray-400">• {parseInt(v.odometer).toLocaleString('id-ID')} km</span>}
                               <span className="block mt-0.5 text-blue-500 font-medium whitespace-nowrap">Masuk: {new Date(v.entry_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                               {v.status === 'Sold' && v.sold_date && (
                                 <span className="block mt-0.5 text-red-500 font-bold whitespace-nowrap">Terjual: {new Date(v.sold_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
@@ -536,8 +561,17 @@ const Vehicles = () => {
                           <span className="text-sm font-medium">{v.Office?.name || 'Unknown'}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">
-                        {formatPrice(v.price)}
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-gray-900 dark:text-white">
+                          {formatPrice(v.price)}
+                        </div>
+                        {isSuperAdmin && v.purchase_price > 0 && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <span className="text-[10px] px-1.5 py-0.5 bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 font-bold rounded">
+                              Margin: {Math.round(((v.price - (parseFloat(v.purchase_price) + parseFloat(v.service_cost))) / v.price) * 100)}%
+                            </span>
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`badge ${
@@ -788,9 +822,8 @@ const Vehicles = () => {
             <Input 
               label="Down Payment (DP)" 
               icon={Tag} 
-              type="number" 
-              value={bookingData.down_payment}
-              onChange={e => setBookingData({...bookingData, down_payment: e.target.value})} 
+              value={displayCurrency(bookingData.down_payment)}
+              onChange={e => handleCurrencyChange(setBookingData, bookingData, 'down_payment', e.target.value)} 
               placeholder="Minimal nominal DP" 
             />
           </div>
@@ -841,200 +874,246 @@ const Vehicles = () => {
         </form>
       </Modal>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isViewOnly ? 'Vehicle Details' : (editingVehicle ? 'Edit Vehicle' : 'Register Vehicle')}>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <fieldset disabled={isViewOnly} className="space-y-4 border-0 p-0 m-0">
-            <div className="grid grid-cols-2 gap-4">
-              <Select label="Type" icon={Car} value={formData.type}
-                onChange={e => setFormData({...formData, type: e.target.value})}
-                options={[{value: 'Motor', label: 'Motor'}, {value: 'Mobil', label: 'Mobil'}]} />
-              
-              <Select label="Year" icon={Calendar} value={formData.year}
-                onChange={e => setFormData({...formData, year: e.target.value})}
-                options={years.map(y => ({ value: y, label: y }))} />
-            </div>
-
-            {isHeadOffice && (
-              <Select 
-                label="Kantor / Cabang" 
-                icon={MapPin} 
-                value={formData.office_id}
-                onChange={e => setFormData({...formData, office_id: e.target.value})}
-                options={offices.map(o => ({ value: o.id, label: o.name }))}
-                required
-              />
-            )}
-
-            <div className="grid grid-cols-2 gap-4">
-              <Select label="Brand" icon={Tag} value={formData.brand}
-                onChange={e => setFormData({...formData, brand: e.target.value})}
-                options={brands.filter(b => formData.type === 'Mobil' ? b.for_car : b.for_motorcycle).map(b => ({ value: b.name, label: b.name }))}
-              />
-              
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1 flex items-center gap-1.5">
-                  <Info size={12} /> Model
-                </label>
-                <input 
-                  list="model-history"
-                  className="input"
-                  value={formData.model}
-                  onChange={e => setFormData({...formData, model: e.target.value})}
-                  placeholder="Avanza / Vario"
-                  required
-                />
-                <datalist id="model-history">
-                  {modelHistory.map(m => <option key={m} value={m} />)}
-                </datalist>
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        title={isViewOnly ? 'Vehicle Details' : (editingVehicle ? 'Edit Vehicle' : 'Register Vehicle')}
+        maxWidth="max-w-4xl"
+      >
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <fieldset disabled={isViewOnly} className="space-y-8 border-0 p-0 m-0">
+            
+            {/* Section 1: Vehicle Specification */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-blue-600 border-b border-gray-100 dark:border-gray-800 pb-2">
+                <Car size={18} />
+                <h3 className="font-bold uppercase text-xs tracking-wider">Vehicle Specification</h3>
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Input label="Plate Number" icon={ArrowUpDown} required value={formData.plate_number}
-                onChange={e => setFormData({...formData, plate_number: e.target.value})} placeholder="B 1234 ABC" />
-              <Input label="Price (IDR)" icon={Tag} type="number" required value={formData.price}
-                onChange={e => setFormData({...formData, price: e.target.value})} placeholder="150000000" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Select label="Status" icon={Filter} value={formData.status}
-                onChange={e => setFormData({...formData, status: e.target.value})}
-                options={[
-                  {value: 'Available', label: 'Available (Ready)'}, 
-                  {value: 'Sold', label: 'Sold (Terjual)'},
-                  {value: 'Booked', label: 'Booked'}
-                ]} />
-              <Input label="Tanggal Masuk" icon={Calendar} type="date" required value={formData.entry_date}
-                onChange={e => setFormData({...formData, entry_date: e.target.value})} />
-            </div>
-
-            {formData.status === 'Sold' && (
-              <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
-                <Input label="Tanggal Terjual" icon={CheckCircle} type="date" value={formData.sold_date || ''}
-                  onChange={e => setFormData({...formData, sold_date: e.target.value})} />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Select label="Type" icon={Smartphone} value={formData.type}
+                  onChange={e => setFormData({...formData, type: e.target.value})}
+                  options={[{value: 'Motor', label: 'Motor'}, {value: 'Mobil', label: 'Mobil'}]} />
                 
-                <Select 
-                  label="Sales Agent" 
-                  icon={UserIcon} 
-                  value={formData.sales_agent_id || ''}
-                  onChange={e => setFormData({...formData, sales_agent_id: e.target.value})}
-                  options={[
-                    { value: '', label: '-- Pilih Sales (Opsional) --' },
-                    ...salesAgents
-                      .filter(sa => {
-                        if (isSuperAdmin) return true;
-                        // For new vehicle or edit without office selection yet, show relevant
-                        const targetOfficeId = formData.office_id;
-                        if (!targetOfficeId) return true;
-                        
-                        // Find potential roots
-                        const vOffice = offices.find(o => o.id == targetOfficeId);
-                        const vRoot = vOffice?.parent_id || targetOfficeId;
-                        const saRoot = sa.Office?.parent_id || sa.office_id;
-                        
-                        return vRoot == saRoot;
-                      })
-                      .map(sa => ({ value: sa.id, label: sa.name }))
-                  ]}
-                />
-              </div>
-            )}
+                <Select label="Year" icon={Calendar} value={formData.year}
+                  onChange={e => setFormData({...formData, year: e.target.value})}
+                  options={years.map(y => ({ value: y, label: y }))} />
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">Description</label>
-              <textarea 
-                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                rows={3} value={formData.description}
-                onChange={e => setFormData({...formData, description: e.target.value})}
-                placeholder="Detail tambahan kendaraan..."
-              />
-            </div>
-
-            {/* Vehicle Images Section */}
-            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
-              <div className="flex items-center gap-2 mb-3 text-blue-600">
-                <ImageIcon size={18} />
-                <h3 className="font-bold uppercase text-xs tracking-wider">Vehicle Images (Max 10)</h3>
+                <Input label="Plate Number" icon={ArrowUpDown} required value={formData.plate_number}
+                  onChange={e => setFormData({...formData, plate_number: e.target.value})} placeholder="B 1234 ABC" />
               </div>
               
-              {/* Existing Images Gallery */}
-              {editingVehicle?.images && editingVehicle.images.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                  {editingVehicle.images.map((img, idx) => (
-                    <div key={img.id} className="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 aspect-video cursor-zoom-in" onClick={() => { setActiveImageIndex(idx); setIsLightboxOpen(true); }}>
-                      <img src={`http://localhost:5001${img.image_url}`} alt="vehicle" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                      
-                      {img.is_primary && (
-                        <div className="absolute top-1 left-1 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
-                          Primary
-                        </div>
-                      )}
-
-                      {!isViewOnly && (
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                          {!img.is_primary && (
-                            <button 
-                              type="button" 
-                              onClick={() => handleSetPrimaryImage(img.id)}
-                              className="p-1.5 bg-blue-600 text-white rounded hover:bg-blue-700" 
-                              title="Set as Primary"
-                            >
-                              <CheckCircle size={14} />
-                            </button>
-                          )}
-                          <button 
-                            type="button" 
-                            onClick={() => handleDeleteImage(img.id)}
-                            className="p-1.5 bg-red-600 text-white rounded hover:bg-red-700"
-                            title="Delete"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Select label="Brand" icon={Tag} value={formData.brand}
+                  onChange={e => setFormData({...formData, brand: e.target.value})}
+                  options={brands.filter(b => formData.type === 'Mobil' ? b.for_car : b.for_motorcycle).map(b => ({ value: b.name, label: b.name }))}
+                />
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Model{ <span className="text-red-500 ml-0.5">*</span>}
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                      <Info size={15} />
                     </div>
-                  ))}
+                    <input 
+                      list="model-history"
+                      className="input pl-9"
+                      value={formData.model}
+                      onChange={e => setFormData({...formData, model: e.target.value})}
+                      placeholder="Avanza / Vario"
+                      required
+                    />
+                    <datalist id="model-history">
+                      {modelHistory.map(m => <option key={m} value={m} />)}
+                    </datalist>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input label="Warna" icon={Tag} value={formData.color || ''}
+                  onChange={e => setFormData({...formData, color: e.target.value})}
+                  placeholder="Putih, Hitam, Merah..." />
+                <Input label="Odometer (km)" icon={ArrowUpDown} value={formData.odometer || ''}
+                  onChange={e => setFormData({...formData, odometer: e.target.value.replace(/\D/g, '')})}
+                  placeholder="15.000" />
+              </div>
+            </div>
+
+            {/* Section 2: Inventory & Status */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-purple-600 border-b border-gray-100 dark:border-gray-800 pb-2">
+                <MapPin size={18} />
+                <h3 className="font-bold uppercase text-xs tracking-wider">Inventory & Status</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {isHeadOffice && (
+                  <Select 
+                    label="Kantor / Cabang" 
+                    icon={MapPin} 
+                    value={formData.office_id}
+                    onChange={e => setFormData({...formData, office_id: e.target.value})}
+                    options={offices.map(o => ({ value: o.id, label: o.name }))}
+                    required
+                  />
+                )}
+                <Select label="Status" icon={Filter} value={formData.status}
+                  onChange={e => setFormData({...formData, status: e.target.value})}
+                  options={[
+                    {value: 'Available', label: 'Available (Ready)'}, 
+                    {value: 'Sold', label: 'Sold (Terjual)'},
+                    {value: 'Booked', label: 'Booked'}
+                  ]} />
+                <Input label="Tanggal Masuk" icon={Calendar} type="date" required value={formData.entry_date}
+                  onChange={e => setFormData({...formData, entry_date: e.target.value})} />
+              </div>
+
+              {formData.status === 'Sold' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-800 animate-in fade-in slide-in-from-top-2">
+                  <Input label="Tanggal Terjual" icon={CheckCircle} type="date" value={formData.sold_date || ''}
+                    onChange={e => setFormData({...formData, sold_date: e.target.value})} />
+                  
+                  <Select 
+                    label="Sales Agent" 
+                    icon={UserIcon} 
+                    value={formData.sales_agent_id || ''}
+                    onChange={e => setFormData({...formData, sales_agent_id: e.target.value})}
+                    options={[
+                      { value: '', label: '-- Pilih Sales (Opsional) --' },
+                      ...salesAgents
+                        .filter(sa => {
+                          if (isSuperAdmin) return true;
+                          const targetOfficeId = formData.office_id;
+                          if (!targetOfficeId) return true;
+                          const vOffice = offices.find(o => o.id == targetOfficeId);
+                          const vRoot = vOffice?.parent_id || targetOfficeId;
+                          const saRoot = sa.Office?.parent_id || sa.office_id;
+                          return vRoot == saRoot;
+                        })
+                        .map(sa => ({ value: sa.id, label: sa.name }))
+                    ]}
+                  />
                 </div>
               )}
+            </div>
 
-              {/* Upload Input */}
-              {!isViewOnly && (
-                <div className="space-y-3">
-                  <div className="relative border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-4 text-center hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <input 
-                      type="file" 
-                      multiple 
-                      accept="image/*" 
-                      onChange={handleFileChange}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                      disabled={editingVehicle?.images?.length >= 10}
-                    />
-                    <div className="flex flex-col items-center gap-1 text-gray-500">
-                      <Camera size={24} className="text-blue-500 mb-1" />
-                      <p className="text-sm font-bold">Click or drag images here to upload</p>
-                      <p className="text-xs">JPG, PNG, WEBP (Max 10 files)</p>
+            {/* Section 3: Financial Overview */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-green-600 border-b border-gray-100 dark:border-gray-800 pb-2">
+                <Tag size={18} />
+                <h3 className="font-bold uppercase text-xs tracking-wider">Financial Overview</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Input label="Harga Jual (IDR)" icon={Tag} value={displayCurrency(formData.price)}
+                  onChange={e => handleCurrencyChange(setFormData, formData, 'price', e.target.value)} placeholder="150.000.000" />
+                <Input label="Harga Beli (IDR)" icon={Tag} value={displayCurrency(formData.purchase_price)}
+                  onChange={e => handleCurrencyChange(setFormData, formData, 'purchase_price', e.target.value)} placeholder="130.000.000" />
+                <Input label="Biaya Service (IDR)" icon={PlusCircle} value={displayCurrency(formData.service_cost)}
+                  onChange={e => handleCurrencyChange(setFormData, formData, 'service_cost', e.target.value)} placeholder="5.000.000" />
+              </div>
+
+              {isSuperAdmin && formData.price && formData.purchase_price && (
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800 flex flex-col md:flex-row justify-between items-center gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-600 text-white rounded-xl">
+                      <TrendingUp size={20} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Calculated Profit</p>
+                      <h4 className="text-xl font-black text-blue-900 dark:text-blue-200 font-mono">
+                        {formatPrice(formData.price - (parseFloat(formData.purchase_price || 0) + parseFloat(formData.service_cost || 0)))}
+                      </h4>
                     </div>
                   </div>
-
-                  {/* Preview Selected Files */}
-                  {selectedFiles.length > 0 && (
-                    <div className="flex overflow-x-auto gap-2 pb-2">
-                      {selectedFiles.map((file, idx) => (
-                        <div key={idx} className="relative shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-gray-200">
-                          <img src={URL.createObjectURL(file)} alt="preview" className="w-full h-full object-cover" />
-                          <button 
-                            type="button"
-                            onClick={() => setSelectedFiles(files => files.filter((_, i) => i !== idx))}
-                            className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full p-0.5"
-                          >
-                            <X size={10} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <div className="px-4 py-2 bg-white dark:bg-gray-800 rounded-xl border border-blue-200 dark:border-blue-700 shadow-sm text-center">
+                    <p className="text-[10px] text-gray-500 uppercase font-bold">Margin</p>
+                    <p className="text-lg font-black text-green-600">
+                      {Math.round(((formData.price - (parseFloat(formData.purchase_price || 0) + parseFloat(formData.service_cost || 0))) / formData.price) * 100)}%
+                    </p>
+                  </div>
                 </div>
               )}
+            </div>
+
+            {/* Section 4: Media & Description */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-orange-600 border-b border-gray-100 dark:border-gray-800 pb-2">
+                <ImageIcon size={18} />
+                <h3 className="font-bold uppercase text-xs tracking-wider">Media & Description</h3>
+              </div>
+              
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">Description</label>
+                <textarea 
+                  className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all dark:text-white"
+                  rows={3} value={formData.description}
+                  onChange={e => setFormData({...formData, description: e.target.value})}
+                  placeholder="Detail tambahan mengenai kondisi mesin, body, perlengkapan, dll..."
+                />
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Vehicle Images (Max 10)</h4>
+                
+                {editingVehicle?.images && editingVehicle.images.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                    {editingVehicle.images.map((img, idx) => (
+                      <div key={img.id} className="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 aspect-video cursor-zoom-in" onClick={() => { setActiveImageIndex(idx); setIsLightboxOpen(true); }}>
+                        <img src={`http://localhost:5001${img.image_url}`} alt="vehicle" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                        {img.is_primary && (
+                          <div className="absolute top-1 left-1 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">Primary</div>
+                        )}
+                        {!isViewOnly && (
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            {!img.is_primary && (
+                              <button type="button" onClick={() => handleSetPrimaryImage(img.id)} className="p-1.5 bg-blue-600 text-white rounded hover:bg-blue-700" title="Set as Primary"><CheckCircle size={14} /></button>
+                            )}
+                            <button type="button" onClick={() => handleDeleteImage(img.id)} className="p-1.5 bg-red-600 text-white rounded hover:bg-red-700" title="Delete"><Trash2 size={14} /></button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {!isViewOnly && (
+                  <>
+                    <div className="relative border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl p-8 text-center hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors group">
+                      <input 
+                        type="file" 
+                        multiple 
+                        accept="image/*" 
+                        onChange={handleFileChange}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        disabled={editingVehicle?.images?.length >= 10}
+                      />
+                      <div className="flex flex-col items-center gap-1 text-gray-500">
+                        <Camera size={24} className="text-blue-500 mb-1" />
+                        <p className="text-sm font-bold">Click or drag images here to upload</p>
+                        <p className="text-xs">JPG, PNG, WEBP (Max 10 files)</p>
+                      </div>
+                    </div>
+
+                    {/* Preview Selected Files */}
+                    {selectedFiles.length > 0 && (
+                      <div className="flex overflow-x-auto gap-2 pb-2">
+                        {selectedFiles.map((file, idx) => (
+                          <div key={idx} className="relative shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-gray-200">
+                            <img src={URL.createObjectURL(file)} alt="preview" className="w-full h-full object-cover" />
+                            <button 
+                              type="button"
+                              onClick={() => setSelectedFiles(files => files.filter((_, i) => i !== idx))}
+                              className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full p-0.5"
+                            >
+                              <X size={10} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </fieldset>
 

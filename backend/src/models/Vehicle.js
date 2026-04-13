@@ -32,6 +32,16 @@ const Vehicle = sequelize.define('Vehicle', {
     type: DataTypes.DECIMAL(15, 2),
     allowNull: false,
   },
+  purchase_price: {
+    type: DataTypes.DECIMAL(15, 2),
+    allowNull: true,
+    defaultValue: 0
+  },
+  service_cost: {
+    type: DataTypes.DECIMAL(15, 2),
+    allowNull: true,
+    defaultValue: 0
+  },
   entry_date: {
     type: DataTypes.DATEONLY,
     allowNull: false,
@@ -59,6 +69,15 @@ const Vehicle = sequelize.define('Vehicle', {
   },
   sales_agent_id: {
     type: DataTypes.INTEGER,
+    allowNull: true,
+  },
+  odometer: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0
+  },
+  color: {
+    type: DataTypes.STRING(50),
     allowNull: true,
   }
 }, {

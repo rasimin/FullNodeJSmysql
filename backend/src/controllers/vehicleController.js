@@ -132,7 +132,9 @@ const createVehicle = async (req, res) => {
     const vehicle = await Vehicle.create({
       ...req.body,
       user_id: user.id,
-      office_id: targetOfficeId
+      office_id: targetOfficeId,
+      purchase_price: req.body.purchase_price || 0,
+      service_cost: req.body.service_cost || 0
     }, { userId: user.id });
 
     res.status(201).json(vehicle);
