@@ -8,6 +8,7 @@ const Vehicle = require('./Vehicle');
 const VehicleBrand = require('./VehicleBrand');
 const Booking = require('./Booking');
 const VehicleImage = require('./VehicleImage');
+const SalesAgent = require('./SalesAgent');
 
 // User Relationships
 User.belongsTo(Role, { foreignKey: 'role_id' });
@@ -15,6 +16,10 @@ Role.hasMany(User, { foreignKey: 'role_id' });
 
 User.belongsTo(Office, { foreignKey: 'office_id' });
 Office.hasMany(User, { foreignKey: 'office_id' });
+
+// Sales Agent Relationships
+SalesAgent.belongsTo(Office, { foreignKey: 'office_id' });
+Office.hasMany(SalesAgent, { foreignKey: 'office_id', as: 'salesAgents' });
 
 // Office Hierarchy
 Office.belongsTo(Office, { as: 'parent', foreignKey: 'parent_id' });
@@ -30,6 +35,9 @@ Vehicle.belongsTo(User, { foreignKey: 'user_id' });
 Office.hasMany(Vehicle, { foreignKey: 'office_id', as: 'vehicles' });
 User.hasMany(Vehicle, { foreignKey: 'user_id', as: 'vehicles' });
 
+Vehicle.belongsTo(SalesAgent, { foreignKey: 'sales_agent_id', as: 'salesAgent' });
+SalesAgent.hasMany(Vehicle, { foreignKey: 'sales_agent_id', as: 'soldVehicles' });
+
 Vehicle.hasMany(VehicleImage, { foreignKey: 'vehicle_id', as: 'images' });
 VehicleImage.belongsTo(Vehicle, { foreignKey: 'vehicle_id' });
 
@@ -42,6 +50,9 @@ Office.hasMany(Booking, { foreignKey: 'office_id' });
 
 Booking.belongsTo(User, { foreignKey: 'user_id' });
 User.hasMany(Booking, { foreignKey: 'user_id' });
+
+Booking.belongsTo(SalesAgent, { foreignKey: 'sales_agent_id', as: 'salesAgent' });
+SalesAgent.hasMany(Booking, { foreignKey: 'sales_agent_id', as: 'bookings' });
 
 // Audit Trail Relationship (Optional, as user_id can be null)
 AuditTrail.belongsTo(User, { foreignKey: 'user_id' });
@@ -92,6 +103,7 @@ setupHooks(Vehicle);
 setupHooks(VehicleBrand);
 setupHooks(Booking);
 setupHooks(VehicleImage);
+setupHooks(SalesAgent);
 
 module.exports = {
   sequelize,
@@ -103,5 +115,6 @@ module.exports = {
   Vehicle,
   VehicleBrand,
   Booking,
-  VehicleImage
+  VehicleImage,
+  SalesAgent
 };

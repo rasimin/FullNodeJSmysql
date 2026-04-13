@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { 
-  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, 
+import {
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
-import { 
-  TrendingUp, TrendingDown, DollarSign, Package, ShoppingCart, 
-  Calendar, Filter, FileText, Download, ChevronRight, BarChart2, PieChart as PieIcon
+import {
+  TrendingUp, TrendingDown, DollarSign, Package, ShoppingCart,
+  Calendar, Filter, FileText, Download, ChevronRight, BarChart2, PieChart as PieIcon, Users
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -68,10 +68,10 @@ const Reports = () => {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Reports & Analytics</h1>
           <p className="text-sm text-gray-500">Overview of sales performance and inventory flow</p>
         </div>
-        
+
         <div className="flex gap-2 w-full sm:w-auto">
           {isHeadOffice && (
-            <select 
+            <select
               className="input h-10 text-sm"
               value={selectedOffice}
               onChange={(e) => setSelectedOffice(e.target.value)}
@@ -88,32 +88,32 @@ const Reports = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard 
-          title="Total Revenue" 
-          value={formatCurrency(stats?.summary?.totalRevenue)} 
+        <StatCard
+          title="Total Revenue"
+          value={formatCurrency(stats?.summary?.totalRevenue)}
           subValue="+12% from last month"
-          icon={DollarSign} 
+          icon={DollarSign}
           color="blue"
         />
-        <StatCard 
-          title="Units Sold" 
-          value={stats?.summary?.totalSold} 
+        <StatCard
+          title="Units Sold"
+          value={stats?.summary?.totalSold}
           subValue="Active Sales"
-          icon={ShoppingCart} 
+          icon={ShoppingCart}
           color="green"
         />
-        <StatCard 
-          title="Current Stock" 
-          value={stats?.summary?.totalAvailable} 
+        <StatCard
+          title="Current Stock"
+          value={stats?.summary?.totalAvailable}
           subValue="Available Units"
-          icon={Package} 
+          icon={Package}
           color="amber"
         />
-        <StatCard 
-          title="Potential Value" 
-          value={formatCurrency(stats?.summary?.potentialRevenue)} 
+        <StatCard
+          title="Potential Value"
+          value={formatCurrency(stats?.summary?.potentialRevenue)}
           subValue="Unsold Inventory"
-          icon={TrendingUp} 
+          icon={TrendingUp}
           color="purple"
         />
       </div>
@@ -130,22 +130,22 @@ const Reports = () => {
             <AreaChart width={550} height={300} data={stats?.charts?.sales}>
               <defs>
                 <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1} />
+                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
               <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-              <Tooltip 
+              <Tooltip
                 contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
               />
-              <Area 
-                type="monotone" 
-                dataKey="revenue" 
-                stroke="#3b82f6" 
-                strokeWidth={3} 
-                fillOpacity={1} 
+              <Area
+                type="monotone"
+                dataKey="revenue"
+                stroke="#3b82f6"
+                strokeWidth={3}
+                fillOpacity={1}
                 fill="url(#colorRevenue)"
               />
             </AreaChart>
@@ -164,15 +164,15 @@ const Reports = () => {
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
               <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-              <Tooltip 
-                cursor={{fill: '#f8fafc'}}
+              <Tooltip
+                cursor={{ fill: '#f8fafc' }}
                 contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
               />
-              <Bar 
-                dataKey="count" 
-                fill="#10b981" 
-                radius={[4, 4, 0, 0]} 
-                barSize={40} 
+              <Bar
+                dataKey="count"
+                fill="#10b981"
+                radius={[4, 4, 0, 0]}
+                barSize={40}
               />
             </BarChart>
           </div>
@@ -225,18 +225,18 @@ const Reports = () => {
             <BarChart2 size={18} className="text-blue-500" /> Branch Revenue & Inventory Overview
           </h3>
           <div className="flex justify-center h-[300px] w-full overflow-hidden">
-            <BarChart 
+            <BarChart
               width={700}
               height={300}
-              data={stats?.charts?.branchComparison} 
+              data={stats?.charts?.branchComparison}
               margin={{ top: 10, right: 30, left: 10, bottom: 0 }}
             >
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
               <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
               <YAxis yAxisId="left" orientation="left" stroke="#3b82f6" fontSize={10} tickLine={false} axisLine={false} />
-              <YAxis yAxisId="right" orientation="right" stroke="#10b981" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `Rp${(val/1000000).toFixed(0)}Jt`} />
-              <Tooltip 
-                cursor={{fill: '#f8fafc'}}
+              <YAxis yAxisId="right" orientation="right" stroke="#10b981" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `Rp${(val / 1000000).toFixed(0)}Jt`} />
+              <Tooltip
+                cursor={{ fill: '#f8fafc' }}
                 contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
               />
               <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
@@ -249,38 +249,82 @@ const Reports = () => {
 
       {/* Dynamic Branch Performance Overview */}
       <div className="card p-6">
-          <h3 className="font-bold text-gray-900 dark:text-white mb-6">Branch Performance Overview (Real-time)</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {stats?.charts?.branchComparison?.map((office, idx) => (
-              <div key={office.id} className="flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-gray-900/50 card-hover">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center text-sm font-bold border border-gray-100 dark:border-gray-700">
-                    {idx + 1}
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold">{office.name}</p>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-widest">{office.type.replace('_', ' ')}</p>
-                  </div>
+        <h3 className="font-bold text-gray-900 dark:text-white mb-6">Branch Performance Overview (Real-time)</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {stats?.charts?.branchComparison?.map((office, idx) => (
+            <div key={office.id} className="flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-gray-900/50 card-hover">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center text-sm font-bold border border-gray-100 dark:border-gray-700">
+                  {idx + 1}
                 </div>
-                
-                <div className="flex gap-8 items-center">
-                  <div className="text-right">
-                    <p className="text-[10px] text-gray-400 uppercase font-bold">In-Stock</p>
-                    <p className="text-sm font-bold text-gray-900 dark:text-white">{office.availableVehicles}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] text-gray-400 uppercase font-bold">Revenue</p>
-                    <p className="text-sm font-bold text-green-600">{formatCurrency(office.revenue)}</p>
-                  </div>
-                  <div className="text-right min-w-[80px]">
-                    <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${office.activeStatus === 'Active' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
-                      {office.activeStatus}
-                    </span>
-                  </div>
+                <div>
+                  <p className="text-sm font-bold">{office.name}</p>
+                  <p className="text-[10px] text-gray-500 uppercase tracking-widest">{office.type.replace('_', ' ')}</p>
                 </div>
               </div>
-            ))}
-          </div>
+
+              <div className="flex gap-8 items-center">
+                <div className="text-right">
+                  <p className="text-[10px] text-gray-400 uppercase font-bold">In-Stock</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">{office.availableVehicles}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-gray-400 uppercase font-bold">Revenue</p>
+                  <p className="text-sm font-bold text-green-600">{formatCurrency(office.revenue)}</p>
+                </div>
+                <div className="text-right min-w-[80px]">
+                  <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${office.activeStatus === 'Active' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                    {office.activeStatus}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Sales Agent performance leaderboard */}
+      <div className="card p-6">
+        <h3 className="font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+          <Users size={18} className="text-purple-500" /> Sales Agent Performance Leaderboard
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {stats?.charts?.agentPerformance?.map((agent, idx) => (
+            <div key={idx} className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900/50 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 rounded-full bg-purple-50 dark:bg-purple-900/20 text-purple-600 flex items-center justify-center text-xs font-bold">
+                  #{idx + 1}
+                </div>
+                <span className="font-bold text-gray-900 dark:text-white uppercase text-xs tracking-wider">{agent.name}</span>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between items-end">
+                  <div>
+                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">Units Sold</p>
+                    <p className="text-lg font-bold text-blue-600">{agent.soldCount} Units</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">Revenue Generated</p>
+                    <p className="text-sm font-bold text-green-600">{formatCurrency(agent.totalRevenue)}</p>
+                  </div>
+                </div>
+                {/* Progress bar (Visual dummy relative to top agent) */}
+                <div className="w-full h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(agent.soldCount / (stats.charts.agentPerformance[0]?.soldCount || 1)) * 100}%` }}
+                    className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+          {(!stats?.charts?.agentPerformance || stats.charts.agentPerformance.length === 0) && (
+            <div className="col-span-full py-8 text-center text-gray-400 text-sm italic">
+              No sales data found for agents in this selection.
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -295,7 +339,7 @@ const StatCard = ({ title, value, subValue, icon: Icon, color }) => {
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="card p-5"

@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { 
   LayoutDashboard, Users, Building2, ShieldCheck, LogOut,
-  Menu, X, History, FileText, Sun, Moon, ChevronLeft, ChevronRight, UserCircle, Car, Tags, BarChart2
+  Menu, X, History, FileText, Sun, Moon, ChevronLeft, ChevronRight, UserCircle, Car, Tags, BarChart2, Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -30,31 +30,41 @@ const DashboardLayout = () => {
   const navigate = useNavigate();
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setCollapsed] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
-  const menuItems = [
-    { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/users', icon: Users, label: 'User Management' },
-    { to: '/vehicles', icon: Car, label: 'Vehicles' },
-    { to: '/reports', icon: BarChart2, label: 'Reports & Analytics' },
-    { to: '/brands', icon: Tags, label: 'Brand Management' },
-    { to: '/offices', icon: Building2, label: 'Office Management' },
-  ];
-
   const userRole = user?.role || user?.Role?.name;
-  
-  if (userRole === 'Super Admin' || userRole === 'Admin Pusat') {
-    menuItems.push(
-      { to: '/roles', icon: ShieldCheck, label: 'Role Management' },
-      { to: '/activities', icon: FileText, label: 'Activity Logs' },
-      { to: '/audit-trails', icon: History, label: 'Audit Trails' }
-    );
-  } else {
-    // Normal users can still see their own activities if needed, 
-    // but typically logs are for admins
-    menuItems.push({ to: '/activities', icon: FileText, label: 'My Activities' });
-  }
+
+  const getMenuItems = () => {
+    const items = [
+      { to: '/', icon: BarChart2, label: 'Reports & Analytics' },
+      { to: '/vehicles', icon: Car, label: 'Vehicles' },
+      { to: '/sales-agents', icon: Users, label: 'Sales Agent' },
+      { to: '/brands', icon: Tags, label: 'Brand Management' },
+      { to: '/offices', icon: Building2, label: 'Office Management' },
+    ];
+
+    if (userRole === 'Super Admin' || userRole === 'Admin Pusat') {
+      items.push(
+        { to: '/roles', icon: ShieldCheck, label: 'Role Management' },
+        { to: '/activities', icon: FileText, label: 'Activity Logs' },
+        { to: '/audit-trails', icon: History, label: 'Audit Trails' }
+      );
+    } else {
+      items.push({ to: '/activities', icon: FileText, label: 'My Activities' });
+    }
+
+    // Move User Management / Dashboard to the bottom
+    items.push({ to: '/users', icon: Users, label: 'User Management' });
+    
+    return items;
+  };
+
+  const menuItems = getMenuItems();
+  const filteredMenuItems = menuItems.filter(item =>
+    item.label.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const sidebarW = isCollapsed ? 68 : 240;
 
@@ -107,13 +117,34 @@ const DashboardLayout = () => {
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden">
-          {menuItems.map((item) => (
+          {/* Search Menu */}
+          {!isCollapsed && (
+            <div className="px-1 mb-4">
+              <div className="relative group/search">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within/search:text-blue-500 transition-colors" />
+                <input
+                  type="text"
+                  placeholder="Search menu..."
+                  className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl py-2 pl-9 pr-3 text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {filteredMenuItems.map((item) => (
             <SidebarItem
               key={item.to} {...item}
               onClick={() => setSidebarOpen(false)}
               collapsed={isCollapsed}
             />
           ))}
+          {filteredMenuItems.length === 0 && (
+            <div className="px-4 py-8 text-center">
+              <p className="text-xs text-gray-400">No menu found</p>
+            </div>
+          )}
         </nav>
 
         {/* Collapse Toggle */}

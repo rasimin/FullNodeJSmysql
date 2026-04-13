@@ -38,6 +38,10 @@ const Booking = sequelize.define('Booking', {
   notes: {
     type: DataTypes.TEXT,
     allowNullable: true
+  },
+  sales_agent_id: {
+    type: DataTypes.INTEGER,
+    allowNullable: true
   }
 }, {
   tableName: 'bookings',

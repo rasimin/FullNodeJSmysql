@@ -4,7 +4,7 @@ import {
   Search, Plus, Car, Tag, MapPin, 
   Calendar, Info, Edit, Trash2, Filter, Eye,
   ChevronRight, ChevronLeft, ArrowUpDown, Bookmark, Smartphone, User as UserIcon,
-  CreditCard, XCircle, CheckCircle, Clock, Camera, Image as ImageIcon, X, Maximize2
+  CreditCard, XCircle, CheckCircle, Clock, Camera, Image as ImageIcon, X, Maximize2, Users
 } from 'lucide-react';
 import Modal from '../components/Modal';
 import DynamicIsland from '../components/DynamicIsland';
@@ -23,6 +23,7 @@ const Vehicles = () => {
   const [notification, setNotification] = useState({ status: 'idle', message: '' });
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [isViewOnly, setIsViewOnly] = useState(false);
+  const [salesAgents, setSalesAgents] = useState([]);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [bookingHistory, setBookingHistory] = useState([]);
   const [isConfirmActionModalOpen, setIsConfirmActionModalOpen] = useState(false);
@@ -47,7 +48,8 @@ const Vehicles = () => {
     plate_number: '', price: '', status: 'Available', 
     entry_date: new Date().toISOString().split('T')[0],
     description: '',
-    office_id: ''
+    office_id: '',
+    sales_agent_id: ''
   });
 
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -64,14 +66,16 @@ const Vehicles = () => {
 
   const fetchMetadata = async () => {
     try {
-      const [b, h, o] = await Promise.all([
+      const [b, h, o, s] = await Promise.all([
         api.get('/vehicles/brands'),
         api.get('/vehicles/model-history'),
-        isHeadOffice ? api.get('/offices') : Promise.resolve({ data: [] })
+        isHeadOffice ? api.get('/offices') : Promise.resolve({ data: [] }),
+        api.get('/sales-agents/active')
       ]);
       setBrands(b.data);
       setModelHistory(h.data);
       if (isHeadOffice) setOffices(o.data);
+      setSalesAgents(s.data);
     } catch (e) { console.error('Metadata fetch error', e); }
   };
 
@@ -196,7 +200,8 @@ const Vehicles = () => {
     notify('loading', 'Confirming sale...');
     try {
       await api.put(`/bookings/vehicle/${editingVehicle.id}/sold`, { 
-        sold_date: bookingData.sold_date || new Date().toISOString().split('T')[0] 
+        sold_date: bookingData.sold_date || new Date().toISOString().split('T')[0],
+        sales_agent_id: bookingData.sales_agent_id
       });
       notify('success', 'Unit marked as Sold!');
       setIsConfirmActionModalOpen(false);
@@ -394,6 +399,7 @@ const Vehicles = () => {
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Office</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Price</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Status</th>
+                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase text-center">Transaction</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase text-right">Actions</th>
               </tr>
             </thead>
@@ -402,7 +408,7 @@ const Vehicles = () => {
                 {loading && vehicles.length === 0 ? (
                   [...Array(3)].map((_, i) => (
                     <tr key={i} className="animate-pulse">
-                      <td colSpan={5} className="px-6 py-8"><div className="h-4 bg-gray-100 dark:bg-gray-800 rounded w-full" /></td>
+                      <td colSpan={6} className="px-6 py-8"><div className="h-4 bg-gray-100 dark:bg-gray-800 rounded w-full" /></td>
                     </tr>
                   ))
                 ) : vehicles.length === 0 ? (
@@ -411,7 +417,7 @@ const Vehicles = () => {
                     animate={{ opacity: 1 }} 
                     exit={{ opacity: 0 }}
                   >
-                    <td colSpan={5} className="px-6 py-12 text-center text-gray-400">No vehicles found</td>
+                    <td colSpan={6} className="px-6 py-12 text-center text-gray-400">No vehicles found</td>
                   </motion.tr>
                 ) : (
                   vehicles.map((v, i) => (
@@ -456,23 +462,30 @@ const Vehicles = () => {
                           {v.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-2">
+                      <td className="px-6 py-4">
+                        <div className="flex justify-center gap-2">
                           {v.status === 'Available' && (
-                            <button onClick={() => openBookingModal(v)} className="btn-icon text-gray-400 hover:text-orange-500" title="Book Now">
-                              <Bookmark size={16} />
+                            <button onClick={() => openBookingModal(v)} className="btn flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10 hover:bg-orange-100 dark:hover:bg-orange-500/20 rounded-lg transition-colors border border-orange-200 dark:border-orange-500/30">
+                              <Bookmark size={14} /> Book Unit
                             </button>
                           )}
-                          {v.status === 'Pending' && (
+                          {v.status === 'Booked' && (
                             <>
-                              <button onClick={() => preConfirmAction(v, 'sold')} className="btn-icon text-gray-400 hover:text-green-600" title="Mark as Sold">
-                                <CheckCircle size={16} />
+                              <button onClick={() => preConfirmAction(v, 'sold')} className="btn flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/10 hover:bg-green-100 dark:hover:bg-green-500/20 rounded-lg transition-colors border border-green-200 dark:border-green-500/30">
+                                <CheckCircle size={14} /> Confirm Sold
                               </button>
-                              <button onClick={() => preConfirmAction(v, 'cancel')} className="btn-icon text-gray-400 hover:text-red-500" title="Cancel Booking">
-                                <XCircle size={16} />
+                              <button onClick={() => preConfirmAction(v, 'cancel')} className="btn flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-lg transition-colors border border-red-200 dark:border-red-500/30">
+                                <XCircle size={14} /> Cancel
                               </button>
                             </>
                           )}
+                          {v.status === 'Sold' && (
+                             <span className="text-xs font-medium text-gray-400 italic">No actions available</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
                           <button onClick={() => openModal(v, true)} className="btn-icon text-gray-400 hover:text-purple-600" title="View Details">
                             <Eye size={16} />
                           </button>
@@ -569,14 +582,40 @@ const Vehicles = () => {
           )}
           
           {actionType === 'sold' && (
-            <div className="p-4 bg-orange-50 dark:bg-orange-900/10 rounded-xl border border-orange-100 dark:border-orange-800">
-              <label className="text-xs font-bold text-orange-600 uppercase tracking-wider block mb-2">Tanggal Penjualan (Bisa Backdate)</label>
-              <input 
-                type="date" 
-                className="input h-10 bg-white/50 dark:bg-gray-900 border-orange-200" 
-                value={bookingData.sold_date || new Date().toISOString().split('T')[0]}
-                onChange={(e) => setBookingData({...bookingData, sold_date: e.target.value})}
-              />
+            <div className="space-y-4">
+              <div className="p-4 bg-orange-50 dark:bg-orange-900/10 rounded-xl border border-orange-100 dark:border-orange-800">
+                <label className="text-xs font-bold text-orange-600 uppercase tracking-wider block mb-2">Tanggal Penjualan (Bisa Backdate)</label>
+                <input 
+                  type="date" 
+                  className="input h-10 bg-white/50 dark:bg-gray-900 border-orange-200" 
+                  value={bookingData.sold_date || new Date().toISOString().split('T')[0]}
+                  onChange={(e) => setBookingData({...bookingData, sold_date: e.target.value})}
+                />
+              </div>
+
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-800">
+                <label className="text-xs font-bold text-blue-600 uppercase tracking-wider block mb-2">Pilih Sales Agent</label>
+                <select 
+                  className="input h-10 bg-white/50 dark:bg-gray-900 border-blue-200"
+                  value={bookingData.sales_agent_id || ''}
+                  onChange={(e) => setBookingData({...bookingData, sales_agent_id: e.target.value})}
+                >
+                  <option value="">-- Pilih Sales (Opsional) --</option>
+                  {salesAgents
+                    .filter(sa => {
+                      if (isSuperAdmin) return true;
+                      const vOffice = editingVehicle?.Office;
+                      if (!vOffice) return true;
+                      const vRoot = vOffice.parent_id || vOffice.id;
+                      const saRoot = sa.Office?.parent_id || sa.office_id;
+                      return vRoot == saRoot;
+                    })
+                    .map(sa => (
+                      <option key={sa.id} value={sa.id}>{sa.name}</option>
+                    ))
+                  }
+                </select>
+              </div>
             </div>
           )}
 
@@ -675,6 +714,32 @@ const Vehicles = () => {
             />
           </div>
 
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1 flex items-center gap-1.5">
+              <Users size={12} className="text-blue-500" /> Handling Sales Agent
+            </label>
+            <select 
+              className="input h-11"
+              value={bookingData.sales_agent_id || ''}
+              onChange={(e) => setBookingData({...bookingData, sales_agent_id: e.target.value})}
+            >
+              <option value="">-- Pilih Sales (Opsional) --</option>
+              {salesAgents
+                .filter(sa => {
+                  if (isSuperAdmin) return true;
+                  const vOffice = editingVehicle?.Office;
+                  if (!vOffice) return true;
+                  const vRoot = vOffice.parent_id || vOffice.id;
+                  const saRoot = sa.Office?.parent_id || sa.office_id;
+                  return vRoot == saRoot;
+                })
+                .map(sa => (
+                  <option key={sa.id} value={sa.id}>{sa.name}</option>
+                ))
+              }
+            </select>
+          </div>
+
           <button 
             type="submit" 
             className="btn-primary w-full py-3 mt-2 shadow-lg shadow-orange-500/20 bg-orange-600 hover:bg-orange-700 border-none"
@@ -745,7 +810,7 @@ const Vehicles = () => {
                 options={[
                   {value: 'Available', label: 'Available (Ready)'}, 
                   {value: 'Sold', label: 'Sold (Terjual)'},
-                  {value: 'Pending', label: 'Pending (Booking)'}
+                  {value: 'Booked', label: 'Booked'}
                 ]} />
               <Input label="Tanggal Masuk" icon={Calendar} type="date" required value={formData.entry_date}
                 onChange={e => setFormData({...formData, entry_date: e.target.value})} />
@@ -755,6 +820,31 @@ const Vehicles = () => {
               <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
                 <Input label="Tanggal Terjual" icon={CheckCircle} type="date" value={formData.sold_date || ''}
                   onChange={e => setFormData({...formData, sold_date: e.target.value})} />
+                
+                <Select 
+                  label="Sales Agent" 
+                  icon={UserIcon} 
+                  value={formData.sales_agent_id || ''}
+                  onChange={e => setFormData({...formData, sales_agent_id: e.target.value})}
+                  options={[
+                    { value: '', label: '-- Pilih Sales (Opsional) --' },
+                    ...salesAgents
+                      .filter(sa => {
+                        if (isSuperAdmin) return true;
+                        // For new vehicle or edit without office selection yet, show relevant
+                        const targetOfficeId = formData.office_id;
+                        if (!targetOfficeId) return true;
+                        
+                        // Find potential roots
+                        const vOffice = offices.find(o => o.id == targetOfficeId);
+                        const vRoot = vOffice?.parent_id || targetOfficeId;
+                        const saRoot = sa.Office?.parent_id || sa.office_id;
+                        
+                        return vRoot == saRoot;
+                      })
+                      .map(sa => ({ value: sa.id, label: sa.name }))
+                  ]}
+                />
               </div>
             )}
 
@@ -863,11 +953,43 @@ const Vehicles = () => {
                 <h3 className="font-bold uppercase text-xs tracking-wider">Booking & Status History</h3>
               </div>
               
+              {/* Highlight Active Booking */}
+              {editingVehicle?.status === 'Booked' && bookingHistory.find(b => b.status === 'Active') && (
+                <div className="mb-6 p-4 bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-800 rounded-2xl">
+                  <div className="flex justify-between items-start mb-3">
+                    <span className="bg-orange-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase">Current Active Booking</span>
+                    <span className="text-xs font-bold text-orange-600">Expires: {new Date(bookingHistory.find(b => b.status === 'Active').expiry_date).toLocaleDateString()}</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Customer</p>
+                      <p className="text-sm font-bold text-gray-900 dark:text-white">{bookingHistory.find(b => b.status === 'Active').customer_name}</p>
+                      <p className="text-xs text-gray-500">{bookingHistory.find(b => b.status === 'Active').customer_phone}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Down Payment</p>
+                      <p className="text-sm font-bold text-green-600">Rp {Number(bookingHistory.find(b => b.status === 'Active').down_payment).toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Sales Agent</p>
+                      <p className="text-sm font-bold text-blue-600">{bookingHistory.find(b => b.status === 'Active').salesAgent?.name || 'N/A'}</p>
+                    </div>
+                  </div>
+                  {bookingHistory.find(b => b.status === 'Active').notes && (
+                    <div className="mt-3 pt-3 border-t border-orange-100 dark:border-orange-800/50">
+                      <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Notes</p>
+                      <p className="text-xs italic text-gray-600 dark:text-gray-400">"{bookingHistory.find(b => b.status === 'Active').notes}"</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              
               <div className="overflow-hidden rounded-xl border border-gray-100 dark:border-gray-800">
                 <table className="w-full text-xs">
                   <thead className="bg-gray-50 dark:bg-gray-900/50">
                     <tr>
                       <th className="px-4 py-3 text-left font-bold text-gray-500 uppercase">Customer</th>
+                      <th className="px-4 py-3 text-left font-bold text-gray-500 uppercase">Sales</th>
                       <th className="px-4 py-3 text-left font-bold text-gray-500 uppercase">Date</th>
                       <th className="px-4 py-3 text-left font-bold text-gray-500 uppercase">Status</th>
                       <th className="px-4 py-3 text-left font-bold text-gray-500 uppercase">Admin</th>
@@ -876,7 +998,7 @@ const Vehicles = () => {
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                     {bookingHistory.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="px-4 py-6 text-center text-gray-400 italic">No booking records found for this unit.</td>
+                        <td colSpan={5} className="px-4 py-6 text-center text-gray-400 italic">No booking records found for this unit.</td>
                       </tr>
                     ) : (
                       bookingHistory.map((bh) => (
@@ -884,6 +1006,9 @@ const Vehicles = () => {
                           <td className="px-4 py-3">
                             <p className="font-bold text-gray-900 dark:text-white">{bh.customer_name}</p>
                             <p className="text-[10px] text-gray-500">{bh.customer_phone}</p>
+                          </td>
+                          <td className="px-4 py-3 text-blue-600 font-medium">
+                            {bh.salesAgent?.name || '-'}
                           </td>
                           <td className="px-4 py-3">
                             {new Date(bh.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}

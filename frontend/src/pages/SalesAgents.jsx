@@ -1,0 +1,321 @@
+import React, { useState, useEffect } from 'react';
+import api from '../services/api';
+import { 
+  Users, UserPlus, Search, Edit2, Trash2, Mail, Phone, MapPin, 
+  Building2, ChevronLeft, ChevronRight, FileText, Filter, MoreVertical
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Modal from '../components/Modal';
+
+const SalesAgents = () => {
+  const [agents, setAgents] = useState([]);
+  const [offices, setOffices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedOffice, setSelectedOffice] = useState('');
+  const [pagination, setPagination] = useState({ page: 1, totalPages: 0 });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingAgent, setEditingAgent] = useState(null);
+  const [formData, setFormData] = useState({
+    name: '', email: '', phone: '', address: '', bio: '', office_id: '', status: 'Active'
+  });
+
+  useEffect(() => {
+    fetchAgents();
+    fetchOffices();
+  }, [pagination.page, searchTerm, selectedOffice]);
+
+  const fetchAgents = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/sales-agents', {
+        params: {
+          page: pagination.page,
+          size: 10,
+          search: searchTerm,
+          officeId: selectedOffice
+        }
+      });
+      setAgents(res.data.items);
+      setPagination(prev => ({ ...prev, totalPages: res.data.total_pages }));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchOffices = async () => {
+    try {
+      const res = await api.get('/offices');
+      setOffices(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingAgent) {
+        await api.put(`/sales-agents/${editingAgent.id}`, formData);
+      } else {
+        await api.post('/sales-agents', formData);
+      }
+      setIsModalOpen(false);
+      setEditingAgent(null);
+      setFormData({ name: '', email: '', phone: '', address: '', bio: '', office_id: '', status: 'Active' });
+      fetchAgents();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error occurred');
+    }
+  };
+
+  const handleEdit = (agent) => {
+    setEditingAgent(agent);
+    setFormData({
+      name: agent.name,
+      email: agent.email || '',
+      phone: agent.phone || '',
+      address: agent.address || '',
+      bio: agent.bio || '',
+      office_id: agent.office_id,
+      status: agent.status
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this sales agent?')) {
+      try {
+        await api.delete(`/sales-agents/${id}`);
+        fetchAgents();
+      } catch (err) {
+        alert(err.response?.data?.message || 'Error occurred');
+      }
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Sales Agent Management</h1>
+          <p className="text-sm text-gray-500">Manage sales teams and their assigned offices</p>
+        </div>
+        <button 
+          onClick={() => { setEditingAgent(null); setIsModalOpen(true); }}
+          className="btn-primary"
+        >
+          <UserPlus size={18} /> Add New Agent
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="card p-4 flex flex-col md:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input 
+            type="text"
+            placeholder="Search by name..."
+            className="input pl-10 h-11"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-2">
+          <select 
+            className="input h-11 min-w-[200px]"
+            value={selectedOffice}
+            onChange={(e) => setSelectedOffice(e.target.value)}
+          >
+            <option value="">All Offices</option>
+            {offices.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* Grid View */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <AnimatePresence mode='popLayout'>
+          {loading ? (
+            [...Array(6)].map((_, i) => (
+              <div key={i} className="card p-6 h-[220px] animate-pulse bg-gray-50 dark:bg-gray-900/40" />
+            ))
+          ) : agents.length === 0 ? (
+            <div className="col-span-full py-12 text-center card">
+              <Users size={48} className="mx-auto text-gray-300 mb-3" />
+              <p className="text-gray-500">No sales agents found.</p>
+            </div>
+          ) : agents.map((agent) => (
+            <motion.div
+              layout
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              key={agent.id}
+              className="card group hover:border-blue-500/50 transition-all duration-300 overflow-hidden"
+            >
+              <div className="p-6">
+                <div className="flex justify-between mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
+                    <Users size={24} />
+                  </div>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => handleEdit(agent)} className="btn-icon text-amber-500 hover:bg-amber-50">
+                      <Edit2 size={16} />
+                    </button>
+                    <button onClick={() => handleDelete(agent.id)} className="btn-icon text-red-500 hover:bg-red-50">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="font-bold text-gray-900 dark:text-white text-lg">{agent.name}</h3>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5">
+                      <Building2 size={12} className="text-blue-500" />
+                      {agent.Office?.name}
+                    </div>
+                  </div>
+
+                  <div className="pt-2 space-y-2 border-t border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                      <Mail size={12} /> {agent.email || '-'}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                      <Phone size={12} /> {agent.phone || '-'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="px-6 py-3 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${agent.status === 'Active' ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-gray-500'}`}>
+                  {agent.status}
+                </span>
+                <span className="text-[10px] text-gray-400 font-medium">Updated: {new Date(agent.updated_at).toLocaleDateString()}</span>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="flex justify-center gap-2 mt-8">
+          <button 
+            disabled={pagination.page <= 1}
+            onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+            className="btn h-9 px-3 disabled:opacity-50"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          {[...Array(pagination.totalPages)].map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setPagination(prev => ({ ...prev, page: i + 1 }))}
+              className={`h-9 w-9 rounded-lg text-sm font-medium transition-colors ${pagination.page === i + 1 ? 'bg-blue-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600'}`}
+            >
+              {i + 1}
+            </button>
+          ))}
+          <button 
+            disabled={pagination.page >= pagination.totalPages}
+            onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+            className="btn h-9 px-3 disabled:opacity-50"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* Modal CRUD */}
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        title={editingAgent ? 'Edit Sales Agent' : 'Add New Sales Agent'}
+      >
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-500 uppercase">Full Name</label>
+              <input 
+                type="text" required className="input" placeholder="e.g. John Doe"
+                value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-500 uppercase">Office Assigned</label>
+              <select 
+                required className="input"
+                value={formData.office_id} onChange={(e) => setFormData({...formData, office_id: e.target.value})}
+              >
+                <option value="">Select Office</option>
+                {offices.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-500 uppercase">Email Address</label>
+              <input 
+                type="email" className="input" placeholder="john@example.com"
+                value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-500 uppercase">Phone Number</label>
+              <input 
+                type="text" className="input" placeholder="+62..."
+                value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-gray-500 uppercase">Status</label>
+            <div className="flex gap-4">
+              {['Active', 'Inactive'].map(s => (
+                <label key={s} className="flex items-center gap-2 cursor-pointer group">
+                  <input 
+                    type="radio" name="status" value={s} 
+                    checked={formData.status === s} 
+                    onChange={(e) => setFormData({...formData, status: e.target.value})}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
+                  />
+                  <span className={`text-sm ${formData.status === s ? 'text-blue-600 font-bold' : 'text-gray-500'}`}>{s}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-gray-500 uppercase">Address</label>
+            <textarea 
+              className="input min-h-[80px]" placeholder="Full address..."
+              value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})}
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-gray-500 uppercase">Biography / Notes</label>
+            <textarea 
+              className="input min-h-[100px]" placeholder="Brief background of the sales agent..."
+              value={formData.bio} onChange={(e) => setFormData({...formData, bio: e.target.value})}
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+            <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400">Cancel</button>
+            <button type="submit" className="btn-primary px-8">
+              {editingAgent ? 'Update Agent' : 'Save Agent'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  );
+};
+
+export default SalesAgents;

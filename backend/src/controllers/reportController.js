@@ -1,4 +1,4 @@
-const { Vehicle, Booking, Office, sequelize } = require('../models');
+const { Vehicle, Booking, Office, SalesAgent, sequelize } = require('../models');
 const { Op } = require('sequelize');
 
 exports.getDashboardStats = async (req, res) => {
@@ -106,6 +106,25 @@ exports.getDashboardStats = async (req, res) => {
       };
     }).sort((a, b) => b.totalVehicles - a.totalVehicles); // Sort by quantity
 
+    // 6. Sales Agent Performance
+    const agentPerformanceRaw = await SalesAgent.findAll({
+      where: { office_id: { [Op.in]: officeIds } },
+      attributes: ['id', 'name'],
+      include: [{
+        model: Vehicle,
+        as: 'soldVehicles',
+        where: { status: 'Sold' },
+        attributes: ['id', 'price'],
+        required: false
+      }]
+    });
+
+    const agentPerformance = agentPerformanceRaw.map(agent => ({
+      name: agent.name,
+      soldCount: agent.soldVehicles?.length || 0,
+      totalRevenue: agent.soldVehicles?.reduce((acc, v) => acc + Number(v.price), 0) || 0
+    })).sort((a, b) => b.soldCount - a.soldCount);
+
     res.json({
       summary: {
         totalInventory,
@@ -119,7 +138,8 @@ exports.getDashboardStats = async (req, res) => {
         incoming: incomingData,
         sales: salesData,
         distribution: typeDistributionRaw.map(t => ({ type: t.type, count: Number(t.get('count')) })),
-        branchComparison
+        branchComparison,
+        agentPerformance
       }
     });
 

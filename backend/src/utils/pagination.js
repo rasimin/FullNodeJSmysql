@@ -1,20 +1,24 @@
 const getPagination = (page, size) => {
   const limit = size ? +size : 10;
-  const offset = page ? (page - 1) * limit : 0;
+  const pageNum = page ? +page : 1;
+  const offset = pageNum > 0 ? (pageNum - 1) * limit : 0;
 
   return { limit, offset };
 };
 
 const getPagingData = (data, page, limit) => {
-  const { count: total_records, rows: items } = data;
-  const current_page = page ? +page : 1;
-  const total_pages = Math.ceil(total_records / limit);
+  const { count: totalItems, rows: items } = data;
+  const currentPage = page ? +page : 1;
+  const totalPages = Math.ceil(totalItems / limit);
 
   return {
-    total_records,
+    totalItems,
     items,
-    total_pages,
-    current_page,
+    totalPages,
+    currentPage,
+    total_records: totalItems,
+    total_pages: totalPages,
+    current_page: currentPage
   };
 };
 

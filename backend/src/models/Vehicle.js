@@ -38,7 +38,7 @@ const Vehicle = sequelize.define('Vehicle', {
     defaultValue: DataTypes.NOW,
   },
   status: {
-    type: DataTypes.ENUM('Available', 'Sold', 'Pending'),
+    type: DataTypes.ENUM('Available', 'Sold', 'Booked'),
     defaultValue: 'Available',
   },
   office_id: {
@@ -55,6 +55,10 @@ const Vehicle = sequelize.define('Vehicle', {
   },
   sold_date: {
     type: DataTypes.DATEONLY,
+    allowNull: true,
+  },
+  sales_agent_id: {
+    type: DataTypes.INTEGER,
     allowNull: true,
   }
 }, {

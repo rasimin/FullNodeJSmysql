@@ -72,8 +72,9 @@ const getVehicles = async (req, res) => {
       where: condition,
       limit,
       offset,
+      distinct: true,
       include: [
-        { model: Office, attributes: ['name'] },
+        { model: Office, attributes: ['id', 'name', 'parent_id'] },
         { model: User, attributes: ['name'] },
         { model: VehicleImage, as: 'images', attributes: ['id', 'image_url', 'is_primary'] }
       ],

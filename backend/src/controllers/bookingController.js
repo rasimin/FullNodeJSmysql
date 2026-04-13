@@ -19,13 +19,14 @@ exports.createBooking = async (req, res) => {
       expiry_date,
       down_payment: down_payment || 0,
       notes,
+      sales_agent_id: req.body.sales_agent_id,
       user_id: req.user.id,
       office_id: vehicle.office_id,
       status: 'Active'
     }, { userId: req.user.id });
 
-    // Update status kendaraan menjadi Pending
-    await vehicle.update({ status: 'Pending' }, { userId: req.user.id });
+    // Update status kendaraan menjadi Booked
+    await vehicle.update({ status: 'Booked' }, { userId: req.user.id });
 
     res.status(201).json(booking);
   } catch (err) {
@@ -125,7 +126,8 @@ exports.confirmSale = async (req, res) => {
 
     await vehicle.update({ 
       status: 'Sold',
-      sold_date: req.body.sold_date || new Date().toISOString().split('T')[0]
+      sold_date: req.body.sold_date || new Date().toISOString().split('T')[0],
+      sales_agent_id: req.body.sales_agent_id || (booking ? booking.sales_agent_id : null)
     }, { userId: req.user.id });
 
     res.json({ message: 'Unit successfully marked as Sold' });
@@ -140,7 +142,8 @@ exports.getVehicleBookingHistory = async (req, res) => {
       where: { vehicle_id: req.params.vehicleId },
       include: [
         { model: User, attributes: ['name'] },
-        { model: Office, attributes: ['name'] }
+        { model: Office, attributes: ['name'] },
+        { model: SalesAgent, as: 'salesAgent', attributes: ['name'] }
       ],
       order: [['createdAt', 'DESC']]
     });
