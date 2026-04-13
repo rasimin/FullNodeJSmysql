@@ -7,8 +7,33 @@ const { getPagination, getPagingData } = require('../utils/pagination');
 const createUser = async (req, res) => {
   try {
     const { name, email, username, password, role_id, office_id } = req.body;
+    const currentUser = req.user;
+    const currentOffice = await Office.findByPk(currentUser.office_id);
 
     if (!username) return res.status(400).json({ message: 'Username is required' });
+
+    // Pengecekan Izin Berdasarkan Role & Hirarki
+    if (currentUser.Role?.name !== 'Super Admin') {
+      // 1. User cabang sama sekali tidak bisa buat user
+      if (currentOffice.parent_id) {
+        return res.status(403).json({ message: 'User kantor cabang tidak diperbolehkan menambah user baru' });
+      }
+
+      // 2. Admin Pusat hanya bisa buat user di hiarkinya (diri sendiri + cabang di bawahnya)
+      const allowedOffices = await Office.findAll({
+        where: {
+          [Op.or]: [
+            { id: currentUser.office_id },
+            { parent_id: currentUser.office_id }
+          ]
+        },
+        attributes: ['id']
+      });
+      const allowedIds = allowedOffices.map(o => o.id);
+      if (!allowedIds.includes(parseInt(office_id))) {
+        return res.status(403).json({ message: 'Anda hanya bisa membuat user untuk kantor di bawah naungan Anda' });
+      }
+    }
 
     const existingUser = await User.findOne({ 
       where: { 
@@ -43,9 +68,41 @@ const getUsers = async (req, res) => {
   try {
     const { page, size, search, role_id, office_id } = req.query;
     const { limit, offset } = getPagination(page, size);
+    const currentUser = req.user;
+    const isSuperAdmin = currentUser.Role?.name === 'Super Admin';
+    const currentOffice = await Office.findByPk(currentUser.office_id);
 
     // Build query conditions
     const condition = {};
+
+    // Logic Hierarki Kantor untuk List User
+    if (!isSuperAdmin) {
+      if (currentOffice.parent_id) {
+        // Cabang: Hanya lihat user di kantornya sendiri
+        condition.office_id = currentUser.office_id;
+      } else {
+        // Pusat: Lihat dirinya + cabang di bawahnya
+        const allowedOffices = await Office.findAll({
+          where: {
+            [Op.or]: [
+              { id: currentUser.office_id },
+              { parent_id: currentUser.office_id }
+            ]
+          },
+          attributes: ['id']
+        });
+        const allowedIds = allowedOffices.map(o => o.id);
+        
+        if (office_id) {
+           // Jika filter frontend minta spesifik, cek apakah masuk mapping
+           condition.office_id = allowedIds.includes(parseInt(office_id)) ? office_id : { [Op.in]: allowedIds };
+        } else {
+           condition.office_id = { [Op.in]: allowedIds };
+        }
+      }
+    } else if (office_id) {
+      condition.office_id = office_id;
+    }
     
     if (search) {
       condition[Op.or] = [

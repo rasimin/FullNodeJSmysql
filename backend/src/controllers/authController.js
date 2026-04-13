@@ -94,8 +94,12 @@ const login = async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
+        username: user.username,
         role: user.Role.name,
-        office: user.Office ? user.Office.name : 'N/A'
+        office: user.Office ? user.Office.name : 'N/A',
+        office_id: user.office_id,
+        office_type: user.Office?.type,
+        parent_office_id: user.Office?.parent_id
       }
     });
   } catch (error) {
@@ -183,7 +187,10 @@ const updateProfile = async (req, res) => {
         username: updatedUser.username,
         avatar: updatedUser.avatar,
         role: updatedUser.Role?.name,
-        office: updatedUser.Office?.name
+        office: updatedUser.Office?.name,
+        office_id: updatedUser.office_id,
+        office_type: updatedUser.Office?.type,
+        parent_office_id: updatedUser.Office?.parent_id
       }
     });
   } catch (error) {

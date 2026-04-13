@@ -21,6 +21,17 @@ const UserManagement = () => {
   const [notification, setNotification] = useState({ status: 'idle', message: '' });
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
+  const storedUser = JSON.parse(localStorage.getItem('user') || localStorage.getItem('user_data') || '{}');
+  const user = storedUser.user || storedUser; // Handle different storage formats
+  
+  console.log('[UserManagement] Raw Stored User:', storedUser);
+  console.log('[UserManagement] Extracted User Info:', user);
+
+  const isSuperAdmin = user?.role === 'Super Admin';
+  // Jika metadata kantor belum ada (user belum relogin), default ke 'bukan cabang' agar tombol tidak hilang tiba-tiba
+  const isBranchUser = user?.office_type === 'BRANCH_OFFICE' && user?.parent_office_id !== null;
+  const canAddUser = isSuperAdmin || !isBranchUser;
+
   const notify = (status, message, delay = 2000) => {
     setNotification({ status, message });
     if (status !== 'loading') setTimeout(() => setNotification({ status: 'idle' }), delay);
@@ -37,8 +48,15 @@ const UserManagement = () => {
   };
 
   useEffect(() => {
-    api.get('/roles').then(r => setRoles(r.data)).catch(console.error);
-    api.get('/offices').then(r => setOffices(r.data)).catch(console.error);
+    api.get('/roles').then(r => {
+      console.log('[UserManagement] Roles API Response:', r.data);
+      setRoles(r.data);
+    }).catch(err => console.error('[UserManagement] Roles Fetch Error:', err));
+
+    api.get('/offices').then(r => {
+      console.log('[UserManagement] Offices API Response:', r.data);
+      setOffices(r.data);
+    }).catch(err => console.error('[UserManagement] Offices Fetch Error:', err));
   }, []);
 
   useEffect(() => { fetchUsers(); }, [page, search]);
@@ -124,9 +142,11 @@ const UserManagement = () => {
           <button onClick={handleExport} className="btn gap-2">
             <FileSpreadsheet size={15} className="text-green-600" /> Export
           </button>
-          <button onClick={() => openModal()} className="btn-primary gap-2">
-            <Plus size={15} /> Add User
-          </button>
+          {canAddUser && (
+            <button onClick={() => openModal()} className="btn-primary gap-2">
+              <Plus size={15} /> Add User
+            </button>
+          )}
         </div>
       </div>
 
@@ -220,7 +240,9 @@ const UserManagement = () => {
           <div className="grid grid-cols-2 gap-4">
             <Select label="Role" icon={Shield} value={formData.role_id}
               onChange={e => setFormData({...formData, role_id: e.target.value})}
-              options={roles.map(r => ({ value: r.id, label: r.name }))} />
+              options={roles
+                .filter(r => isSuperAdmin || r.name !== 'Super Admin')
+                .map(r => ({ value: r.id, label: r.name }))} />
             <Select label="Office" icon={Building2} value={formData.office_id}
               onChange={e => setFormData({...formData, office_id: e.target.value})}
               options={offices.map(o => ({ value: o.id, label: o.name }))} />

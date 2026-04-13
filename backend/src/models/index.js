@@ -27,8 +27,8 @@ User.hasMany(ActivityLog, { foreignKey: 'user_id' });
 // Vehicle Relationships
 Vehicle.belongsTo(Office, { foreignKey: 'office_id' });
 Vehicle.belongsTo(User, { foreignKey: 'user_id' });
-Office.hasMany(Vehicle, { foreignKey: 'office_id' });
-User.hasMany(Vehicle, { foreignKey: 'user_id' });
+Office.hasMany(Vehicle, { foreignKey: 'office_id', as: 'vehicles' });
+User.hasMany(Vehicle, { foreignKey: 'user_id', as: 'vehicles' });
 
 Vehicle.hasMany(VehicleImage, { foreignKey: 'vehicle_id', as: 'images' });
 VehicleImage.belongsTo(Vehicle, { foreignKey: 'vehicle_id' });

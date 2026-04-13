@@ -80,6 +80,19 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   }
 
+  .card-interactive {
+    @apply transition-all duration-300;
+  }
+  .card-interactive:hover {
+    @apply bg-blue-50/40 dark:bg-blue-900/10 border-blue-200 dark:border-blue-900/50 shadow-md transform -translate-y-0.5;
+  }
+  .card-interactive:hover h3, .card-interactive:hover h4 {
+    @apply text-blue-700 dark:text-blue-400;
+  }
+  .card-interactive:hover p {
+    @apply text-blue-600/70 dark:text-blue-400/60;
+  }
+
   /* ——— NAV ITEMS ——— */
   .nav-link {
     display: flex;

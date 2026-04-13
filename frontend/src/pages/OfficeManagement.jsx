@@ -114,7 +114,7 @@ const OfficeManagement = () => {
                     transition={{ delay: hoIndex * 0.1 }}
                     className="w-full lg:w-80 flex-shrink-0"
                   >
-                    <div className="card-hover p-6 border-l-4 border-purple-500 bg-gradient-to-br from-white to-purple-50/30 dark:from-gray-900 dark:to-purple-900/5">
+                    <div className="card-interactive p-6 border-l-4 border-purple-500 bg-gradient-to-br from-white to-purple-50/30 dark:from-gray-900 dark:to-purple-900/5 cursor-default">
                       <div className="flex items-start justify-between mb-4">
                         <div className="icon-box icon-purple">
                           <Building2 size={22} />
@@ -146,7 +146,7 @@ const OfficeManagement = () => {
                               initial={{ opacity: 0, scale: 0.95 }}
                               animate={{ opacity: 1, scale: 1 }}
                               transition={{ delay: (hoIndex * 0.1) + (bIndex * 0.05) }}
-                              className="card-hover p-4 bg-white dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800"
+                              className="card-interactive p-4 bg-white dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 cursor-default"
                             >
                               <div className="flex justify-between items-start mb-2">
                                 <div className="icon-box icon-blue w-8 h-8">

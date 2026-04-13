@@ -126,8 +126,8 @@ const Reports = () => {
               <TrendingUp size={18} className="text-blue-500" /> Sales vs Incoming Trend
             </h3>
           </div>
-          <div className="flex justify-center h-[300px] w-full">
-            <AreaChart width={500} height={300} data={stats?.charts?.sales}>
+          <div className="flex justify-center h-[300px] w-full mt-4">
+            <AreaChart width={550} height={300} data={stats?.charts?.sales}>
               <defs>
                 <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
@@ -147,7 +147,6 @@ const Reports = () => {
                 strokeWidth={3} 
                 fillOpacity={1} 
                 fill="url(#colorRevenue)"
-                isAnimationActive={false}
               />
             </AreaChart>
           </div>
@@ -160,8 +159,8 @@ const Reports = () => {
               <BarChart2 size={18} className="text-green-500" /> Units Movement
             </h3>
           </div>
-          <div className="flex justify-center h-[300px] w-full">
-            <BarChart width={500} height={300} data={stats?.charts?.sales}>
+          <div className="flex justify-center h-[300px] w-full mt-4">
+            <BarChart width={550} height={300} data={stats?.charts?.sales}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
               <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
@@ -174,7 +173,6 @@ const Reports = () => {
                 fill="#10b981" 
                 radius={[4, 4, 0, 0]} 
                 barSize={40} 
-                isAnimationActive={false}
               />
             </BarChart>
           </div>
@@ -183,7 +181,7 @@ const Reports = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Type Distribution */}
-        <div className="card p-6">
+        <div className="card p-6 h-full flex flex-col justify-between">
           <h3 className="font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
             <PieIcon size={18} className="text-amber-500" /> Inventory Type
           </h3>
@@ -221,39 +219,68 @@ const Reports = () => {
           </div>
         </div>
 
-        {/* Top Branches (Demo list) */}
+        {/* Branch Performance Comparison Chart */}
         <div className="card lg:col-span-2 p-6">
-          <h3 className="font-bold text-gray-900 dark:text-white mb-6">Branch Performance Overview</h3>
-          <div className="space-y-4">
-            {offices.slice(0, 5).map((office, idx) => (
-              <div key={office.id} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-900/50">
+          <h3 className="font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+            <BarChart2 size={18} className="text-blue-500" /> Branch Revenue & Inventory Overview
+          </h3>
+          <div className="flex justify-center h-[300px] w-full overflow-hidden">
+            <BarChart 
+              width={700}
+              height={300}
+              data={stats?.charts?.branchComparison} 
+              margin={{ top: 10, right: 30, left: 10, bottom: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+              <YAxis yAxisId="left" orientation="left" stroke="#3b82f6" fontSize={10} tickLine={false} axisLine={false} />
+              <YAxis yAxisId="right" orientation="right" stroke="#10b981" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `Rp${(val/1000000).toFixed(0)}Jt`} />
+              <Tooltip 
+                cursor={{fill: '#f8fafc'}}
+                contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+              />
+              <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
+              <Bar yAxisId="left" name="Vehicles (Stock)" dataKey="totalVehicles" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={25} />
+              <Bar yAxisId="right" name="Revenue (Sold)" dataKey="revenue" fill="#10b981" radius={[4, 4, 0, 0]} barSize={25} />
+            </BarChart>
+          </div>
+        </div>
+      </div>
+
+      {/* Dynamic Branch Performance Overview */}
+      <div className="card p-6">
+          <h3 className="font-bold text-gray-900 dark:text-white mb-6">Branch Performance Overview (Real-time)</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {stats?.charts?.branchComparison?.map((office, idx) => (
+              <div key={office.id} className="flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-gray-900/50 card-hover">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center text-xs font-bold border border-gray-100 dark:border-gray-700">
+                  <div className="w-10 h-10 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center text-sm font-bold border border-gray-100 dark:border-gray-700">
                     {idx + 1}
                   </div>
                   <div>
                     <p className="text-sm font-bold">{office.name}</p>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-widest">{office.Parent?.name || 'Main'}</p>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-widest">{office.type.replace('_', ' ')}</p>
                   </div>
                 </div>
                 
-                {/* Mini Sparkline Chart */}
-                <div className="hidden md:block h-8 w-24">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={[{v: 40}, {v: 70}, {v: 50}, {v: 90}]}>
-                      <Bar dataKey="v" fill="#3b82f6" radius={[2, 2, 0, 0]} isAnimationActive={false} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="text-right">
-                  <p className="text-sm font-bold text-blue-600">Active</p>
-                  <p className="text-[10px] text-gray-400 font-medium">Monthly Active</p>
+                <div className="flex gap-8 items-center">
+                  <div className="text-right">
+                    <p className="text-[10px] text-gray-400 uppercase font-bold">In-Stock</p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">{office.availableVehicles}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] text-gray-400 uppercase font-bold">Revenue</p>
+                    <p className="text-sm font-bold text-green-600">{formatCurrency(office.revenue)}</p>
+                  </div>
+                  <div className="text-right min-w-[80px]">
+                    <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${office.activeStatus === 'Active' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                      {office.activeStatus}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-        </div>
       </div>
     </div>
   );

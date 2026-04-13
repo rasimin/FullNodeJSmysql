@@ -7,16 +7,29 @@ exports.getDashboardStats = async (req, res) => {
     const user = req.user;
     
     // Default filter by office hierarchy
-    let officeIds = [user.office_id];
+    const isSuperAdmin = user.Role?.name === 'Super Admin';
+    let officeIds = [];
     const currentOffice = await Office.findByPk(user.office_id);
     
-    if (currentOffice && !currentOffice.parent_id) { // Head Office
+    if (isSuperAdmin) {
        if (officeId) {
          officeIds = [officeId];
        } else {
          const allOffices = await Office.findAll({ attributes: ['id'] });
          officeIds = allOffices.map(o => o.id);
        }
+    } else if (currentOffice && !currentOffice.parent_id) { // Head Office
+       if (officeId) {
+         officeIds = [officeId];
+       } else {
+         const mappingOffices = await Office.findAll({
+           where: { [Op.or]: [{ id: user.office_id }, { parent_id: user.office_id }] },
+           attributes: ['id']
+         });
+         officeIds = mappingOffices.map(o => o.id);
+       }
+    } else {
+       officeIds = [user.office_id];
     }
 
     const where = { office_id: { [Op.in]: officeIds } };
@@ -68,10 +81,30 @@ exports.getDashboardStats = async (req, res) => {
       group: ['type']
     });
 
-    const typeDistribution = typeDistributionRaw.map(t => ({
-      type: t.type,
-      count: Number(t.get('count'))
-    }));
+    // 5. Branch Comparison (Per Branch Analytics)
+    const branchComparisonRaw = await Office.findAll({
+      where: isSuperAdmin ? {} : { [Op.or]: [{ id: user.office_id }, { parent_id: user.office_id }] },
+      attributes: ['id', 'name', 'type'],
+      include: [{
+        model: Vehicle,
+        as: 'vehicles',
+        attributes: ['id', 'status', 'price']
+      }]
+    });
+
+    const branchComparison = branchComparisonRaw.map(office => {
+      const vehicles = office.vehicles || [];
+      return {
+        id: office.id,
+        name: office.name,
+        type: office.type,
+        totalVehicles: vehicles.length,
+        soldVehicles: vehicles.filter(v => v.status === 'Sold').length,
+        availableVehicles: vehicles.filter(v => v.status === 'Available').length,
+        revenue: vehicles.filter(v => v.status === 'Sold').reduce((acc, v) => acc + Number(v.price), 0),
+        activeStatus: vehicles.length > 0 ? 'Active' : 'Idle'
+      };
+    }).sort((a, b) => b.totalVehicles - a.totalVehicles); // Sort by quantity
 
     res.json({
       summary: {
@@ -85,7 +118,8 @@ exports.getDashboardStats = async (req, res) => {
       charts: {
         incoming: incomingData,
         sales: salesData,
-        distribution: typeDistribution
+        distribution: typeDistributionRaw.map(t => ({ type: t.type, count: Number(t.get('count')) })),
+        branchComparison
       }
     });
 
