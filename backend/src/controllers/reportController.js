@@ -43,7 +43,7 @@ exports.getDashboardStats = async (req, res) => {
     });
 
     // 3. Sales Chart (by month - last 6 months)
-    const salesData = await Vehicle.findAll({
+    const salesDataRaw = await Vehicle.findAll({
       where: { ...where, status: 'Sold', sold_date: { [Op.ne]: null } },
       attributes: [
         [sequelize.fn('DATE_FORMAT', sequelize.col('sold_date'), '%Y-%m'), 'month'],
@@ -55,12 +55,23 @@ exports.getDashboardStats = async (req, res) => {
       limit: 6
     });
 
+    const salesData = salesDataRaw.map(s => ({
+      month: s.get('month'),
+      count: Number(s.get('count')),
+      revenue: Number(s.get('revenue'))
+    }));
+
     // 4. Type Distribution (Mobil vs Motor)
-    const typeDistribution = await Vehicle.findAll({
+    const typeDistributionRaw = await Vehicle.findAll({
       where,
       attributes: ['type', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
       group: ['type']
     });
+
+    const typeDistribution = typeDistributionRaw.map(t => ({
+      type: t.type,
+      count: Number(t.get('count'))
+    }));
 
     res.json({
       summary: {
@@ -68,8 +79,8 @@ exports.getDashboardStats = async (req, res) => {
         totalAvailable,
         totalSold,
         totalPending,
-        totalRevenue,
-        potentialRevenue
+        totalRevenue: Number(totalRevenue),
+        potentialRevenue: Number(potentialRevenue)
       },
       charts: {
         incoming: incomingData,

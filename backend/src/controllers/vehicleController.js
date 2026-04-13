@@ -11,18 +11,46 @@ const getVehicles = async (req, res) => {
     const { page, size, search, officeId: filterOfficeId, type, status } = req.query;
     const { limit, offset } = getPagination(page, size);
     const user = req.user;
-
-    let officeIds = [user.office_id];
+    const isSuperAdmin = user.Role?.name === 'Super Admin';
     const currentOffice = await Office.findByPk(user.office_id);
-    
-    // Logic Hierarki Kantor
-    if (!currentOffice.parent_id) {
+    let officeIds = [];
+
+    // Logic Hierarki Kantor: Filter sesuai mapping
+    if (isSuperAdmin) {
+      // Super Admin: Bisa lihat semua unit atau berdasarkan filter spesifik
+      if (filterOfficeId) {
+        officeIds = [filterOfficeId];
+      } else {
+        const allOffices = await Office.findAll({ attributes: ['id'] });
+        officeIds = allOffices.map(o => o.id);
+      }
+    } else if (!currentOffice.parent_id) {
+       // Kantor Pusat: Bisa lihat dirinya sendiri + cabang-cabang di bawahnya
+       const allowedOffices = await Office.findAll({
+         where: {
+           [Op.or]: [
+             { id: user.office_id },
+             { parent_id: user.office_id }
+           ]
+         },
+         attributes: ['id']
+       });
+       const allowedIds = allowedOffices.map(o => o.id);
+
        if (filterOfficeId) {
-         officeIds = [filterOfficeId]; // Head Office filter cabang tertentu
+         // Validasi apakah filterOfficeId masuk dalam mapping yang diizinkan
+         if (allowedIds.includes(parseInt(filterOfficeId))) {
+           officeIds = [filterOfficeId];
+         } else {
+           // Jika tidak punya akses ke cabang tersebut, default ke mapping miliknya
+           officeIds = allowedIds;
+         }
        } else {
-         const allOffices = await Office.findAll({ attributes: ['id'] });
-         officeIds = allOffices.map(o => o.id);
+         officeIds = allowedIds;
        }
+    } else {
+      // Kantor Cabang: Hanya bisa melihat datanya sendiri
+      officeIds = [user.office_id];
     }
 
     const condition = {
@@ -73,11 +101,38 @@ const deleteVehicle = async (req, res) => {
 
 const createVehicle = async (req, res) => {
   try {
+    const user = req.user;
+    let targetOfficeId = user.office_id;
+
+    // Jika user kantor pusat, mereka bisa memilih office_id dari mapping mereka
+    const currentOffice = await Office.findByPk(user.office_id);
+    const isSuperAdmin = user.Role?.name === 'Super Admin';
+
+    if (isSuperAdmin) {
+      if (req.body.office_id) targetOfficeId = req.body.office_id;
+    } else if (!currentOffice.parent_id) {
+      if (req.body.office_id) {
+        const allowedOffices = await Office.findAll({
+          where: {
+            [Op.or]: [{ id: user.office_id }, { parent_id: user.office_id }]
+          },
+          attributes: ['id']
+        });
+        const allowedIds = allowedOffices.map(o => o.id);
+        
+        if (allowedIds.includes(parseInt(req.body.office_id))) {
+          targetOfficeId = req.body.office_id;
+        } else {
+          return res.status(403).json({ message: 'Anda tidak memiliki akses untuk input ke kantor ini' });
+        }
+      }
+    }
+
     const vehicle = await Vehicle.create({
       ...req.body,
-      user_id: req.user.id,
-      office_id: req.user.office_id // Default ke kantor si pembuat
-    }, { userId: req.user.id });
+      user_id: user.id,
+      office_id: targetOfficeId
+    }, { userId: user.id });
 
     res.status(201).json(vehicle);
   } catch (error) {
@@ -88,6 +143,7 @@ const createVehicle = async (req, res) => {
 const updateVehicle = async (req, res) => {
   try {
     const { id } = req.params;
+    const user = req.user;
     const vehicle = await Vehicle.findByPk(id);
     if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
 
@@ -100,8 +156,35 @@ const updateVehicle = async (req, res) => {
       updateData.sold_date = null;
     }
 
+    // Validate office_id if changing
+    if (updateData.office_id && updateData.office_id !== vehicle.office_id) {
+      const isSuperAdmin = user.Role?.name === 'Super Admin';
+      const currentOffice = await Office.findByPk(user.office_id);
+
+      if (isSuperAdmin) {
+        // Skip validation for Super Admin
+      } else if (currentOffice.parent_id) {
+         // Branch user cannot change office_id of a vehicle (or only to their own which is redundant)
+         if (updateData.office_id !== user.office_id) {
+           return res.status(403).json({ message: 'Anda tidak memiliki akses untuk memindahkan unit ke kantor lain' });
+         }
+      } else {
+        // Head office user validation
+        const allowedOffices = await Office.findAll({
+          where: {
+            [Op.or]: [{ id: user.office_id }, { parent_id: user.office_id }]
+          },
+          attributes: ['id']
+        });
+        const allowedIds = allowedOffices.map(o => o.id);
+        if (!allowedIds.includes(parseInt(updateData.office_id))) {
+          return res.status(403).json({ message: 'Kantor tujuan tidak dalam mapping Anda' });
+        }
+      }
+    }
+
     await vehicle.update(updateData, { 
-      userId: req.user.id,
+      userId: user.id,
       individualHooks: true 
     });
 

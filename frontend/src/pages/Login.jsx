@@ -22,7 +22,7 @@ const Login = () => {
       await login(email, password);
       navigate('/');
     } catch {
-      setError('Invalid email or password');
+      setError('Invalid credentials');
     } finally {
       setLoading(false);
     }
@@ -58,11 +58,11 @@ const Login = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Email</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Email / Username</label>
             <input
-              type="email" required value={email}
+              type="text" required value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="input" placeholder="admin@example.com"
+              className="input" placeholder="admin@example.com atau admin"
             />
           </div>
           <div>

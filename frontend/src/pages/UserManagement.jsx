@@ -17,7 +17,7 @@ const UserManagement = () => {
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', role_id: '', office_id: '', is_active: true });
+  const [formData, setFormData] = useState({ name: '', email: '', username: '', password: '', role_id: '', office_id: '', is_active: true });
   const [notification, setNotification] = useState({ status: 'idle', message: '' });
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
@@ -57,8 +57,8 @@ const UserManagement = () => {
   const openModal = (user = null) => {
     setEditingUser(user);
     setFormData(user
-      ? { name: user.name, email: user.email, password: '', role_id: user.role_id, office_id: user.office_id, is_active: user.is_active }
-      : { name: '', email: '', password: '', role_id: roles[0]?.id || '', office_id: offices[0]?.id || '', is_active: true }
+      ? { name: user.name, email: user.email, username: user.username, password: '', role_id: user.role_id, office_id: user.office_id, is_active: user.is_active }
+      : { name: '', email: '', username: '', password: '', role_id: roles[0]?.id || '', office_id: offices[0]?.id || '', is_active: true }
     );
     setIsModalOpen(true);
   };
@@ -100,7 +100,7 @@ const UserManagement = () => {
     } catch { notify('error', 'Delete failed'); }
   };
 
-  const headers = ['Name', 'Email', 'Role', 'Office', 'Status', 'Actions'];
+  const headers = ['Name', 'User', 'Email', 'Role', 'Office', 'Status', 'Actions'];
 
   return (
     <div className="space-y-5">
@@ -163,7 +163,8 @@ const UserManagement = () => {
                       className="table-row"
                     >
                       <td className="px-5 py-3.5 font-medium text-gray-900 dark:text-white">{user.name}</td>
-                      <td className="px-5 py-3.5 text-gray-500 dark:text-gray-400">{user.email}</td>
+                      <td className="px-5 py-3.5 text-blue-600 dark:text-blue-400 font-mono text-xs">{user.username}</td>
+                      <td className="px-5 py-3.5 text-gray-500 dark:text-gray-400">{user.email || '—'}</td>
                       <td className="px-5 py-3.5">
                         <span className="badge badge-blue">{user.Role?.name || 'N/A'}</span>
                       </td>
@@ -206,7 +207,10 @@ const UserManagement = () => {
           <Input label="Full Name" icon={User} required value={formData.name}
             onChange={e => setFormData({...formData, name: e.target.value})} placeholder="John Doe" />
 
-          <Input label="Email" icon={Mail} type="email" required value={formData.email}
+          <Input label="Username" icon={User} required value={formData.username}
+            onChange={e => setFormData({...formData, username: e.target.value})} placeholder="johndoe123" />
+
+          <Input label="Email (Optional)" icon={Mail} type="email" value={formData.email}
             onChange={e => setFormData({...formData, email: e.target.value})} placeholder="john@example.com" />
 
           <Input label={editingUser ? 'Password (blank = keep)' : 'Password'} icon={Lock} type="password"

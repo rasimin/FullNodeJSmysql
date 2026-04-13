@@ -25,7 +25,13 @@ const Reports = () => {
       const res = await api.get('/reports/dashboard', {
         params: { officeId: selectedOffice }
       });
-      setStats(res.data);
+      // Ensure we have at least an empty array for charts
+      const data = res.data;
+      if (data.charts.sales.length === 0) {
+        // Fallback for empty sales data to show a clean axis
+        data.charts.sales = [{ month: 'No Data', count: 0, revenue: 0 }];
+      }
+      setStats(data);
     } catch (err) {
       console.error('Failed to fetch stats', err);
     }
@@ -120,24 +126,30 @@ const Reports = () => {
               <TrendingUp size={18} className="text-blue-500" /> Sales vs Incoming Trend
             </h3>
           </div>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={stats?.charts?.sales}>
-                <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                />
-                <Area type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
-              </AreaChart>
-            </ResponsiveContainer>
+          <div className="flex justify-center h-[300px] w-full">
+            <AreaChart width={500} height={300} data={stats?.charts?.sales}>
+              <defs>
+                <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+              <Tooltip 
+                contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+              />
+              <Area 
+                type="monotone" 
+                dataKey="revenue" 
+                stroke="#3b82f6" 
+                strokeWidth={3} 
+                fillOpacity={1} 
+                fill="url(#colorRevenue)"
+                isAnimationActive={false}
+              />
+            </AreaChart>
           </div>
         </div>
 
@@ -148,19 +160,23 @@ const Reports = () => {
               <BarChart2 size={18} className="text-green-500" /> Units Movement
             </h3>
           </div>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats?.charts?.sales}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip 
-                  cursor={{fill: '#f8fafc'}}
-                  contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                />
-                <Bar dataKey="count" fill="#10b981" radius={[4, 4, 0, 0]} barSize={40} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="flex justify-center h-[300px] w-full">
+            <BarChart width={500} height={300} data={stats?.charts?.sales}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+              <Tooltip 
+                cursor={{fill: '#f8fafc'}}
+                contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+              />
+              <Bar 
+                dataKey="count" 
+                fill="#10b981" 
+                radius={[4, 4, 0, 0]} 
+                barSize={40} 
+                isAnimationActive={false}
+              />
+            </BarChart>
           </div>
         </div>
       </div>
@@ -171,26 +187,25 @@ const Reports = () => {
           <h3 className="font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
             <PieIcon size={18} className="text-amber-500" /> Inventory Type
           </h3>
-          <div className="h-[250px] w-full relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={stats?.charts?.distribution}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="count"
-                  nameKey="type"
-                >
-                  {stats?.charts?.distribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+          <div className="flex justify-center items-center h-[250px] w-full relative">
+            <PieChart width={250} height={250}>
+              <Pie
+                data={stats?.charts?.distribution}
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={80}
+                paddingAngle={5}
+                dataKey="count"
+                nameKey="type"
+                isAnimationActive={false}
+              >
+                {stats?.charts?.distribution.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
             <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
               <span className="text-2xl font-bold">{stats?.summary?.totalInventory}</span>
               <span className="text-[10px] text-gray-500 uppercase font-bold">Total Units</span>
@@ -221,6 +236,16 @@ const Reports = () => {
                     <p className="text-[10px] text-gray-500 uppercase tracking-widest">{office.Parent?.name || 'Main'}</p>
                   </div>
                 </div>
+                
+                {/* Mini Sparkline Chart */}
+                <div className="hidden md:block h-8 w-24">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={[{v: 40}, {v: 70}, {v: 50}, {v: 90}]}>
+                      <Bar dataKey="v" fill="#3b82f6" radius={[2, 2, 0, 0]} isAnimationActive={false} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
                 <div className="text-right">
                   <p className="text-sm font-bold text-blue-600">Active</p>
                   <p className="text-[10px] text-gray-400 font-medium">Monthly Active</p>

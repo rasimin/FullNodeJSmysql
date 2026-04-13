@@ -13,6 +13,11 @@ const User = sequelize.define('User', {
   },
   email: {
     type: DataTypes.STRING(100),
+    allowNull: true,
+    unique: true,
+  },
+  username: {
+    type: DataTypes.STRING(50),
     allowNull: false,
     unique: true,
   },
@@ -43,6 +48,9 @@ const User = sequelize.define('User', {
   indexes: [
     {
       fields: ['email'],
+    },
+    {
+      fields: ['username'],
     },
     {
       fields: ['role_id'],

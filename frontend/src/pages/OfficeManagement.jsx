@@ -86,57 +86,114 @@ const OfficeManagement = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="flex flex-col gap-8">
         {loading ? (
-          [...Array(3)].map((_, i) => (
-            <div key={i} className="card p-5 animate-pulse">
-              <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-xl mb-4" />
-              <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded w-3/4 mb-2" />
-              <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-1/2" />
+          [...Array(2)].map((_, i) => (
+            <div key={i} className="flex gap-6 animate-pulse">
+              <div className="w-80 h-40 bg-gray-100 dark:bg-gray-800 rounded-2xl" />
+              <div className="flex-1 grid grid-cols-3 gap-3">
+                <div className="h-24 bg-gray-100 dark:bg-gray-800 rounded-xl" />
+                <div className="h-24 bg-gray-100 dark:bg-gray-800 rounded-xl" />
+              </div>
             </div>
           ))
         ) : offices.length === 0 ? (
-          <p className="text-sm text-gray-400 col-span-3">No offices found.</p>
+          <div className="card p-10 text-center">
+            <p className="text-sm text-gray-400">No offices found.</p>
+          </div>
         ) : (
-          offices.map((office, i) => (
-            <motion.div key={office.id}
-              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.06, duration: 0.18 }}
-              className="card-hover p-5"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className={`icon-box ${office.type === 'HEAD_OFFICE' ? 'icon-purple' : 'icon-blue'}`}>
-                  <Building2 size={20} />
+          offices
+            .filter(o => o.type === 'HEAD_OFFICE')
+            .map((ho, hoIndex, filteredArray) => (
+              <div key={ho.id} className="space-y-8">
+                <div className="flex flex-col lg:flex-row gap-8 items-start">
+                  {/* Left: Head Office Card */}
+                  <motion.div
+                    initial={{ opacity: 0, x: -12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: hoIndex * 0.1 }}
+                    className="w-full lg:w-80 flex-shrink-0"
+                  >
+                    <div className="card-hover p-6 border-l-4 border-purple-500 bg-gradient-to-br from-white to-purple-50/30 dark:from-gray-900 dark:to-purple-900/5">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="icon-box icon-purple">
+                          <Building2 size={22} />
+                        </div>
+                        <div className="flex gap-1">
+                          <button onClick={() => openModal(ho)} className="btn-icon text-gray-400 hover:text-blue-600"><Edit size={14} /></button>
+                          <button onClick={() => setConfirmDeleteId(ho.id)} className="btn-icon text-gray-400 hover:text-red-500"><Trash2 size={14} /></button>
+                        </div>
+                      </div>
+                      <h3 className="text-base font-bold text-gray-900 dark:text-white">{ho.name}</h3>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 mb-4 leading-relaxed">{ho.address || 'No address provided'}</p>
+                      <span className="badge badge-purple px-2.5 py-1">HEAD OFFICE</span>
+                    </div>
+                  </motion.div>
+
+                  {/* Right: Branches Grid */}
+                  <div className="flex-1 w-full">
+                    <div className="mb-3 flex items-center gap-2">
+                       <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Branches Under {ho.name}</h4>
+                       <div className="h-[1px] flex-1 bg-gray-100 dark:bg-gray-800" />
+                    </div>
+                    {ho.branches?.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                        {ho.branches.map((branch, bIndex) => {
+                          const fullBranchData = flatOffices.find(f => f.id === branch.id) || branch;
+                          return (
+                            <motion.div
+                              key={branch.id}
+                              initial={{ opacity: 0, scale: 0.95 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: (hoIndex * 0.1) + (bIndex * 0.05) }}
+                              className="card-hover p-4 bg-white dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800"
+                            >
+                              <div className="flex justify-between items-start mb-2">
+                                <div className="icon-box icon-blue w-8 h-8">
+                                  <Building2 size={16} />
+                                </div>
+                                <div className="flex gap-0.5">
+                                  <button onClick={() => openModal(fullBranchData)} className="btn-icon w-7 h-7 text-gray-400 hover:text-blue-600"><Edit size={12} /></button>
+                                  <button onClick={() => setConfirmDeleteId(branch.id)} className="btn-icon w-7 h-7 text-gray-400 hover:text-red-500"><Trash2 size={12} /></button>
+                                </div>
+                              </div>
+                              <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{branch.name}</h4>
+                              <p className="text-[10px] text-gray-400 mt-1 line-clamp-1">{fullBranchData.address || 'No address'}</p>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="py-8 border-2 border-dashed border-gray-50 dark:border-gray-800/50 rounded-2xl flex flex-col items-center justify-center text-gray-300 dark:text-gray-700">
+                         <Building2 size={32} strokeWidth={1} />
+                         <p className="text-xs mt-2 font-medium">No branches mapped yet</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="flex gap-0.5">
-                  <button onClick={() => openModal(office)} className="btn-icon text-gray-400 hover:text-blue-600"><Edit size={14} /></button>
-                  <button onClick={() => setConfirmDeleteId(office.id)} className="btn-icon text-gray-400 hover:text-red-500"><Trash2 size={14} /></button>
-                </div>
+
+                {hoIndex < filteredArray.length - 1 && (
+                  <div className="py-4">
+                    <div className="h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-800 to-transparent" />
+                  </div>
+                )}
               </div>
+            ))
+        )}
 
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{office.name}</h3>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 mb-3 line-clamp-1">{office.address || 'No address'}</p>
-
-              <div className="flex flex-wrap gap-1.5">
-                <span className="badge badge-gray">{office.type.replace('_', ' ')}</span>
-                {office.parent && <span className="badge" style={{backgroundColor:'#fff7ed',color:'#ea580c'}}>↑ {office.parent.name}</span>}
-              </div>
-
-              {office.branches?.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Branches</p>
-                  <ul className="space-y-1">
-                    {office.branches.map(b => (
-                      <li key={b.id} className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
-                        {b.name}
-                      </li>
-                    ))}
-                  </ul>
+        {/* Handle orphaned branches (if any) */}
+        {!loading && offices.some(o => o.type === 'BRANCH_OFFICE' && !o.parent_id) && (
+          <div className="mt-8 pt-8 border-t-2 border-dashed border-gray-100 dark:border-gray-800">
+            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Unmapped Branches</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
+              {offices.filter(o => o.type === 'BRANCH_OFFICE' && !o.parent_id).map(o => (
+                <div key={o.id} className="card p-4">
+                   <h5 className="text-sm font-bold">{o.name}</h5>
+                   <button onClick={() => openModal(o)} className="text-xs text-blue-600 mt-2">Map to Head Office</button>
                 </div>
-              )}
-            </motion.div>
-          ))
+              ))}
+            </div>
+          </div>
         )}
       </div>
 

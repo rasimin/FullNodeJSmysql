@@ -36,6 +36,7 @@ const seed = async () => {
     await User.create({
       name: 'Super Administrator',
       email: 'admin@example.com',
+      username: 'admin',
       password_hash: passwordHash,
       role_id: roles[0].id, // Super Admin
       office_id: headOffice.id,

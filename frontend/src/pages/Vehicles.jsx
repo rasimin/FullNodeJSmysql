@@ -46,14 +46,16 @@ const Vehicles = () => {
     type: 'Motor', brand: '', model: '', year: (new Date().getFullYear()).toString(), 
     plate_number: '', price: '', status: 'Available', 
     entry_date: new Date().toISOString().split('T')[0],
-    description: ''
+    description: '',
+    office_id: ''
   });
 
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const { user } = JSON.parse(localStorage.getItem('user_data') || '{}');
-  const isHeadOffice = !user?.office_id || user?.Office?.parent_id === null;
+  const isSuperAdmin = user?.role === 'Super Admin';
+  const isHeadOffice = isSuperAdmin || !user?.office_id || user?.Office?.parent_id === null;
 
   const notify = (status, message, delay = 2000) => {
     setNotification({ status, message });
@@ -139,7 +141,13 @@ const Vehicles = () => {
     setSelectedFiles([]);
     setFormData(vehicle 
       ? { ...vehicle } 
-      : { type: 'Motor', brand: '', model: '', year: (new Date().getFullYear()).toString(), plate_number: '', price: '', status: 'Available', entry_date: new Date().toISOString().split('T')[0], description: '' }
+      : { 
+          type: 'Motor', brand: '', model: '', year: (new Date().getFullYear()).toString(), 
+          plate_number: '', price: '', status: 'Available', 
+          entry_date: new Date().toISOString().split('T')[0], 
+          description: '',
+          office_id: user?.office_id || ''
+        }
     );
     if (readOnly && vehicle) {
       fetchBookingHistory(vehicle.id);
@@ -688,6 +696,17 @@ const Vehicles = () => {
                 onChange={e => setFormData({...formData, year: e.target.value})}
                 options={years.map(y => ({ value: y, label: y }))} />
             </div>
+
+            {isHeadOffice && (
+              <Select 
+                label="Kantor / Cabang" 
+                icon={MapPin} 
+                value={formData.office_id}
+                onChange={e => setFormData({...formData, office_id: e.target.value})}
+                options={offices.map(o => ({ value: o.id, label: o.name }))}
+                required
+              />
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <Select label="Brand" icon={Tag} value={formData.brand}

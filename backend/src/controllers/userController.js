@@ -6,18 +6,29 @@ const { getPagination, getPagingData } = require('../utils/pagination');
 // Create User
 const createUser = async (req, res) => {
   try {
-    const { name, email, password, role_id, office_id } = req.body;
+    const { name, email, username, password, role_id, office_id } = req.body;
 
-    const existingUser = await User.findOne({ where: { email } });
+    if (!username) return res.status(400).json({ message: 'Username is required' });
+
+    const existingUser = await User.findOne({ 
+      where: { 
+        [Op.or]: [
+          ...(email ? [{ email }] : []),
+          { username }
+        ]
+      } 
+    });
+
     if (existingUser) {
-      return res.status(400).json({ message: 'Email already exists' });
+      const field = existingUser.email === email ? 'Email' : 'Username';
+      return res.status(400).json({ message: `${field} already exists` });
     }
 
     const salt = await bcrypt.genSalt(10);
     const password_hash = await bcrypt.hash(password, salt);
 
     const user = await User.create(
-      { name, email, password_hash, role_id, office_id },
+      { name, email: email || null, username, password_hash, role_id, office_id },
       { userId: req.user.id }
     );
 
@@ -37,7 +48,11 @@ const getUsers = async (req, res) => {
     const condition = {};
     
     if (search) {
-      condition.name = { [Op.like]: `%${search}%` };
+      condition[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { email: { [Op.like]: `%${search}%` } },
+        { username: { [Op.like]: `%${search}%` } }
+      ];
     }
     
     if (role_id) {
@@ -89,7 +104,7 @@ const getUserById = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, password, role_id, office_id, is_active } = req.body;
+    const { name, email, username, password, role_id, office_id, is_active } = req.body;
     
     // Log Attempt
     await ActivityLog.create({
@@ -105,20 +120,31 @@ const updateUser = async (req, res) => {
 
     const updateData = {};
     if (name) updateData.name = name;
+    if (username) updateData.username = username;
     if (role_id) updateData.role_id = role_id;
     if (office_id) updateData.office_id = office_id;
     if (is_active !== undefined) updateData.is_active = is_active;
 
     // Email update logic (Robust comparison)
-    if (email && email.trim() !== user.email) {
-      const newEmail = email.trim();
-      const emailExists = await User.findOne({ where: { email: newEmail } });
-      
-      // Gunakan toString() untuk perbandingan BIGINT yang aman
-      if (emailExists && emailExists.id.toString() !== id.toString()) {
-        return res.status(400).json({ message: 'Email address already in use' });
+    if (email !== undefined && email !== user.email) {
+      const newEmail = email ? email.trim() : null;
+      if (newEmail) {
+        const emailExists = await User.findOne({ where: { email: newEmail } });
+        if (emailExists && emailExists.id.toString() !== id.toString()) {
+          return res.status(400).json({ message: 'Email address already in use' });
+        }
       }
       updateData.email = newEmail;
+    }
+
+    // Username update logic
+    if (username && username.trim() !== user.username) {
+      const newUsername = username.trim();
+      const usernameExists = await User.findOne({ where: { username: newUsername } });
+      if (usernameExists && usernameExists.id.toString() !== id.toString()) {
+        return res.status(400).json({ message: 'Username already in use' });
+      }
+      updateData.username = newUsername;
     }
 
     if (password) {

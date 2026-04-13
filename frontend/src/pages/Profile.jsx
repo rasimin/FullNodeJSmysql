@@ -10,6 +10,7 @@ const Profile = () => {
   const [formData, setFormData] = useState({ 
     name: user?.name || '', 
     email: user?.email || '',
+    username: user?.username || '',
     password: '', 
     confirmPassword: '' 
   });
@@ -26,7 +27,7 @@ const Profile = () => {
 
   useEffect(() => {
     if (user) {
-      setFormData(prev => ({ ...prev, name: user.name, email: user.email }));
+      setFormData(prev => ({ ...prev, name: user.name, email: user.email, username: user.username }));
       if (user.avatar) setPreview(`http://localhost:5001${user.avatar}`);
     }
   }, [user]);
@@ -104,12 +105,16 @@ const Profile = () => {
             <p className="text-xs text-gray-400">JPG, PNG — max 5MB</p>
           </div>
 
-          {/* Name & Email */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <Input label="Full Name" icon={User} required value={formData.name}
               onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Your name" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input label="Username" icon={User} required disabled value={formData.username}
+              className="opacity-70" placeholder="your_username" />
             
-            <Input label="Email Address" icon={Mail} type="email" required value={formData.email}
+            <Input label="Email (Optional)" icon={Mail} type="email" value={formData.email}
               onChange={e => setFormData({...formData, email: e.target.value})} placeholder="your@email.com" />
           </div>
 

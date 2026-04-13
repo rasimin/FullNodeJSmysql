@@ -1,4 +1,5 @@
 const { Office } = require('../models');
+const { Op } = require('sequelize');
 
 const createOffice = async (req, res) => {
   try {
@@ -21,7 +22,30 @@ const createOffice = async (req, res) => {
 
 const getOffices = async (req, res) => {
   try {
+    const user = req.user;
+    const currentOffice = await Office.findByPk(user.office_id);
+
+    let condition = {};
+    const isSuperAdmin = user.Role?.name === 'Super Admin';
+
+    if (isSuperAdmin) {
+      // Super Admin: Can see everything
+      condition = {};
+    } else if (currentOffice.parent_id) {
+      // Branch user: only their own office
+      condition = { id: user.office_id };
+    } else {
+      // Head office user: their office + branches
+      condition = {
+        [Op.or]: [
+          { id: user.office_id },
+          { parent_id: user.office_id }
+        ]
+      };
+    }
+
     const offices = await Office.findAll({
+      where: condition,
       include: [
         {
           model: Office,

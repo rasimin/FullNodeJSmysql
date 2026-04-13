@@ -1,10 +1,11 @@
 const jwt = require('jsonwebtoken');
+const { Op } = require('sequelize');
 const bcrypt = require('bcryptjs');
 const { User, Role, Office, ActivityLog } = require('../models');
 
 const generateToken = (user) => {
   return jwt.sign(
-    { id: user.id, email: user.email, role: user.Role.name },
+    { id: user.id, email: user.email, username: user.username, role: user.Role.name },
     process.env.JWT_SECRET,
     { expiresIn: '24h' }
   );
@@ -12,11 +13,22 @@ const generateToken = (user) => {
 
 const register = async (req, res) => {
   try {
-    const { name, email, password, role_id, office_id } = req.body;
+    const { name, email, username, password, role_id, office_id } = req.body;
 
-    const existingUser = await User.findOne({ where: { email } });
+    if (!username) return res.status(400).json({ message: 'Username is required' });
+
+    const existingUser = await User.findOne({ 
+      where: { 
+        [Op.or]: [
+          ...(email ? [{ email }] : []),
+          { username }
+        ]
+      } 
+    });
+    
     if (existingUser) {
-      return res.status(400).json({ message: 'Email already exists' });
+      const field = existingUser.email === email ? 'Email' : 'Username';
+      return res.status(400).json({ message: `${field} already exists` });
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -24,7 +36,8 @@ const register = async (req, res) => {
 
     const user = await User.create({
       name,
-      email,
+      email: email || null,
+      username,
       password_hash,
       role_id,
       office_id,
@@ -39,10 +52,15 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body; // 'email' field in request can be email or username
 
     const user = await User.findOne({
-      where: { email },
+      where: {
+        [Op.or]: [
+          { email: email || '' },
+          { username: email || '' }
+        ]
+      },
       include: [{ model: Role }, { model: Office }]
     });
 
@@ -162,6 +180,7 @@ const updateProfile = async (req, res) => {
         id: updatedUser.id,
         name: updatedUser.name,
         email: updatedUser.email,
+        username: updatedUser.username,
         avatar: updatedUser.avatar,
         role: updatedUser.Role?.name,
         office: updatedUser.Office?.name
