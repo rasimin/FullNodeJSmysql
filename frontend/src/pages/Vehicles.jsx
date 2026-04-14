@@ -580,6 +580,12 @@ const Vehicles = () => {
                         }`}>
                           {v.status}
                         </span>
+                        {(v.status === 'Booked' || v.status === 'Sold') && v.salesAgent && (
+                          <div className="mt-2 flex flex-col gap-0.5 border-t border-gray-100 dark:border-gray-800 pt-1">
+                            <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 tracking-tighter uppercase">{v.salesAgent.sales_code}</span>
+                            <span className="text-[10px] text-gray-500 font-medium truncate max-w-[120px]">{v.salesAgent.name}</span>
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex justify-center gap-2">
@@ -881,13 +887,15 @@ const Vehicles = () => {
         maxWidth="max-w-4xl"
       >
         <form onSubmit={handleSubmit} className="space-y-6">
-          <fieldset disabled={isViewOnly} className="space-y-8 border-0 p-0 m-0">
+          <fieldset disabled={isViewOnly} className="space-y-5 border-0 p-0 m-0">
             
             {/* Section 1: Vehicle Specification */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-blue-600 border-b border-gray-100 dark:border-gray-800 pb-2">
-                <Car size={18} />
-                <h3 className="font-bold uppercase text-xs tracking-wider">Vehicle Specification</h3>
+            <div className="space-y-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-5 rounded-2xl shadow-sm">
+              <div className="flex items-center gap-2 border-l-2 border-black dark:border-white pl-3 py-0.5 mb-4">
+                <div className="text-black dark:text-white">
+                  <Car size={16} />
+                </div>
+                <h3 className="font-bold uppercase text-[10px] tracking-widest text-black dark:text-white">Vehicle Specification</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <Select label="Type" icon={Smartphone} value={formData.type}
@@ -941,10 +949,12 @@ const Vehicles = () => {
             </div>
 
             {/* Section 2: Inventory & Status */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-purple-600 border-b border-gray-100 dark:border-gray-800 pb-2">
-                <MapPin size={18} />
-                <h3 className="font-bold uppercase text-xs tracking-wider">Inventory & Status</h3>
+            <div className="space-y-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-5 rounded-2xl shadow-sm">
+              <div className="flex items-center gap-2 border-l-2 border-black dark:border-white pl-3 py-0.5 mb-4">
+                <div className="text-black dark:text-white">
+                  <MapPin size={16} />
+                </div>
+                <h3 className="font-bold uppercase text-[10px] tracking-widest text-black dark:text-white">Inventory & Status</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {isHeadOffice && (
@@ -998,10 +1008,12 @@ const Vehicles = () => {
             </div>
 
             {/* Section 3: Financial Overview */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-green-600 border-b border-gray-100 dark:border-gray-800 pb-2">
-                <Tag size={18} />
-                <h3 className="font-bold uppercase text-xs tracking-wider">Financial Overview</h3>
+            <div className="space-y-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-5 rounded-2xl shadow-sm">
+              <div className="flex items-center gap-2 border-l-2 border-black dark:border-white pl-3 py-0.5 mb-4">
+                <div className="text-black dark:text-white">
+                  <Tag size={16} />
+                </div>
+                <h3 className="font-bold uppercase text-[10px] tracking-widest text-black dark:text-white">Financial Overview</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Input label="Harga Jual (IDR)" icon={Tag} value={displayCurrency(formData.price)}
@@ -1036,10 +1048,12 @@ const Vehicles = () => {
             </div>
 
             {/* Section 4: Media & Description */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-orange-600 border-b border-gray-100 dark:border-gray-800 pb-2">
-                <ImageIcon size={18} />
-                <h3 className="font-bold uppercase text-xs tracking-wider">Media & Description</h3>
+            <div className="space-y-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-5 rounded-2xl shadow-sm">
+              <div className="flex items-center gap-2 border-l-2 border-black dark:border-white pl-3 py-0.5 mb-4">
+                <div className="text-black dark:text-white">
+                  <ImageIcon size={16} />
+                </div>
+                <h3 className="font-bold uppercase text-[10px] tracking-widest text-black dark:text-white">Media & Description</h3>
               </div>
               
               <div className="space-y-1">
@@ -1119,9 +1133,11 @@ const Vehicles = () => {
 
           {isViewOnly && (
             <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800">
-              <div className="flex items-center gap-2 mb-4 text-blue-600">
-                <Clock size={18} />
-                <h3 className="font-bold uppercase text-xs tracking-wider">Booking & Status History</h3>
+              <div className="flex items-center gap-2 border-l-2 border-black dark:border-white pl-3 py-0.5 mb-4">
+                <div className="text-black dark:text-white">
+                  <Clock size={16} />
+                </div>
+                <h3 className="font-bold uppercase text-[10px] tracking-widest text-black dark:text-white">Booking & Status History</h3>
               </div>
               
               {/* Highlight Active/Sold Booking */}

@@ -1,6 +1,18 @@
 const { SalesAgent, Office, Vehicle, sequelize } = require('../models');
 const { Op } = require('sequelize');
+const sharp = require('sharp');
+const path = require('path');
+const fs = require('fs');
 const { getPagination, getPagingData } = require('../utils/pagination');
+
+const generateSalesCode = () => {
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const numbers = '0123456789';
+  let code = '';
+  for (let i = 0; i < 3; i++) code += letters.charAt(Math.floor(Math.random() * letters.length));
+  for (let i = 0; i < 3; i++) code += numbers.charAt(Math.floor(Math.random() * numbers.length));
+  return code;
+};
 
 const getSalesAgents = async (req, res) => {
   try {
@@ -77,9 +89,29 @@ const createSalesAgent = async (req, res) => {
       }
     }
 
+    let avatar_url = null;
+    if (req.file) {
+      const uploadDir = path.join(__dirname, '../../uploads/sales-agents');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+
+      const filename = `avatar-${Date.now()}.webp`;
+      const filepath = path.join(uploadDir, filename);
+
+      await sharp(req.file.buffer)
+        .resize(300, 300)
+        .webp({ quality: 80 })
+        .toFile(filepath);
+
+      avatar_url = `/uploads/sales-agents/${filename}`;
+    }
+
     const agent = await SalesAgent.create({
       ...req.body,
-      office_id: targetOfficeId
+      office_id: targetOfficeId,
+      avatar_url,
+      sales_code: generateSalesCode()
     }, { userId: user.id });
 
     res.status(201).json(agent);
@@ -94,9 +126,34 @@ const updateSalesAgent = async (req, res) => {
     const agent = await SalesAgent.findByPk(id);
     if (!agent) return res.status(404).json({ message: 'Sales Agent not found' });
 
-    // Cek akses (Opsional: bisa diperketat sesuai hierarki)
+    const updateData = { ...req.body };
+
+    if (req.file) {
+      const uploadDir = path.join(__dirname, '../../uploads/sales-agents');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+
+      // Hapus foto lama jika ada
+      if (agent.avatar_url) {
+        const oldPath = path.join(__dirname, '../..', agent.avatar_url);
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
+
+      const filename = `avatar-${id}-${Date.now()}.webp`;
+      const filepath = path.join(uploadDir, filename);
+
+      await sharp(req.file.buffer)
+        .resize(300, 300)
+        .webp({ quality: 80 })
+        .toFile(filepath);
+
+      updateData.avatar_url = `/uploads/sales-agents/${filename}`;
+    }
     
-    await agent.update(req.body, { userId: req.user.id, individualHooks: true });
+    await agent.update(updateData, { userId: req.user.id, individualHooks: true });
     res.json({ message: 'Sales Agent updated successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });

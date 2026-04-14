@@ -46,6 +46,63 @@ const syncDb = async () => {
       console.log('Added color column');
     }
 
+    if (!tableInfo.sales_agent_id) {
+      await queryInterface.addColumn('vehicles', 'sales_agent_id', {
+        type: DataTypes.INTEGER,
+        allowNull: true
+      });
+      console.log('Added sales_agent_id column to vehicles');
+    }
+
+    // Check sales_agents table
+    const salesAgentsInfo = await queryInterface.describeTable('sales_agents');
+    if (!salesAgentsInfo.avatar_url) {
+      await queryInterface.addColumn('sales_agents', 'avatar_url', {
+        type: DataTypes.STRING(255),
+        allowNull: true
+      });
+      console.log('Added avatar_url column to sales_agents');
+    }
+
+    if (!salesAgentsInfo.sales_code) {
+      await queryInterface.addColumn('sales_agents', 'sales_code', {
+        type: DataTypes.STRING(10),
+        allowNull: true,
+        unique: true
+      });
+      console.log('Added sales_code column to sales_agents');
+    }
+
+    // Backfill existing agents with empty sales_code
+    console.log('Backfilling empty sales codes...');
+    const { SalesAgent } = require('./src/models');
+    const generateSalesCode = () => {
+      const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      const numbers = '0123456789';
+      let code = '';
+      for (let i = 0; i < 3; i++) code += letters.charAt(Math.floor(Math.random() * letters.length));
+      for (let i = 0; i < 3; i++) code += numbers.charAt(Math.floor(Math.random() * numbers.length));
+      return code;
+    };
+
+    const agentsWithoutCode = await SalesAgent.findAll({
+      where: {
+        [require('sequelize').Op.or]: [
+          { sales_code: null },
+          { sales_code: '' }
+        ]
+      }
+    });
+
+    for (const agent of agentsWithoutCode) {
+      let uniqueCode = generateSalesCode();
+      // Simple loop to try and keep it unique (optional but good)
+      await agent.update({ sales_code: uniqueCode });
+      console.log(`Generated code ${uniqueCode} for agent: ${agent.name}`);
+    }
+
+    console.log('Database synchronized and backfilled.');
+
     console.log('Database synchronized.');
     process.exit(0);
   } catch (err) {

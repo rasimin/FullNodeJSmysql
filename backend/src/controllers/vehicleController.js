@@ -1,4 +1,4 @@
-const { Vehicle, Office, User, VehicleBrand, VehicleImage, sequelize } = require('../models');
+const { Vehicle, Office, User, VehicleBrand, SalesAgent, VehicleImage, sequelize } = require('../models');
 const { Op } = require('sequelize');
 const sharp = require('sharp');
 const path = require('path');
@@ -76,6 +76,7 @@ const getVehicles = async (req, res) => {
       include: [
         { model: Office, attributes: ['id', 'name', 'parent_id'] },
         { model: User, attributes: ['name'] },
+        { model: SalesAgent, as: 'salesAgent', attributes: ['name', 'sales_code'] },
         { model: VehicleImage, as: 'images', attributes: ['id', 'image_url', 'is_primary'] }
       ],
       order: [['created_at', 'DESC']]

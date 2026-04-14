@@ -15,6 +15,8 @@ import AuditTrail from './pages/AuditTrail';
 import Profile from './pages/Profile';
 import Reports from './pages/Reports';
 import SalesAgents from './pages/SalesAgents';
+import Catalog from './pages/Catalog';
+import DashboardLayout from './layouts/DashboardLayout';
 
 function App() {
   return (
@@ -25,18 +27,24 @@ function App() {
             <Route path="/login" element={<Login />} />
             
             <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<Reports />} />
-              <Route path="/users" element={<UserManagement />} />
-              <Route path="/sales-agents" element={<SalesAgents />} />
-              <Route path="/vehicles" element={<Vehicles />} />
-              <Route path="/brands" element={<BrandManagement />} />
-              <Route path="/offices" element={<OfficeManagement />} />
-              <Route path="/activities" element={<ActivityLog />} />
-              <Route path="/roles" element={<RoleManagement />} />
-              <Route path="/audit-trails" element={<AuditTrail />} />
-              <Route path="/reports" element={<Reports />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/old-dashboard" element={<Dashboard />} />
+              {/* Layout for Admin Pages */}
+              <Route element={<DashboardLayout />}>
+                <Route path="/" element={<Reports />} />
+                <Route path="/users" element={<UserManagement />} />
+                <Route path="/sales-agents" element={<SalesAgents />} />
+                <Route path="/vehicles" element={<Vehicles />} />
+                <Route path="/brands" element={<BrandManagement />} />
+                <Route path="/offices" element={<OfficeManagement />} />
+                <Route path="/activities" element={<ActivityLog />} />
+                <Route path="/roles" element={<RoleManagement />} />
+                <Route path="/audit-trails" element={<AuditTrail />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/old-dashboard" element={<Dashboard />} />
+              </Route>
+
+              {/* Standalone Page (New Tab) */}
+              <Route path="/catalog" element={<Catalog />} />
             </Route>
           </Routes>
         </BrowserRouter>

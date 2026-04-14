@@ -8,11 +8,12 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const SidebarItem = ({ to, icon: Icon, label, onClick, collapsed }) => (
+const SidebarItem = ({ to, icon: Icon, label, onClick, collapsed, target }) => (
   <div className="relative group">
     <NavLink
       to={to}
       onClick={onClick}
+      target={target}
       className={({ isActive }) => isActive ? 'nav-link-active' : 'nav-link'}
     >
       <Icon size={18} className="flex-shrink-0" />
@@ -39,6 +40,7 @@ const DashboardLayout = () => {
   const getMenuItems = () => {
     const items = [
       { to: '/', icon: BarChart2, label: 'Reports & Analytics' },
+      { to: '/catalog', icon: LayoutDashboard, label: 'Product Catalog', target: '_blank' },
       { to: '/vehicles', icon: Car, label: 'Vehicles' },
       { to: '/sales-agents', icon: Users, label: 'Sales Agent' },
       { to: '/brands', icon: Tags, label: 'Brand Management' },
@@ -69,7 +71,7 @@ const DashboardLayout = () => {
   const sidebarW = isCollapsed ? 68 : 240;
 
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-gray-950">
+    <div className="flex min-h-screen bg-slate-50 dark:bg-[#0a0b0f]">
 
       {/* Mobile Overlay */}
       <AnimatePresence>

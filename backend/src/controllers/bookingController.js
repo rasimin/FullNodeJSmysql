@@ -27,7 +27,10 @@ exports.createBooking = async (req, res) => {
     }, { userId: req.user.id });
 
     // Update status kendaraan menjadi Booked
-    await vehicle.update({ status: 'Booked' }, { userId: req.user.id });
+    await vehicle.update({ 
+      status: 'Booked',
+      sales_agent_id: req.body.sales_agent_id 
+    }, { userId: req.user.id });
 
     res.status(201).json(booking);
   } catch (err) {
@@ -46,7 +49,10 @@ exports.cancelBooking = async (req, res) => {
     
     const vehicle = await Vehicle.findByPk(booking.vehicle_id);
     if (vehicle) {
-      await vehicle.update({ status: 'Available' }, { userId: req.user.id });
+      await vehicle.update({ 
+        status: 'Available',
+        sales_agent_id: null
+      }, { userId: req.user.id });
     }
     
     res.json({ message: 'Booking cancelled and vehicle released' });
@@ -67,7 +73,10 @@ exports.cancelVehicleBooking = async (req, res) => {
     
     const vehicle = await Vehicle.findByPk(req.params.vehicleId);
     if (vehicle) {
-      await vehicle.update({ status: 'Available' }, { userId: req.user.id });
+      await vehicle.update({ 
+        status: 'Available', 
+        sales_agent_id: null 
+      }, { userId: req.user.id });
     }
     
     res.json({ message: 'Booking cancelled and unit is now Available' });

@@ -19,6 +19,8 @@ const SalesAgents = () => {
   const [formData, setFormData] = useState({
     name: '', email: '', phone: '', address: '', bio: '', office_id: '', status: 'Active'
   });
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
 
   useEffect(() => {
     fetchAgents();
@@ -56,14 +58,24 @@ const SalesAgents = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const data = new FormData();
+    Object.keys(formData).forEach(key => data.append(key, formData[key]));
+    if (avatarFile) data.append('avatar', avatarFile);
+
     try {
       if (editingAgent) {
-        await api.put(`/sales-agents/${editingAgent.id}`, formData);
+        await api.put(`/sales-agents/${editingAgent.id}`, data, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
       } else {
-        await api.post('/sales-agents', formData);
+        await api.post('/sales-agents', data, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
       }
       setIsModalOpen(false);
       setEditingAgent(null);
+      setAvatarFile(null);
+      setPreviewUrl(null);
       setFormData({ name: '', email: '', phone: '', address: '', bio: '', office_id: '', status: 'Active' });
       fetchAgents();
     } catch (err) {
@@ -83,6 +95,16 @@ const SalesAgents = () => {
       status: agent.status
     });
     setIsModalOpen(true);
+    setPreviewUrl(agent.avatar_url ? `http://localhost:5001${agent.avatar_url}` : null);
+    setAvatarFile(null);
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setAvatarFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
   };
 
   const handleDelete = async (id) => {
@@ -159,8 +181,12 @@ const SalesAgents = () => {
             >
               <div className="p-6">
                 <div className="flex justify-between mb-4">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
-                    <Users size={24} />
+                  <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 overflow-hidden ring-4 ring-white dark:ring-gray-900 shadow-sm">
+                    {agent.avatar_url ? (
+                      <img src={`http://localhost:5001${agent.avatar_url}`} alt={agent.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <Users size={24} />
+                    )}
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onClick={() => handleEdit(agent)} className="btn-icon text-amber-500 hover:bg-amber-50">
@@ -174,7 +200,10 @@ const SalesAgents = () => {
 
                 <div className="space-y-3">
                   <div>
-                    <h3 className="font-bold text-gray-900 dark:text-white text-lg">{agent.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-gray-900 dark:text-white text-lg">{agent.name}</h3>
+                      <span className="text-[10px] font-black text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded-md uppercase">{agent.sales_code}</span>
+                    </div>
                     <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5">
                       <Building2 size={12} className="text-blue-500" />
                       {agent.Office?.name}
@@ -239,6 +268,24 @@ const SalesAgents = () => {
         title={editingAgent ? 'Edit Sales Agent' : 'Add New Sales Agent'}
       >
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          {/* Avatar Upload */}
+          <div className="flex flex-col items-center gap-3 py-2">
+            <div className="relative group">
+              <div className="w-24 h-24 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 overflow-hidden border-4 border-white dark:border-gray-900 shadow-xl">
+                {previewUrl ? (
+                  <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <Users size={40} />
+                )}
+              </div>
+              <label className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 group-hover:opacity-100 cursor-pointer rounded-full transition-opacity">
+                <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                <span className="text-[10px] font-bold uppercase">Change</span>
+              </label>
+            </div>
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center">Profile Photo</p>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-xs font-bold text-gray-500 uppercase">Full Name</label>
@@ -262,6 +309,14 @@ const SalesAgents = () => {
               <input 
                 type="email" className="input" placeholder="john@example.com"
                 value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-500 uppercase">Sales Code (System Generated)</label>
+              <input 
+                type="text" className="input bg-gray-100 cursor-not-allowed font-mono font-bold text-blue-600" 
+                value={editingAgent?.sales_code || '---'} 
+                readOnly 
               />
             </div>
             <div className="space-y-1">

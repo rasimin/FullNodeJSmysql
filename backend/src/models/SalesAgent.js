@@ -34,6 +34,15 @@ const SalesAgent = sequelize.define('SalesAgent', {
   status: {
     type: DataTypes.ENUM('Active', 'Inactive'),
     defaultValue: 'Active',
+  },
+  avatar_url: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+  },
+  sales_code: {
+    type: DataTypes.STRING(10),
+    unique: true,
+    allowNull: true,
   }
 }, {
   tableName: 'sales_agents',
