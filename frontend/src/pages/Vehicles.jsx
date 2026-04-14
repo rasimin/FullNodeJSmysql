@@ -12,6 +12,7 @@ import DynamicIsland from '../components/DynamicIsland';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { motion, AnimatePresence } from 'framer-motion';
+import { IMAGE_BASE_URL } from '../config';
 
 const Vehicles = () => {
   const [vehicles, setVehicles] = useState([]);
@@ -1073,7 +1074,7 @@ const Vehicles = () => {
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                     {editingVehicle.images.map((img, idx) => (
                       <div key={img.id} className="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 aspect-video cursor-zoom-in" onClick={() => { setActiveImageIndex(idx); setIsLightboxOpen(true); }}>
-                        <img src={`http://localhost:5001${img.image_url}`} alt="vehicle" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                        <img src={`${IMAGE_BASE_URL}${img.image_url}`} alt="vehicle" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
                         {img.is_primary && (
                           <div className="absolute top-1 left-1 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">Primary</div>
                         )}
@@ -1330,7 +1331,7 @@ const Vehicles = () => {
                   onClick={() => setActiveImageIndex(idx)}
                   className={`relative w-16 h-12 rounded-lg overflow-hidden border-2 transition-all ${activeImageIndex === idx ? 'border-blue-500 scale-110 shadow-lg shadow-blue-500/20' : 'border-transparent opacity-50 hover:opacity-100'}`}
                 >
-                  <img src={`http://localhost:5001${img.image_url}`} className="w-full h-full object-cover" alt="thumb" />
+                  <img src={`${IMAGE_BASE_URL}${img.image_url}`} className="w-full h-full object-cover" alt="thumb" />
                 </button>
               ))}
             </div>

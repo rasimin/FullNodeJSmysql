@@ -87,7 +87,7 @@ const Reports = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <StatCard
           title="Total Revenue"
           value={formatCurrency(stats?.summary?.totalRevenue)}
@@ -248,35 +248,37 @@ const Reports = () => {
       </div>
 
       {/* Dynamic Branch Performance Overview */}
-      <div className="card p-6">
-        <h3 className="font-bold text-gray-900 dark:text-white mb-6">Branch Performance Overview (Real-time)</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="card p-3 md:p-6">
+        <h3 className="font-bold text-gray-900 dark:text-white mb-4 md:mb-6 text-sm md:text-base">Branch Performance Overview</h3>
+        <div className="grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-4">
           {stats?.charts?.branchComparison?.map((office, idx) => (
-            <div key={office.id} className="flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-gray-900/50 card-hover">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center text-sm font-bold border border-gray-100 dark:border-gray-700">
+            <div key={office.id} className="p-3 md:p-4 rounded-xl bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 flex flex-col justify-between gap-3 group hover:border-blue-500/30 transition-all">
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="w-7 h-7 md:w-10 md:h-10 shrink-0 rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center text-[10px] md:text-sm font-bold border border-gray-100 dark:border-gray-700">
                   {idx + 1}
                 </div>
-                <div>
-                  <p className="text-sm font-bold">{office.name}</p>
-                  <p className="text-[10px] text-gray-500 uppercase tracking-widest">{office.type.replace('_', ' ')}</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] md:text-sm font-bold truncate">{office.name}</p>
+                  <p className="text-[8px] md:text-[10px] text-gray-500 uppercase tracking-widest truncate">{office.type.replace('_', ' ')}</p>
                 </div>
               </div>
 
-              <div className="flex gap-8 items-center">
-                <div className="text-right">
-                  <p className="text-[10px] text-gray-400 uppercase font-bold">In-Stock</p>
-                  <p className="text-sm font-bold text-gray-900 dark:text-white">{office.availableVehicles}</p>
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-200/50 dark:border-gray-700/50">
+                <div>
+                  <p className="text-[8px] text-gray-400 uppercase font-bold">In-Stock</p>
+                  <p className="text-[11px] md:text-sm font-bold text-gray-900 dark:text-white">{office.availableVehicles}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] text-gray-400 uppercase font-bold">Revenue</p>
-                  <p className="text-sm font-bold text-green-600">{formatCurrency(office.revenue)}</p>
+                  <p className="text-[8px] text-gray-400 uppercase font-bold">Revenue</p>
+                  <p className="text-[11px] md:text-sm font-bold text-green-600 truncate">{formatCurrency(office.revenue)}</p>
                 </div>
-                <div className="text-right min-w-[80px]">
-                  <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${office.activeStatus === 'Active' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
-                    {office.activeStatus}
-                  </span>
-                </div>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <span className={`px-2 py-0.5 rounded-full text-[8px] md:text-[10px] font-bold ${office.activeStatus === 'Active' ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-gray-400'}`}>
+                  {office.activeStatus}
+                </span>
+                <div className="w-4 h-1 bg-gray-200 dark:bg-gray-800 rounded-full group-hover:bg-blue-500 transition-colors md:hidden" />
               </div>
             </div>
           ))}
@@ -288,24 +290,24 @@ const Reports = () => {
         <h3 className="font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
           <Users size={18} className="text-purple-500" /> Sales Agent Performance Leaderboard
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
           {stats?.charts?.agentPerformance?.map((agent, idx) => (
             <div key={idx} className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900/50 hover:shadow-md transition-shadow">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 rounded-full bg-purple-50 dark:bg-purple-900/20 text-purple-600 flex items-center justify-center text-xs font-bold">
+                <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-purple-50 dark:bg-purple-900/20 text-purple-600 flex items-center justify-center text-[10px] md:text-xs font-bold">
                   #{idx + 1}
                 </div>
-                <span className="font-bold text-gray-900 dark:text-white uppercase text-xs tracking-wider">{agent.name}</span>
+                <span className="font-bold text-gray-900 dark:text-white uppercase text-[9px] md:text-xs tracking-wider truncate">{agent.name}</span>
               </div>
               <div className="space-y-3">
                 <div className="flex justify-between items-end">
                   <div>
-                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">Units Sold</p>
-                    <p className="text-lg font-bold text-blue-600">{agent.soldCount} Units</p>
+                    <p className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-tighter">Units Sold</p>
+                    <p className="text-sm md:text-lg font-bold text-blue-600">{agent.soldCount} U</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">Revenue Generated</p>
-                    <p className="text-sm font-bold text-green-600">{formatCurrency(agent.totalRevenue)}</p>
+                    <p className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-tighter">Revenue</p>
+                    <p className="text-[10px] md:text-sm font-bold text-green-600">{formatCurrency(agent.totalRevenue)}</p>
                   </div>
                 </div>
                 {/* Progress bar (Visual dummy relative to top agent) */}
@@ -342,21 +344,21 @@ const StatCard = ({ title, value, subValue, icon: Icon, color }) => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="card p-5"
+      className="card p-3 md:p-5"
     >
-      <div className="flex justify-between items-start mb-4">
-        <div className={`p-3 rounded-2xl ${colorClasses[color]}`}>
-          <Icon size={24} />
+      <div className="flex justify-between items-start mb-2 md:mb-4">
+        <div className={`p-2 md:p-3 rounded-xl md:rounded-2xl ${colorClasses[color]}`}>
+          <Icon size={18} className="md:size-6" />
         </div>
-        <button className="text-gray-400 hover:text-gray-600">
+        <button className="text-gray-400 hover:text-gray-600 hidden md:block">
           <ChevronRight size={18} />
         </button>
       </div>
       <div>
-        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
-        <h4 className="text-xl font-bold text-gray-900 dark:text-white mt-1">{value}</h4>
-        <p className="text-[10px] font-bold text-green-500 mt-2 flex items-center gap-1">
-          <TrendingUp size={10} /> {subValue}
+        <p className="text-[10px] md:text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
+        <h4 className="text-sm md:text-xl font-bold text-gray-900 dark:text-white mt-0.5 md:mt-1 truncate">{value}</h4>
+        <p className="text-[8px] md:text-[10px] font-bold text-green-500 mt-1.5 md:mt-2 flex items-center gap-1">
+          <TrendingUp size={10} /> <span className="truncate">{subValue}</span>
         </p>
       </div>
     </motion.div>

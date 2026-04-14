@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, NavLink } from 'react-router-dom';
+import { IMAGE_BASE_URL } from '../config';
 
 const Catalog = () => {
   const { theme, toggleTheme } = useTheme();
@@ -27,6 +28,7 @@ const Catalog = () => {
   });
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   useEffect(() => {
     fetchVehicles();
@@ -114,53 +116,78 @@ const Catalog = () => {
         {/* Main Search & Filters Bar */}
         <div className="sticky top-4 z-40">
            <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-gray-200 dark:border-white/10 p-2 md:p-3 rounded-[32px] shadow-xl flex flex-col transition-all duration-500">
-              <div className="flex flex-col md:flex-row items-center gap-4">
-                {/* Search Pill */}
-                <div className="relative flex-1 w-full">
-                  <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                  <input 
-                    type="text"
-                    placeholder="Cari brand atau model..."
-                    className="w-full h-14 bg-gray-100 dark:bg-white/5 border-none rounded-[24px] pl-14 pr-6 text-gray-900 dark:text-white placeholder:text-gray-500 focus:ring-2 focus:ring-gray-300 dark:focus:ring-white/20 transition-all outline-none"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button onClick={toggleTheme} className="w-12 h-12 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
-                    {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-                  </button>
-
-                  <div className="relative group">
-                    <button className="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center text-gray-500 dark:text-gray-400 font-bold text-[10px] overflow-hidden border border-transparent group-hover:border-gray-300 dark:group-hover:border-white/20 transition-all">
-                       {user?.avatar ? <img src={`http://localhost:5001${user.avatar}`} alt="" className="w-full h-full object-cover" /> : (user?.name?.charAt(0)?.toUpperCase() || 'U')}
+              <div className="flex flex-col gap-4">
+                {/* Top Row: Search & User/Theme */}
+                <div className="flex items-center gap-2 w-full">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                    <input 
+                      type="text"
+                      placeholder="Cari brand..."
+                      className="w-full h-12 bg-gray-100 dark:bg-white/5 border-none rounded-[20px] pl-12 pr-4 text-sm text-gray-900 dark:text-white placeholder:text-gray-500 focus:ring-1 focus:ring-gray-300 dark:focus:ring-white/20 transition-all outline-none"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <button onClick={toggleTheme} className="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
+                      {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
                     </button>
-                    <div className="absolute right-0 top-full mt-3 w-48 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[20px] shadow-2xl py-2 opacity-0 invisible translate-y-2 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 z-50 transition-all duration-200">
-                      <div className="px-4 py-3 border-b border-gray-50 dark:border-gray-800">
-                        <p className="text-[10px] font-bold text-gray-900 dark:text-white truncate">{user?.name}</p>
-                        <p className="text-[8px] text-gray-400 uppercase tracking-widest mt-0.5">{userRole}</p>
-                      </div>
-                      <NavLink to="/profile" className="flex items-center gap-3 px-4 py-2 text-[10px] font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"><UserCircle size={14} /> Profile</NavLink>
-                      <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2 text-[10px] font-bold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"><LogOut size={14} /> Logout</button>
+                    <div className="relative">
+                      <button 
+                        onClick={() => setShowUserMenu(!showUserMenu)}
+                        className="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center text-gray-500 dark:text-gray-400 font-bold text-[10px] overflow-hidden border border-transparent transition-all"
+                      >
+                         {user?.avatar ? <img src={`${IMAGE_BASE_URL}${user.avatar}`} alt="" className="w-full h-full object-cover" /> : (user?.name?.charAt(0)?.toUpperCase() || 'U')}
+                      </button>
+                      
+                      <AnimatePresence>
+                        {showUserMenu && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                            className="absolute right-0 top-full mt-3 w-48 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[20px] shadow-2xl py-2 z-50 overflow-hidden"
+                          >
+                            <div className="px-4 py-3 border-b border-gray-50 dark:border-gray-800">
+                              <p className="text-[10px] font-bold text-gray-900 dark:text-white truncate">{user?.name}</p>
+                              <p className="text-[8px] text-gray-400 uppercase tracking-widest mt-0.5">{userRole}</p>
+                            </div>
+                            <NavLink to="/profile" className="flex items-center gap-3 px-4 py-2 text-[10px] font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                              <UserCircle size={14} /> Profile
+                            </NavLink>
+                            <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2 text-[10px] font-bold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors">
+                              <LogOut size={14} /> Logout
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* Click Outside Overlay */}
+                      {showUserMenu && (
+                        <div 
+                          className="fixed inset-0 z-40" 
+                          onClick={() => setShowUserMenu(false)}
+                        />
+                      )}
                     </div>
                   </div>
+                </div>
 
-                  <div className="w-px h-8 bg-gray-200 dark:bg-white/10 mx-2" />
-
-                  <div className="flex items-center gap-2 p-1 bg-gray-100 dark:bg-black/20 rounded-[28px]">
-                    <button onClick={() => setFilterType('')} className={`px-8 h-12 rounded-[24px] text-sm font-semibold transition-all ${!filterType ? 'bg-white dark:bg-white dark:text-gray-950 text-black shadow-lg' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 hover:dark:text-white hover:bg-white/5'}`}>All</button>
-                    <button onClick={() => setFilterType('Mobil')} className={`px-8 h-12 rounded-[24px] text-sm font-semibold transition-all flex items-center gap-2 ${filterType === 'Mobil' ? 'bg-white dark:bg-white dark:text-gray-950 text-black shadow-lg' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 hover:dark:text-white hover:bg-white/5'}`}><Car size={16} /> Car</button>
-                    <button onClick={() => setFilterType('Motor')} className={`px-8 h-12 rounded-[24px] text-sm font-semibold transition-all flex items-center gap-2 ${filterType === 'Motor' ? 'bg-white dark:bg-white dark:text-gray-950 text-black shadow-lg' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 hover:dark:text-white hover:bg-white/5'}`}><Smartphone size={16} /> Motor</button>
+                {/* Bottom Row: Type Filters & Advanced */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex-1 flex items-center gap-1 p-1 bg-gray-100 dark:bg-black/20 rounded-[20px] overflow-x-auto no-scrollbar">
+                    <button onClick={() => setFilterType('')} className={`flex-1 whitespace-nowrap px-4 h-9 rounded-[16px] text-[10px] font-bold transition-all ${!filterType ? 'bg-white dark:bg-white dark:text-gray-950 text-black shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}>All</button>
+                    <button onClick={() => setFilterType('Mobil')} className={`flex-1 whitespace-nowrap px-4 h-9 rounded-[16px] text-[10px] font-bold transition-all flex items-center justify-center gap-1.5 ${filterType === 'Mobil' ? 'bg-white dark:bg-white dark:text-gray-950 text-black shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}><Car size={12} /> Car</button>
+                    <button onClick={() => setFilterType('Motor')} className={`flex-1 whitespace-nowrap px-4 h-9 rounded-[16px] text-[10px] font-bold transition-all flex items-center justify-center gap-1.5 ${filterType === 'Motor' ? 'bg-white dark:bg-white dark:text-gray-950 text-black shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}><Smartphone size={12} /> Motor</button>
                   </div>
-
-                  <div className="w-px h-8 bg-gray-200 dark:bg-white/10 mx-2" />
 
                   <button 
                     onClick={() => setShowAdvanced(!showAdvanced)}
-                    className={`flex items-center gap-2 px-6 h-12 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${showAdvanced ? 'bg-gray-950 text-white dark:bg-white dark:text-gray-950' : 'bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'}`}
+                    className={`flex items-center gap-1.5 px-4 h-10 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all flex-shrink-0 ${showAdvanced ? 'bg-gray-950 text-white dark:bg-white dark:text-gray-950' : 'bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400'}`}
                   >
-                    <Filter size={14} /> {showAdvanced ? 'Hide Filters' : 'Advanced'}
+                    <Filter size={12} /> {showAdvanced ? 'Hide' : 'Filter'}
                   </button>
                 </div>
               </div>
@@ -271,7 +298,7 @@ const Catalog = () => {
 
         {/* Grid Section */}
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-8">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="aspect-[3/4] bg-white/5 rounded-[32px] animate-pulse" />
             ))}
@@ -284,7 +311,7 @@ const Catalog = () => {
              <p className="text-gray-500 text-xl">Belum ada unit tersedia untuk kategori ini.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-8">
             {filteredVehicles.map((v, i) => (
               <motion.article
                 layout
@@ -313,7 +340,7 @@ const Catalog = () => {
                   <div className="relative aspect-[4/3] rounded-[20px] overflow-hidden bg-gray-50 dark:bg-gray-800">
                     {v.images && v.images.length > 0 ? (
                       <img 
-                        src={`http://localhost:5001${v.images.find(img => img.is_primary)?.image_url || v.images[0].image_url}`} 
+                        src={`${IMAGE_BASE_URL}${v.images.find(img => img.is_primary)?.image_url || v.images[0].image_url}`} 
                         alt={v.model}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                       />
@@ -325,24 +352,23 @@ const Catalog = () => {
                   </div>
                 </div>
 
-                <div className="p-7 pt-2">
+                <div className="p-3 md:p-7 pt-2">
                   <header>
-                    <p className="text-[10px] text-gray-400 font-light tracking-[0.2em] uppercase mb-1">{v.brand}</p>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white leading-tight mb-2 uppercase tracking-tight">{v.model}</h3>
+                    <p className="text-[8px] md:text-[10px] text-gray-400 font-light tracking-[0.2em] uppercase mb-1">{v.brand}</p>
+                    <h3 className="text-sm md:text-xl font-bold text-gray-900 dark:text-white leading-tight mb-2 uppercase tracking-tight line-clamp-1">{v.model}</h3>
                   </header>
 
-                  <div className="flex items-center gap-3 mb-6">
-                    <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-3 py-1 rounded-full">{v.year}</span>
-                    <span className="w-1 h-1 bg-gray-300 dark:bg-gray-700 rounded-full" />
-                    <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-3 py-1 rounded-full">{parseInt(v.odometer || 0).toLocaleString()} km</span>
+                  <div className="flex flex-wrap items-center gap-1.5 md:gap-3 mb-4 md:mb-6">
+                    <span className="text-[9px] md:text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-2 md:px-3 py-0.5 md:py-1 rounded-full">{v.year}</span>
+                    <span className="text-[9px] md:text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-2 md:px-3 py-0.5 md:py-1 rounded-full">{parseInt(v.odometer || 0).toLocaleString()} km</span>
                   </div>
 
                   <footer className="pt-5 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                     <p className="text-lg font-extrabold text-gray-950 dark:text-white tracking-tight">
+                     <p className="text-sm md:text-lg font-extrabold text-gray-950 dark:text-white tracking-tight">
                        {formatPrice(v.price)}
                      </p>
-                     <div className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-400 group-hover:bg-gray-900 dark:group-hover:bg-white group-hover:text-white dark:group-hover:text-gray-900 transition-all duration-300">
-                       <ChevronRight size={20} />
+                     <div className="w-8 h-8 md:w-10 md:h-10 rounded-full border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-400 group-hover:bg-gray-900 dark:group-hover:bg-white group-hover:text-white dark:group-hover:text-gray-900 transition-all duration-300">
+                       <ChevronRight size={16} />
                      </div>
                   </footer>
                 </div>
@@ -371,7 +397,7 @@ const Catalog = () => {
               {/* Showcase UI */}
               <div className="w-full lg:w-[65%] h-[350px] lg:h-auto bg-gray-50 dark:bg-gray-800/50 relative">
                 {selectedVehicle.images && selectedVehicle.images.length > 0 ? (
-                  <img src={`http://localhost:5001${selectedVehicle.images[activeImageIndex]?.image_url}`} 
+                  <img src={`${IMAGE_BASE_URL}${selectedVehicle.images[activeImageIndex]?.image_url}`} 
                     className="w-full h-full object-cover" alt={selectedVehicle.model} />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-200"><ImageIcon size={120} /></div>
@@ -381,7 +407,7 @@ const Catalog = () => {
                 <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3 p-3 bg-white/10 backdrop-blur-xl rounded-[24px]">
                   {selectedVehicle.images?.map((img, idx) => (
                     <button key={img.id} onClick={() => setActiveImageIndex(idx)} className={`w-14 h-14 rounded-[16px] overflow-hidden border-2 transition-all ${activeImageIndex === idx ? 'border-white scale-110' : 'border-transparent opacity-50'}`}>
-                      <img src={`http://localhost:5001${img.image_url}`} className="w-full h-full object-cover" alt="" />
+                      <img src={`${IMAGE_BASE_URL}${img.image_url}`} className="w-full h-full object-cover" alt="" />
                     </button>
                   ))}
                 </div>

@@ -7,6 +7,7 @@ import {
   Menu, X, History, FileText, Sun, Moon, ChevronLeft, ChevronRight, UserCircle, Car, Tags, BarChart2, Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { IMAGE_BASE_URL } from '../config';
 
 const SidebarItem = ({ to, icon: Icon, label, onClick, collapsed, target }) => (
   <div className="relative group">
@@ -32,6 +33,7 @@ const DashboardLayout = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
@@ -223,38 +225,56 @@ const DashboardLayout = () => {
             <div className="h-5 w-px bg-gray-200 dark:bg-gray-700 mx-1" />
 
             {/* User Dropdown */}
-            <div className="relative group flex items-center gap-2.5">
+            <div className="relative flex items-center gap-2.5">
               <div className="text-right hidden sm:block">
                 <p className="text-xs font-semibold text-gray-900 dark:text-white leading-none">{user?.name}</p>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{userRole}</p>
               </div>
-              <button className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs ring-2 ring-white dark:ring-gray-900 overflow-hidden">
+              <button 
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs ring-2 ring-white dark:ring-gray-900 overflow-hidden cursor-pointer active:scale-95 transition-transform"
+              >
                 {user?.avatar
-                  ? <img src={`http://localhost:5001${user.avatar}`} alt="" className="w-full h-full object-cover" />
+                  ? <img src={`${IMAGE_BASE_URL}${user.avatar}`} alt="" className="w-full h-full object-cover" />
                   : (user?.name?.charAt(0)?.toUpperCase() || 'U')
                 }
               </button>
 
               {/* Dropdown */}
-              <div className="absolute right-0 top-full mt-2 w-40 card shadow-lg py-1 
-                              opacity-0 invisible translate-y-1
-                              group-hover:opacity-100 group-hover:visible group-hover:translate-y-0
-                              z-50 transition-all duration-150">
-                <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-800 sm:hidden">
-                  <p className="text-xs font-semibold text-gray-900 dark:text-white">{user?.name}</p>
-                  <p className="text-xs text-gray-400">{userRole}</p>
-                </div>
-                <NavLink to="/profile"
-                  className="flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
-                >
-                  <UserCircle size={14} /> Profile
-                </NavLink>
-                <button onClick={handleLogout}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950"
-                >
-                  <LogOut size={14} /> Logout
-                </button>
-              </div>
+              <AnimatePresence>
+                {showUserMenu && (
+                  <>
+                    <motion.div 
+                      initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                      transition={{ duration: 0.1 }}
+                      className="absolute right-0 top-full mt-2 w-40 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-xl rounded-xl py-1 z-50"
+                    >
+                      <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-800 sm:hidden">
+                        <p className="text-xs font-semibold text-gray-900 dark:text-white">{user?.name}</p>
+                        <p className="text-xs text-gray-400">{userRole}</p>
+                      </div>
+                      <NavLink to="/profile" onClick={() => setShowUserMenu(false)}
+                        className="flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      >
+                        <UserCircle size={14} /> Profile
+                      </NavLink>
+                      <button onClick={() => { handleLogout(); setShowUserMenu(false); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950"
+                      >
+                        <LogOut size={14} /> Logout
+                      </button>
+                    </motion.div>
+                    
+                    {/* Click Outside Overlay */}
+                    <div 
+                      className="fixed inset-0 z-40 bg-transparent" 
+                      onClick={() => setShowUserMenu(false)}
+                    />
+                  </>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </header>

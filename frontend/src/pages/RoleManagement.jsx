@@ -67,13 +67,13 @@ const RoleManagement = () => {
         <button onClick={() => openModal()} className="btn-primary"><Plus size={15} /> Add Role</button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
         {loading ? (
           [...Array(4)].map((_, i) => (
-            <div key={i} className="card p-5 animate-pulse">
-              <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-xl mb-4" />
-              <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded w-2/3 mb-2" />
-              <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-1/2" />
+            <div key={i} className="card p-3 md:p-5 animate-pulse">
+              <div className="w-8 h-8 md:w-10 md:h-10 bg-gray-100 dark:bg-gray-800 rounded-lg md:rounded-xl mb-3 md:mb-4" />
+              <div className="h-3 md:h-4 bg-gray-100 dark:bg-gray-800 rounded w-2/3 mb-2" />
+              <div className="h-2.5 md:h-3 bg-gray-100 dark:bg-gray-800 rounded w-1/2" />
             </div>
           ))
         ) : roles.length === 0 ? (
@@ -83,17 +83,19 @@ const RoleManagement = () => {
             <motion.div key={role.id}
               initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05, duration: 0.18 }}
-              className="card-hover p-5"
+              className="card-hover p-3 md:p-5"
             >
-              <div className="flex items-start justify-between mb-3">
-                <div className="icon-box icon-green"><ShieldCheck size={20} /></div>
+              <div className="flex items-start justify-between mb-2 md:mb-3">
+                <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center bg-green-50 dark:bg-green-900/30 text-green-600">
+                  <ShieldCheck size={16} className="md:size-5" />
+                </div>
                 <div className="flex gap-0.5">
-                  <button onClick={() => openModal(role)} className="btn-icon text-gray-400 hover:text-blue-600"><Edit size={14} /></button>
-                  <button onClick={() => setConfirmDeleteId(role.id)} className="btn-icon text-gray-400 hover:text-red-500"><Trash2 size={14} /></button>
+                  <button onClick={() => openModal(role)} className="btn-icon p-1 text-gray-400 hover:text-blue-600 focus:text-blue-600 outline-none"><Edit size={12} className="md:size-[14px]" /></button>
+                  <button onClick={() => setConfirmDeleteId(role.id)} className="btn-icon p-1 text-gray-400 hover:text-red-500 focus:text-red-500 outline-none"><Trash2 size={12} className="md:size-[14px]" /></button>
                 </div>
               </div>
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{role.name}</h3>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{role.description || 'No description'}</p>
+              <h3 className="text-xs md:text-sm font-semibold text-gray-900 dark:text-white truncate">{role.name}</h3>
+              <p className="text-[10px] md:text-xs text-gray-400 dark:text-gray-500 mt-0.5 line-clamp-1">{role.description || 'No description'}</p>
             </motion.div>
           ))
         )}

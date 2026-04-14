@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+import { IMAGE_BASE_URL } from '../config';
 import { 
   Users, UserPlus, Search, Edit2, Trash2, Mail, Phone, MapPin, 
   Building2, ChevronLeft, ChevronRight, FileText, Filter, MoreVertical
@@ -95,7 +96,7 @@ const SalesAgents = () => {
       status: agent.status
     });
     setIsModalOpen(true);
-    setPreviewUrl(agent.avatar_url ? `http://localhost:5001${agent.avatar_url}` : null);
+    setPreviewUrl(agent.avatar_url ? `${IMAGE_BASE_URL}${agent.avatar_url}` : null);
     setAvatarFile(null);
   };
 
@@ -159,11 +160,11 @@ const SalesAgents = () => {
       </div>
 
       {/* Grid View */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
         <AnimatePresence mode='popLayout'>
           {loading ? (
             [...Array(6)].map((_, i) => (
-              <div key={i} className="card p-6 h-[220px] animate-pulse bg-gray-50 dark:bg-gray-900/40" />
+              <div key={i} className="card p-3 md:p-6 h-[180px] md:h-[220px] animate-pulse bg-gray-50 dark:bg-gray-900/40" />
             ))
           ) : agents.length === 0 ? (
             <div className="col-span-full py-12 text-center card">
@@ -179,53 +180,53 @@ const SalesAgents = () => {
               key={agent.id}
               className="card group hover:border-blue-500/50 transition-all duration-300 overflow-hidden"
             >
-              <div className="p-6">
-                <div className="flex justify-between mb-4">
-                  <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 overflow-hidden ring-4 ring-white dark:ring-gray-900 shadow-sm">
+              <div className="p-3 md:p-6">
+                <div className="flex justify-between mb-2 md:mb-4">
+                  <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 overflow-hidden ring-2 md:ring-4 ring-white dark:ring-gray-900 shadow-sm">
                     {agent.avatar_url ? (
-                      <img src={`http://localhost:5001${agent.avatar_url}`} alt={agent.name} className="w-full h-full object-cover" />
+                      <img src={`${IMAGE_BASE_URL}${agent.avatar_url}`} alt={agent.name} className="w-full h-full object-cover" />
                     ) : (
-                      <Users size={24} />
+                      <Users size={18} className="md:size-6" />
                     )}
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => handleEdit(agent)} className="btn-icon text-amber-500 hover:bg-amber-50">
-                      <Edit2 size={16} />
+                  <div className="flex gap-1 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => handleEdit(agent)} className="btn-icon p-1.5 text-amber-500 hover:bg-amber-50">
+                      <Edit2 size={14} />
                     </button>
-                    <button onClick={() => handleDelete(agent.id)} className="btn-icon text-red-500 hover:bg-red-50">
-                      <Trash2 size={16} />
+                    <button onClick={() => handleDelete(agent.id)} className="btn-icon p-1.5 text-red-500 hover:bg-red-50">
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-gray-900 dark:text-white text-lg">{agent.name}</h3>
-                      <span className="text-[10px] font-black text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded-md uppercase">{agent.sales_code}</span>
+                    <div className="flex flex-col gap-0.5">
+                      <h3 className="font-bold text-gray-900 dark:text-white text-xs md:text-lg truncate">{agent.name}</h3>
+                      <span className="w-fit text-[8px] md:text-[10px] font-black text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded-md uppercase">{agent.sales_code}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5">
-                      <Building2 size={12} className="text-blue-500" />
-                      {agent.Office?.name}
+                    <div className="flex items-center gap-1.5 text-[9px] md:text-xs text-gray-500 mt-1">
+                      <Building2 size={10} className="text-blue-500" />
+                      <span className="truncate">{agent.Office?.name}</span>
                     </div>
                   </div>
 
-                  <div className="pt-2 space-y-2 border-t border-gray-100 dark:border-gray-800">
-                    <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-                      <Mail size={12} /> {agent.email || '-'}
+                  <div className="pt-2 space-y-1.5 border-t border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center gap-2 text-[9px] md:text-xs text-gray-600 dark:text-gray-400">
+                      <Mail size={10} className="shrink-0" /> <span className="truncate">{agent.email || '-'}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-                      <Phone size={12} /> {agent.phone || '-'}
+                    <div className="flex items-center gap-2 text-[9px] md:text-xs text-gray-600 dark:text-gray-400">
+                      <Phone size={10} className="shrink-0" /> {agent.phone || '-'}
                     </div>
                   </div>
                 </div>
               </div>
               
-              <div className="px-6 py-3 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${agent.status === 'Active' ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-gray-500'}`}>
+              <div className="px-3 md:px-6 py-2 md:py-3 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-1">
+                <span className={`px-2 py-0.5 rounded-full text-[8px] md:text-[10px] font-bold uppercase tracking-wider ${agent.status === 'Active' ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-gray-500'}`}>
                   {agent.status}
                 </span>
-                <span className="text-[10px] text-gray-400 font-medium">Updated: {new Date(agent.updated_at).toLocaleDateString()}</span>
+                <span className="text-[7px] md:text-[10px] text-gray-400 font-medium whitespace-nowrap">Upd: {new Date(agent.updated_at).toLocaleDateString()}</span>
               </div>
             </motion.div>
           ))}

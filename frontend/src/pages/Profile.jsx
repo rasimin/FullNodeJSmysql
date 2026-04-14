@@ -4,6 +4,7 @@ import api from '../services/api';
 import Input from '../components/ui/Input';
 import { User, Lock, Camera, Save, Mail } from 'lucide-react';
 import DynamicIsland from '../components/DynamicIsland';
+import { IMAGE_BASE_URL } from '../config';
 
 const Profile = () => {
   const { user } = useAuth();
@@ -15,7 +16,7 @@ const Profile = () => {
     confirmPassword: '' 
   });
   const [avatar, setAvatar] = useState(null);
-  const [preview, setPreview] = useState(user?.avatar ? `http://localhost:5001${user.avatar}` : null);
+  const [preview, setPreview] = useState(user?.avatar ? `${IMAGE_BASE_URL}${user.avatar}` : null);
   const [notification, setNotification] = useState({ status: 'idle', message: '' });
 
   const notify = (status, message) => {
@@ -28,7 +29,7 @@ const Profile = () => {
   useEffect(() => {
     if (user) {
       setFormData(prev => ({ ...prev, name: user.name, email: user.email, username: user.username }));
-      if (user.avatar) setPreview(`http://localhost:5001${user.avatar}`);
+      if (user.avatar) setPreview(`${IMAGE_BASE_URL}${user.avatar}`);
     }
   }, [user]);
 

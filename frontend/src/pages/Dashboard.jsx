@@ -82,22 +82,22 @@ const Dashboard = () => {
       </motion.div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
         {statCards.map((s, i) => (
           <motion.div
             key={i}
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.07, duration: 0.2 }}
-            className="card p-5 flex items-center gap-4"
+            className={`card p-3 md:p-5 flex flex-col md:flex-row items-center md:items-center gap-2 md:gap-4 text-center md:text-left ${i === 2 && 'col-span-2 md:col-span-1'}`}
           >
-            <div className={s.iconClass}>
-              <s.icon size={22} />
+            <div className={`${s.iconClass} w-10 h-10 md:w-12 md:h-12`}>
+              <s.icon size={18} className="md:size-[22px]" />
             </div>
             <div>
-              <p className="text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide">{s.title}</p>
+              <p className="text-[10px] md:text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide">{s.title}</p>
               {loading
-                ? <div className="mt-1 h-7 w-10 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
-                : <p className="text-2xl font-bold text-gray-900 dark:text-white mt-0.5">{s.value}</p>
+                ? <div className="mt-1 h-5 md:h-7 w-12 md:w-10 bg-gray-100 dark:bg-gray-800 rounded animate-pulse mx-auto md:mx-0" />
+                : <p className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mt-0.5">{s.value}</p>
               }
             </div>
           </motion.div>
