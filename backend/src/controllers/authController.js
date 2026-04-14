@@ -1,7 +1,8 @@
 const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
 const bcrypt = require('bcryptjs');
-const { User, Role, Office, ActivityLog } = require('../models');
+const { User, Role, Office, ActivityLog, UserSession, SystemSetting } = require('../models');
+const { getSettings } = require('../utils/settings');
 
 const generateToken = (user) => {
   return jwt.sign(
@@ -52,7 +53,15 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body; // 'email' field in request can be email or username
+    const { email, password } = req.body;
+    
+    // Fetch security settings
+    const settings = await getSettings([
+      'security_lockout_attempts', 
+      'security_lockout_duration',
+      'security_max_sessions',
+      'security_single_session'
+    ]);
 
     const user = await User.findOne({
       where: {
@@ -72,18 +81,71 @@ const login = async (req, res) => {
       return res.status(403).json({ message: 'Account is inactive' });
     }
 
+    // Check Lockout
+    if (user.locked_until && user.locked_until > new Date()) {
+      const waitMins = Math.ceil((user.locked_until - new Date()) / 60000);
+      return res.status(423).json({ 
+        message: `Account is locked due to multiple failed attempts. Please try again in ${waitMins} minutes.` 
+      });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password_hash);
+    
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      // Increment failed attempts
+      const newCount = (user.failed_login_count || 0) + 1;
+      const maxAttempts = parseInt(settings.security_lockout_attempts || 5);
+      
+      let updateData = { failed_login_count: newCount };
+      
+      if (newCount >= maxAttempts) {
+        const lockoutMins = parseInt(settings.security_lockout_duration || 30);
+        updateData.locked_until = new Date(Date.now() + lockoutMins * 60000);
+        updateData.failed_login_count = 0; // Reset for next cycle after lockout
+      }
+      
+      await user.update(updateData);
+      
+      return res.status(401).json({ 
+        message: isMatch ? 'Invalid credentials' : `Invalid credentials. ${maxAttempts - newCount} attempts remaining.` 
+      });
+    }
+
+    // Login Success - Reset failed attempts
+    await user.update({ failed_login_count: 0, locked_until: null });
+
+    // Session Management
+    const maxSessions = parseInt(settings.security_max_sessions || 3);
+    const isSingleSession = settings.security_single_session === 'true';
+
+    if (isSingleSession) {
+      // Revoke all previous sessions
+      await UserSession.update({ is_revoked: true }, { where: { user_id: user.id, is_revoked: false } });
+    } else {
+      // Check max sessions
+      const activeSessionsCount = await UserSession.count({ where: { user_id: user.id, is_revoked: false } });
+      if (activeSessionsCount >= maxSessions) {
+        return res.status(403).json({ message: 'Maximum active devices reached. Please logout from other devices first.' });
+      }
     }
 
     const token = generateToken(user);
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+
+    // Create Session
+    await UserSession.create({
+      user_id: user.id,
+      token: token,
+      ip_address: req.ip,
+      user_agent: req.headers['user-agent'],
+      expires_at: expiresAt
+    });
 
     // Log Activity
     await ActivityLog.create({
       user_id: user.id,
       action: 'Login',
-      details: { email: user.email },
+      details: { email: user.email, device: req.headers['user-agent'] },
       ip_address: req.ip,
       user_agent: req.headers['user-agent']
     });
@@ -99,7 +161,8 @@ const login = async (req, res) => {
         office: user.Office ? user.Office.name : 'N/A',
         office_id: user.office_id,
         office_type: user.Office?.type,
-        parent_office_id: user.Office?.parent_id
+        parent_office_id: user.Office?.parent_id,
+        avatar: user.avatar
       }
     });
   } catch (error) {
@@ -199,4 +262,16 @@ const updateProfile = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getMe, updateProfile };
+const logout = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (token) {
+      await UserSession.update({ is_revoked: true }, { where: { token } });
+    }
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Logout failed' });
+  }
+};
+
+module.exports = { register, login, getMe, updateProfile, logout };

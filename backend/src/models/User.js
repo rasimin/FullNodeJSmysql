@@ -41,6 +41,14 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING(255),
     allowNull: true,
   },
+  failed_login_count: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
+  locked_until: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
 }, {
   tableName: 'users',
   timestamps: true,

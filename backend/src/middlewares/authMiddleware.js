@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { User, Role, ActivityLog } = require('../models');
+const { User, Role, ActivityLog, UserSession } = require('../models');
 
 const authenticate = async (req, res, next) => {
   try {
@@ -14,10 +14,18 @@ const authenticate = async (req, res, next) => {
       return res.status(401).json({ message: 'Token missing' });
     }
 
+    // Session Check - Realtime validation
+    const session = await UserSession.findOne({ 
+      where: { token, is_revoked: false } 
+    });
+
+    if (!session) {
+      console.log(`[Auth/Session] Blocked: Revoked or Invalid session/token`);
+      return res.status(401).json({ message: 'Session expired or revoked' });
+    }
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    // Log setiap akses yang berhasil ter-otentikasi ke database agar user bisa lihat di System Log
-    // (Kami buat ringan saja)
     const user = await User.findByPk(decoded.id, {
       include: [{ model: Role }],
     });
@@ -26,6 +34,10 @@ const authenticate = async (req, res, next) => {
       console.log(`[Auth] Blocked: User not found or inactive (ID: ${decoded.id})`);
       return res.status(401).json({ message: 'User not found or inactive' });
     }
+
+    // Update session last activity
+    session.last_activity = new Date();
+    await session.save();
 
     req.user = user;
     next();

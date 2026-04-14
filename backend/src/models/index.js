@@ -9,6 +9,8 @@ const VehicleBrand = require('./VehicleBrand');
 const Booking = require('./Booking');
 const VehicleImage = require('./VehicleImage');
 const SalesAgent = require('./SalesAgent');
+const SystemSetting = require('./SystemSetting');
+const UserSession = require('./UserSession');
 
 // User Relationships
 User.belongsTo(Role, { foreignKey: 'role_id' });
@@ -16,6 +18,10 @@ Role.hasMany(User, { foreignKey: 'role_id' });
 
 User.belongsTo(Office, { foreignKey: 'office_id' });
 Office.hasMany(User, { foreignKey: 'office_id' });
+
+// User Sessions
+UserSession.belongsTo(User, { foreignKey: 'user_id' });
+User.hasMany(UserSession, { foreignKey: 'user_id' });
 
 // Sales Agent Relationships
 SalesAgent.belongsTo(Office, { foreignKey: 'office_id' });
@@ -55,13 +61,13 @@ Booking.belongsTo(SalesAgent, { foreignKey: 'sales_agent_id', as: 'salesAgent' }
 Booking.belongsTo(SalesAgent, { foreignKey: 'booked_by_agent_id', as: 'bookedByAgent' });
 SalesAgent.hasMany(Booking, { foreignKey: 'sales_agent_id', as: 'bookings' });
 
-// Audit Trail Relationship (Optional, as user_id can be null)
+// Audit Trail Relationship
 AuditTrail.belongsTo(User, { foreignKey: 'user_id' });
 
 // Global Hook for Audit Trails
 const createAuditLog = async (options) => {
   const { model, action, instance, options: queryOptions } = options;
-  const userId = queryOptions.userId; // Must be passed in options when calling save/destroy
+  const userId = queryOptions.userId;
 
   if (!userId) return; 
 
@@ -105,6 +111,7 @@ setupHooks(VehicleBrand);
 setupHooks(Booking);
 setupHooks(VehicleImage);
 setupHooks(SalesAgent);
+setupHooks(SystemSetting);
 
 module.exports = {
   sequelize,
@@ -117,5 +124,7 @@ module.exports = {
   VehicleBrand,
   Booking,
   VehicleImage,
-  SalesAgent
+  SalesAgent,
+  SystemSetting,
+  UserSession
 };

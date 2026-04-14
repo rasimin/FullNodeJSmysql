@@ -16,6 +16,7 @@ import Profile from './pages/Profile';
 import Reports from './pages/Reports';
 import SalesAgents from './pages/SalesAgents';
 import Catalog from './pages/Catalog';
+import SecuritySettings from './pages/SecuritySettings';
 import DashboardLayout from './layouts/DashboardLayout';
 
 function App() {
@@ -40,6 +41,7 @@ function App() {
                 <Route path="/audit-trails" element={<AuditTrail />} />
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/security-settings" element={<SecuritySettings />} />
                 <Route path="/old-dashboard" element={<Dashboard />} />
               </Route>
 

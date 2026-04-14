@@ -28,6 +28,7 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 
 const reportRoutes = require('./routes/reportRoutes');
 const salesAgentRoutes = require('./routes/salesAgents');
+const settingRoutes = require('./routes/settingRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/roles', roleRoutes);
@@ -40,6 +41,7 @@ app.use('/api/export', exportRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/sales-agents', salesAgentRoutes);
+app.use('/api/settings', settingRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Admin Dashboard API' });

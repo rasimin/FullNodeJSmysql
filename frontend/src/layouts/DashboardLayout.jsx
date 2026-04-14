@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { 
-  LayoutDashboard, Users, Building2, ShieldCheck, LogOut,
+  LayoutDashboard, Users, Building2, ShieldCheck, LogOut, Shield,
   Menu, X, History, FileText, Sun, Moon, ChevronLeft, ChevronRight, UserCircle, Car, Tags, BarChart2, Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -37,36 +37,49 @@ const DashboardLayout = () => {
 
   const userRole = user?.role || user?.Role?.name;
 
-  const getMenuItems = () => {
-    const items = [
-      { to: '/', icon: BarChart2, label: 'Reports & Analytics' },
-      { to: '/catalog', icon: LayoutDashboard, label: 'Product Catalog', target: '_blank' },
-      { to: '/vehicles', icon: Car, label: 'Vehicles' },
-      { to: '/sales-agents', icon: Users, label: 'Sales Agent' },
-      { to: '/brands', icon: Tags, label: 'Brand Management' },
-      { to: '/offices', icon: Building2, label: 'Office Management' },
+  const getMenuGroups = () => {
+    const groups = [
+      {
+        title: 'DATA INSIGHTS',
+        items: [
+          { to: '/', icon: BarChart2, label: 'Reports & Analytics' },
+        ]
+      },
+      {
+        title: 'MANAGEMENT',
+        items: [
+          { to: '/catalog', icon: LayoutDashboard, label: 'Product Catalog', target: '_blank' },
+          { to: '/brands', icon: Tags, label: 'Brand Management' },
+          { to: '/vehicles', icon: Car, label: 'Vehicles' },
+          { to: '/offices', icon: Building2, label: 'Office Management' },
+          { to: '/sales-agents', icon: Users, label: 'Sales Agent' },
+        ]
+      },
+      {
+        title: 'SYSTEM & SECURITY',
+        items: []
+      }
     ];
 
+    // Add Security items based on role
+    const securityItems = groups[2].items;
+    securityItems.push({ to: '/users', icon: Users, label: 'User Management' });
+    
     if (userRole === 'Super Admin' || userRole === 'Admin Pusat') {
-      items.push(
+      securityItems.push(
+        { to: '/security-settings', icon: Shield, label: 'Security Configuration' },
         { to: '/roles', icon: ShieldCheck, label: 'Role Management' },
         { to: '/activities', icon: FileText, label: 'Activity Logs' },
         { to: '/audit-trails', icon: History, label: 'Audit Trails' }
       );
     } else {
-      items.push({ to: '/activities', icon: FileText, label: 'My Activities' });
+      securityItems.push({ to: '/activities', icon: FileText, label: 'My Activities' });
     }
-
-    // Move User Management / Dashboard to the bottom
-    items.push({ to: '/users', icon: Users, label: 'User Management' });
     
-    return items;
+    return groups;
   };
 
-  const menuItems = getMenuItems();
-  const filteredMenuItems = menuItems.filter(item =>
-    item.label.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const menuGroups = getMenuGroups();
 
   const sidebarW = isCollapsed ? 68 : 240;
 
@@ -118,7 +131,7 @@ const DashboardLayout = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden">
+        <nav className="flex-1 px-3 py-3 space-y-3 overflow-y-auto overflow-x-hidden">
           {/* Search Menu */}
           {!isCollapsed && (
             <div className="px-1 mb-4">
@@ -135,16 +148,39 @@ const DashboardLayout = () => {
             </div>
           )}
 
-          {filteredMenuItems.map((item) => (
-            <SidebarItem
-              key={item.to} {...item}
-              onClick={() => setSidebarOpen(false)}
-              collapsed={isCollapsed}
-            />
-          ))}
-          {filteredMenuItems.length === 0 && (
-            <div className="px-4 py-8 text-center">
-              <p className="text-xs text-gray-400">No menu found</p>
+          {menuGroups.map((group, gIdx) => {
+            const filteredItems = group.items.filter(item => 
+              item.label.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+
+            if (filteredItems.length === 0) return null;
+
+            return (
+              <div key={group.title} className="space-y-1">
+                {!isCollapsed && (
+                  <p className="px-4 text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5 opacity-80">
+                    {group.title}
+                  </p>
+                )}
+                <div className="space-y-0.5">
+                  {filteredItems.map((item) => (
+                    <SidebarItem
+                      key={item.to} {...item}
+                      onClick={() => setSidebarOpen(false)}
+                      collapsed={isCollapsed}
+                    />
+                  ))}
+                </div>
+                {gIdx < menuGroups.length - 1 && (
+                  <div className="mx-4 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800" />
+                )}
+              </div>
+            );
+          })}
+          
+          {searchQuery && menuGroups.every(g => g.items.filter(i => i.label.toLowerCase().includes(searchQuery.toLowerCase())).length === 0) && (
+            <div className="px-4 py-8 text-center text-xs text-gray-400">
+              No menu found
             </div>
           )}
         </nav>
