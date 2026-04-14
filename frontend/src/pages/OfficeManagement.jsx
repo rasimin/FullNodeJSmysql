@@ -1,21 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { Building2, Plus, Edit, Trash2 } from 'lucide-react';
+import { Building2, Plus, Edit, Trash2, FileSpreadsheet, LayoutGrid, MapPin, CornerDownRight } from 'lucide-react';
 import Modal from '../components/Modal';
 import DynamicIsland from '../components/DynamicIsland';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const OfficeManagement = () => {
-  const [offices, setOffices] = useState([]);
+  const [offices, setOffices] = useState([]); // Hierarchy grouped
+  const [flatOffices, setFlatOffices] = useState([]); // Sorted list for table
+  const [rawOffices, setRawOffices] = useState([]); // Raw flat data
   const [loading, setLoading] = useState(true);
-  const [flatOffices, setFlatOffices] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingOffice, setEditingOffice] = useState(null);
   const [formData, setFormData] = useState({ name: '', type: 'BRANCH_OFFICE', address: '', parent_id: '' });
   const [notification, setNotification] = useState({ status: 'idle', message: '' });
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [viewMode, setViewMode] = useState(window.innerWidth < 768 ? 'grid' : 'table');
 
   const notify = (status, message) => {
     setNotification({ status, message });
@@ -26,11 +28,24 @@ const OfficeManagement = () => {
     setLoading(true);
     try {
       const r = await api.get('/offices');
-      setOffices(r.data);
-      const flat = [];
-      const walk = (items) => items.forEach(item => { flat.push(item); if (item.branches) walk(item.branches); });
-      walk(r.data);
-      setFlatOffices(flat);
+      const allData = r.data;
+      setRawOffices(allData);
+
+      // Build Sorted List for Table
+      const roots = allData.filter(o => !o.parent_id);
+      const sorted = [];
+      roots.forEach(root => {
+        sorted.push({ ...root, isParent: true });
+        allData.filter(o => o.parent_id === root.id).forEach(c => sorted.push({ ...c, isParent: false }));
+      });
+      setFlatOffices(sorted);
+
+      // Build Hierarchy for Grid
+      const hierarchy = roots.map(root => ({
+        ...root,
+        branches: allData.filter(o => o.parent_id === root.id)
+      }));
+      setOffices(hierarchy);
     } catch (e) { console.error(e); }
     setLoading(false);
   };
@@ -52,170 +67,139 @@ const OfficeManagement = () => {
     notify('loading', editingOffice ? 'Updating...' : 'Creating...');
     try {
       const data = { ...formData };
-      if (!data.parent_id) delete data.parent_id;
-      editingOffice
-        ? await api.put(`/offices/${editingOffice.id}`, data)
-        : await api.post('/offices', data);
-      notify('success', editingOffice ? 'Office updated!' : 'Office created!');
-      fetchOffices();
-    } catch (err) { notify('error', err.response?.data?.message || 'Operation failed'); }
+      if (!data.parent_id) data.parent_id = null;
+      editingOffice ? await api.put(`/offices/${editingOffice.id}`, data) : await api.post('/offices', data);
+      notify('success', 'Success!'); fetchOffices();
+    } catch { notify('error', 'Error'); }
   };
 
   const handleDelete = async () => {
     notify('loading', 'Deleting...');
     setConfirmDeleteId(null);
-    try {
-      await api.delete(`/offices/${confirmDeleteId}`);
-      notify('success', 'Office deleted');
-      fetchOffices();
-    } catch { notify('error', 'Delete failed'); }
+    try { await api.delete(`/offices/${confirmDeleteId}`); notify('success', 'Deleted'); fetchOffices(); }
+    catch { notify('error', 'Failed'); }
   };
 
   return (
-    <div className="space-y-5">
-      <DynamicIsland
-        status={confirmDeleteId ? 'confirm' : notification.status}
-        message={confirmDeleteId ? 'Delete this office?' : notification.message}
-        onConfirm={handleDelete} onCancel={() => setConfirmDeleteId(null)}
-      />
+    <div className="space-y-6 pb-20">
+      <DynamicIsland status={confirmDeleteId ? 'confirm' : notification.status} message={confirmDeleteId ? 'Delete office?' : notification.message} onConfirm={handleDelete} onCancel={() => setConfirmDeleteId(null)} />
 
-      <div className="flex items-center justify-between">
-        <h1 className="text-base font-bold text-gray-900 dark:text-white">Office Management</h1>
-        <button onClick={() => openModal()} className="btn-primary">
-          <Plus size={15} /> Add Office
-        </button>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Office Management</h1>
+          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Master Organization Hierarchy</p>
+        </div>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <div className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-xl grow sm:grow-0">
+             <button onClick={() => setViewMode('table')} className={`grow flex-1 p-2 rounded-lg flex items-center justify-center gap-2 text-[10px] font-black uppercase transition-all ${viewMode === 'table' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'}`}><FileSpreadsheet size={14} /> List</button>
+             <button onClick={() => setViewMode('grid')} className={`grow flex-1 p-2 rounded-lg flex items-center justify-center gap-2 text-[10px] font-black uppercase transition-all ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'}`}><LayoutGrid size={14} /> Tree</button>
+          </div>
+          <button onClick={() => openModal()} className="btn-primary h-11 px-4 text-xs font-black shadow-lg shadow-blue-500/20"><Plus size={18} /></button>
+        </div>
       </div>
 
-      <div className="flex flex-col gap-8">
-        {loading ? (
-          [...Array(2)].map((_, i) => (
-            <div key={i} className="flex gap-6 animate-pulse">
-              <div className="w-80 h-40 bg-gray-100 dark:bg-gray-800 rounded-2xl" />
-              <div className="flex-1 grid grid-cols-3 gap-3">
-                <div className="h-24 bg-gray-100 dark:bg-gray-800 rounded-xl" />
-                <div className="h-24 bg-gray-100 dark:bg-gray-800 rounded-xl" />
-              </div>
-            </div>
-          ))
-        ) : offices.length === 0 ? (
-          <div className="card p-10 text-center">
-            <p className="text-sm text-gray-400">No offices found.</p>
-          </div>
-        ) : (
-          offices
-            .filter(o => o.type === 'HEAD_OFFICE')
-            .map((ho, hoIndex, filteredArray) => (
-              <div key={ho.id} className="space-y-8">
-                <div className="flex flex-col lg:flex-row gap-8 items-start">
-                  {/* Left: Head Office Card */}
-                  <motion.div
-                    initial={{ opacity: 0, x: -12 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: hoIndex * 0.1 }}
-                    className="w-full lg:w-80 flex-shrink-0"
-                  >
-                    <div className="card-interactive p-6 border-l-4 border-purple-500 bg-gradient-to-br from-white to-purple-50/30 dark:from-gray-900 dark:to-purple-900/5 cursor-default">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="icon-box icon-purple">
-                          <Building2 size={22} />
-                        </div>
-                        <div className="flex gap-1">
-                          <button onClick={() => openModal(ho)} className="btn-icon text-gray-400 hover:text-blue-600"><Edit size={14} /></button>
-                          <button onClick={() => setConfirmDeleteId(ho.id)} className="btn-icon text-gray-400 hover:text-red-500"><Trash2 size={14} /></button>
-                        </div>
+      {viewMode === 'table' ? (
+        <div className="space-y-4">
+           {/* Desktop Table */}
+           <div className="hidden md:block card overflow-hidden border-none shadow-xl">
+             <table className="w-full text-left">
+                <thead className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
+                   <tr>
+                      <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Hierarchy & Office</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Action</th>
+                   </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                   {flatOffices.map(o => (
+                     <tr key={o.id} className={`${o.isParent ? 'bg-white' : 'bg-gray-50/20'} hover:bg-blue-50/30 transition-colors`}>
+                        <td className="px-6 py-4">
+                           <div className={`flex items-center gap-4 ${!o.isParent ? 'pl-10' : ''}`}>
+                             {!o.isParent && <CornerDownRight size={14} className="text-blue-300" />}
+                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${o.isParent ? 'bg-purple-100 text-purple-600' : 'bg-blue-50 text-blue-500'}`}><Building2 size={16} /></div>
+                             <div><p className={`text-sm font-black ${o.isParent ? 'text-gray-900' : 'text-gray-600'}`}>{o.name}</p><p className="text-[9px] text-gray-400 font-bold uppercase">{o.type.replace('_', ' ')}</p></div>
+                           </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                           <div className="flex justify-end gap-2 text-gray-400">
+                             <button onClick={() => openModal(o)} className="hover:text-blue-600 transition-colors"><Edit size={16} /></button>
+                             <button onClick={() => setConfirmDeleteId(o.id)} className="hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                           </div>
+                        </td>
+                     </tr>
+                   ))}
+                </tbody>
+             </table>
+           </div>
+           {/* Mobile 2-Column List for Table View */}
+           <div className="md:hidden grid grid-cols-2 gap-3">
+              {flatOffices.map(o => (
+                <div key={o.id} className={`card p-3 border-l-4 ${o.isParent ? 'border-purple-500' : 'border-blue-400'}`}>
+                   <div className="flex justify-between items-start mb-2">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${o.isParent ? 'bg-purple-50 text-purple-500' : 'bg-blue-50 text-blue-500'}`}><Building2 size={16} /></div>
+                      <div className="flex gap-1">
+                        <button onClick={() => openModal(o)} className="text-gray-400"><Edit size={14} /></button>
+                        <button onClick={() => setConfirmDeleteId(o.id)} className="text-gray-400"><Trash2 size={14} /></button>
                       </div>
-                      <h3 className="text-base font-bold text-gray-900 dark:text-white">{ho.name}</h3>
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 mb-4 leading-relaxed">{ho.address || 'No address provided'}</p>
-                      <span className="badge badge-purple px-2.5 py-1">HEAD OFFICE</span>
-                    </div>
-                  </motion.div>
-
-                  {/* Right: Branches Grid */}
-                  <div className="flex-1 w-full">
-                    <div className="mb-3 flex items-center gap-2">
-                       <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Branches Under {ho.name}</h4>
-                       <div className="h-[1px] flex-1 bg-gray-100 dark:bg-gray-800" />
-                    </div>
-                    {ho.branches?.length > 0 ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                        {ho.branches.map((branch, bIndex) => {
-                          const fullBranchData = flatOffices.find(f => f.id === branch.id) || branch;
-                          return (
-                            <motion.div
-                              key={branch.id}
-                              initial={{ opacity: 0, scale: 0.95 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{ delay: (hoIndex * 0.1) + (bIndex * 0.05) }}
-                              className="card-interactive p-4 bg-white dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 cursor-default"
-                            >
-                              <div className="flex justify-between items-start mb-2">
-                                <div className="icon-box icon-blue w-8 h-8">
-                                  <Building2 size={16} />
-                                </div>
-                                <div className="flex gap-0.5">
-                                  <button onClick={() => openModal(fullBranchData)} className="btn-icon w-7 h-7 text-gray-400 hover:text-blue-600"><Edit size={12} /></button>
-                                  <button onClick={() => setConfirmDeleteId(branch.id)} className="btn-icon w-7 h-7 text-gray-400 hover:text-red-500"><Trash2 size={12} /></button>
-                                </div>
-                              </div>
-                              <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{branch.name}</h4>
-                              <p className="text-[10px] text-gray-400 mt-1 line-clamp-1">{fullBranchData.address || 'No address'}</p>
-                            </motion.div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="py-8 border-2 border-dashed border-gray-50 dark:border-gray-800/50 rounded-2xl flex flex-col items-center justify-center text-gray-300 dark:text-gray-700">
-                         <Building2 size={32} strokeWidth={1} />
-                         <p className="text-xs mt-2 font-medium">No branches mapped yet</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {hoIndex < filteredArray.length - 1 && (
-                  <div className="py-4">
-                    <div className="h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-800 to-transparent" />
-                  </div>
-                )}
-              </div>
-            ))
-        )}
-
-        {/* Handle orphaned branches (if any) */}
-        {!loading && offices.some(o => o.type === 'BRANCH_OFFICE' && !o.parent_id) && (
-          <div className="mt-8 pt-8 border-t-2 border-dashed border-gray-100 dark:border-gray-800">
-            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Unmapped Branches</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
-              {offices.filter(o => o.type === 'BRANCH_OFFICE' && !o.parent_id).map(o => (
-                <div key={o.id} className="card p-4">
-                   <h5 className="text-sm font-bold">{o.name}</h5>
-                   <button onClick={() => openModal(o)} className="text-xs text-blue-600 mt-2">Map to Head Office</button>
+                   </div>
+                   <h4 className="text-[10px] font-black text-gray-800 uppercase leading-tight line-clamp-2">{o.name}</h4>
+                   <span className="text-[8px] font-black text-gray-400 uppercase mt-1 block">{o.isParent ? 'ROOT' : 'BRANCH'}</span>
                 </div>
               ))}
-            </div>
-          </div>
-        )}
-      </div>
+           </div>
+        </div>
+      ) : (
+        <div className="space-y-12">
+           {offices.map((ho) => (
+            <div key={ho.id} className="relative">
+              {/* Main Trunk Line */}
+              <div className="absolute left-6 lg:left-[160px] top-28 bottom-0 w-px bg-gradient-to-b from-purple-500/30 to-transparent" />
+              
+              <div className="flex flex-col lg:flex-row gap-6 lg:gap-20">
+                {/* Parent - Full width on desktop, 1/2 on tablet? No, full is better for parent hierarchy */}
+                <div className="w-full lg:w-80 shrink-0 relative z-10 transition-transform active:scale-95">
+                   <div className="card-interactive p-5 border-l-4 border-purple-600 bg-white dark:bg-gray-900 shadow-xl shadow-purple-900/5">
+                      <div className="flex justify-between items-start mb-4 text-gray-400"><Building2 size={24} className="text-purple-600" /><div className="flex gap-2"><Edit size={14} onClick={() => openModal(ho)} /><Trash2 size={14} onClick={() => setConfirmDeleteId(ho.id)} /></div></div>
+                      <h3 className="text-base font-black text-gray-900 dark:text-white uppercase leading-tight">{ho.name}</h3>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase mt-2">Head Office Pusat</p>
+                   </div>
+                </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingOffice ? 'Edit Office' : 'New Office'}>
+                {/* Branches - 2 Columns on ALL mobile sizes */}
+                <div className="flex-1 pl-10 lg:pl-0 space-y-4">
+                   <div className="flex items-center gap-3 relative">
+                      <div className="absolute -left-10 lg:-left-20 top-1/2 w-10 lg:w-20 h-px bg-purple-200" />
+                      <span className="text-[9px] font-black text-purple-400 uppercase tracking-widest">Network Units</span>
+                      <div className="h-px grow bg-gradient-to-r from-purple-100 to-transparent" />
+                   </div>
+                   <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                      {ho.branches.map(br => (
+                        <div key={br.id} className="group relative">
+                           <div className="absolute -left-6 lg:-left-12 top-1/2 w-6 lg:w-12 h-px bg-gray-100 dark:bg-gray-800" />
+                           <div className="card p-3 md:p-4 border-l-2 border-blue-400 hover:border-blue-600 transition-all shadow-sm">
+                             <div className="flex justify-between items-start mb-3"><div className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center text-blue-500"><Building2 size={14} /></div><div className="flex gap-1 text-gray-300 group-hover:text-gray-500 transition-colors"><Edit size={12} onClick={() => openModal(br)} /><Trash2 size={12} onClick={() => setConfirmDeleteId(br.id)} /></div></div>
+                             <h4 className="text-[10px] font-black text-gray-800 dark:text-gray-100 uppercase line-clamp-2 leading-tight">{br.name}</h4>
+                             <p className="text-[8px] text-gray-400 mt-1 uppercase font-bold">{br.address || 'Branch Unit'}</p>
+                           </div>
+                        </div>
+                      ))}
+                      {ho.branches.length === 0 && <div className="col-span-full py-8 border-2 border-dashed border-gray-100 rounded-3xl text-center text-[10px] text-gray-300 font-black uppercase">Offline Unit</div>}
+                   </div>
+                </div>
+              </div>
+            </div>
+           ))}
+        </div>
+      )}
+
+      {/* MODAL remains the same */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Office Registration">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input label="Office Name" required value={formData.name}
-            onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Office name" />
-          <Select label="Type" value={formData.type}
-            onChange={e => setFormData({...formData, type: e.target.value})}
-            options={[{ value: 'HEAD_OFFICE', label: 'Head Office' }, { value: 'BRANCH_OFFICE', label: 'Branch Office' }]} />
+          <Input label="Office Name" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Pusat Jakarta" />
+          <Select label="Type" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} options={[{ value: 'HEAD_OFFICE', label: 'Head Office' }, { value: 'BRANCH_OFFICE', label: 'Branch Office' }]} />
           {formData.type === 'BRANCH_OFFICE' && (
-            <Select label="Parent Office" value={formData.parent_id}
-              onChange={e => setFormData({...formData, parent_id: e.target.value})}
-              options={flatOffices.filter(o => o.type === 'HEAD_OFFICE').map(o => ({ value: o.id, label: o.name }))}
-              placeholder="Select Parent" />
+            <Select label="Parent" value={formData.parent_id} onChange={e => setFormData({...formData, parent_id: e.target.value})} options={offices.map(o => ({ value: o.id, label: o.name }))} />
           )}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Address</label>
-            <textarea className="input resize-none" rows="3" value={formData.address}
-              onChange={e => setFormData({...formData, address: e.target.value})} placeholder="Office address..." />
-          </div>
-          <button type="submit" className="btn-primary w-full py-2.5">{editingOffice ? 'Save Changes' : 'Create Office'}</button>
+          <button type="submit" className="btn-primary w-full py-4 text-xs font-black uppercase tracking-widest shadow-xl shadow-blue-500/20">Save Office Unit</button>
         </form>
       </Modal>
     </div>
