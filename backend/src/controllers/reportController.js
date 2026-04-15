@@ -147,3 +147,104 @@ exports.getDashboardStats = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+exports.getSalesAgentReport = async (req, res) => {
+  try {
+    const { officeId, startDate, endDate } = req.query;
+    const user = req.user;
+    
+    // Permission & Office Scope
+    const isSuperAdmin = user.Role?.name === 'Super Admin';
+    let officeIds = [];
+    if (isSuperAdmin) {
+      if (officeId) officeIds = [officeId];
+      else {
+        const all = await Office.findAll({ attributes: ['id'] });
+        officeIds = all.map(o => o.id);
+      }
+    } else {
+      const currentOffice = await Office.findByPk(user.office_id);
+      if (currentOffice && !currentOffice.parent_id) { // Head Office
+        const mapping = await Office.findAll({
+          where: { [Op.or]: [{ id: user.office_id }, { parent_id: user.office_id }] },
+          attributes: ['id']
+        });
+        officeIds = mapping.map(o => o.id);
+      } else {
+        officeIds = [user.office_id];
+      }
+    }
+
+    const whereVehicle = { 
+      status: 'Sold',
+      office_id: { [Op.in]: officeIds }
+    };
+    if (startDate && endDate) {
+      whereVehicle.sold_date = { [Op.between]: [startDate, endDate] };
+    }
+
+    const agents = await SalesAgent.findAll({
+      where: { office_id: { [Op.in]: officeIds } },
+      include: [{
+        model: Vehicle,
+        as: 'soldVehicles',
+        where: whereVehicle,
+        required: false,
+        attributes: ['id', 'price', 'purchase_price', 'service_cost', 'sold_date', 'brand', 'model']
+      }]
+    });
+
+    const report = agents.map(agent => {
+      const sold = agent.soldVehicles || [];
+      const totalRevenue = sold.reduce((sum, v) => sum + Number(v.price), 0);
+      const totalCost = sold.reduce((sum, v) => sum + (Number(v.purchase_price) + Number(v.service_cost)), 0);
+      const totalMargin = totalRevenue - totalCost;
+
+      return {
+        id: agent.id,
+        name: agent.name,
+        unitsSold: sold.length,
+        totalRevenue,
+        totalMargin,
+        averageMargin: sold.length > 0 ? totalMargin / sold.length : 0
+      };
+    }).sort((a, b) => b.totalRevenue - a.totalRevenue);
+
+    res.json(report);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getAgentSalesDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { startDate, endDate } = req.query;
+
+    const whereVehicle = { 
+      sales_agent_id: id,
+      status: 'Sold'
+    };
+    if (startDate && endDate) {
+      whereVehicle.sold_date = { [Op.between]: [startDate, endDate] };
+    }
+
+    const sales = await Vehicle.findAll({
+      where: whereVehicle,
+      order: [['sold_date', 'DESC']],
+      attributes: ['id', 'type', 'brand', 'model', 'year', 'plate_number', 'price', 'purchase_price', 'service_cost', 'sold_date']
+    });
+
+    const transformed = sales.map(s => {
+      const margin = Number(s.price) - (Number(s.purchase_price) + Number(s.service_cost));
+      return {
+        ...s.toJSON(),
+        margin
+      };
+    });
+
+    res.json(transformed);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

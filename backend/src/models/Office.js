@@ -23,6 +23,14 @@ const Office = sequelize.define('Office', {
     type: DataTypes.INTEGER,
     allowNull: true,
   },
+  logo: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  phone: {
+    type: DataTypes.STRING(20),
+    allowNull: true,
+  },
 }, {
   tableName: 'offices',
   timestamps: true,

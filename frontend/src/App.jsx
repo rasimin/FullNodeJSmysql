@@ -20,6 +20,7 @@ import SecuritySettings from './pages/SecuritySettings';
 import Sessions from './pages/Sessions';
 import AdminSessions from './pages/AdminSessions';
 import LandingPage from './pages/LandingPage';
+import SalesReport from './pages/SalesReport';
 import DashboardLayout from './layouts/DashboardLayout';
 
 function App() {
@@ -47,6 +48,7 @@ function App() {
                 <Route path="/security-settings" element={<SecuritySettings />} />
                 <Route path="/sessions" element={<Sessions />} />
                 <Route path="/admin-sessions" element={<AdminSessions />} />
+                <Route path="/sales-report" element={<SalesReport />} />
                 <Route path="/old-dashboard" element={<Dashboard />} />
               </Route>
 

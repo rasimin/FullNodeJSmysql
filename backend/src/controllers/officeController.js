@@ -1,21 +1,58 @@
 const { Office } = require('../models');
 const { Op } = require('sequelize');
+const sharp = require('sharp');
+const path = require('path');
+const fs = require('fs');
 
 const createOffice = async (req, res) => {
   try {
-    const { name, type, address, parent_id } = req.body;
+    const { name, type, address, parent_id, phone } = req.body;
     
     // Validate hierarchy
     if (type === 'BRANCH_OFFICE' && !parent_id) {
       return res.status(400).json({ message: 'Branch Office must have a Parent Office (Head Office)' });
     }
 
+    const officeData = { name, type, address, parent_id, phone };
+    
+    // Normalize parent_id
+    if (!officeData.parent_id || officeData.parent_id === 'null' || officeData.parent_id === '') {
+      officeData.parent_id = null;
+    }
+
+    if (req.file) {
+      console.log('[OfficeCreate] File received:', req.file.filename);
+      // Fallback: use raw file first
+      officeData.logo = `/uploads/${req.file.filename}`;
+
+      try {
+        const fileName = `logo-${Date.now()}.webp`;
+        const outputPath = path.join(__dirname, '../../uploads', fileName);
+        
+        await sharp(req.file.path)
+          .resize(400, 400, { fit: 'inside', withoutEnlargement: true })
+          .webp({ quality: 80 })
+          .toFile(outputPath);
+
+        // Remove original file
+        if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        
+        officeData.logo = `/uploads/${fileName}`;
+        console.log('[OfficeCreate] Sharp processing success:', fileName);
+      } catch (sharpError) {
+        console.error('[OfficeCreate] Sharp Image Processing Error:', sharpError);
+      }
+    } else {
+      console.log('[OfficeCreate] No file received');
+    }
+
     const office = await Office.create(
-      { name, type, address, parent_id },
+      officeData,
       { userId: req.user.id }
     );
     res.status(201).json(office);
   } catch (error) {
+    console.error('Create Office Error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -72,9 +109,52 @@ const updateOffice = async (req, res) => {
 
     if (!office) return res.status(404).json({ message: 'Office not found' });
 
-    await office.update(req.body, { userId: req.user.id });
+    const { name, type, address, parent_id, phone } = req.body;
+    const updateData = { name, type, address, parent_id, phone };
+    
+    // Convert empty parent_id to null
+    if (updateData.parent_id === '' || updateData.parent_id === 'null' || !updateData.parent_id) {
+      updateData.parent_id = null;
+    }
+
+    if (req.file) {
+      console.log('[OfficeUpdate] File received:', req.file.filename);
+      // Fallback: use raw file first
+      updateData.logo = `/uploads/${req.file.filename}`;
+      
+      try {
+        const fileName = `logo-${Date.now()}.webp`;
+        const outputPath = path.join(__dirname, '../../uploads', fileName);
+        
+        await sharp(req.file.path)
+          .resize(400, 400, { fit: 'inside', withoutEnlargement: true })
+          .webp({ quality: 80 })
+          .toFile(outputPath);
+
+        // Remove original file
+        if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        
+        // Delete old logo if exists
+        if (office.logo) {
+          const relativePath = office.logo.startsWith('/') ? office.logo.slice(1) : office.logo;
+          const oldLogoPath = path.join(__dirname, '../../', relativePath);
+          if (fs.existsSync(oldLogoPath)) fs.unlinkSync(oldLogoPath);
+        }
+
+        updateData.logo = `/uploads/${fileName}`;
+        console.log('[OfficeUpdate] Sharp processing success:', fileName);
+      } catch (sharpError) {
+        console.error('[OfficeUpdate] Sharp Processing Error:', sharpError);
+        // We keep the raw upload path if sharp fails
+      }
+    } else {
+      console.log('[OfficeUpdate] No file received in request');
+    }
+
+    await office.update(updateData, { userId: req.user.id });
     res.json(office);
   } catch (error) {
+    console.error('Update Office Error:', error);
     res.status(500).json({ message: error.message });
   }
 };

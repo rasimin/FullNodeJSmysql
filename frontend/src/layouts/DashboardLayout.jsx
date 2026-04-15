@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { 
   LayoutDashboard, Users, Building2, ShieldCheck, LogOut, Shield,
-  Menu, X, History, FileText, Sun, Moon, ChevronLeft, ChevronRight, UserCircle, Car, Tags, BarChart2, Search, Rocket
+  Menu, X, History, FileText, Sun, Moon, ChevronLeft, ChevronRight, UserCircle, Car, Tags, BarChart2, BarChart3, Search, Rocket
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IMAGE_BASE_URL } from '../config';
@@ -29,6 +29,18 @@ const SidebarItem = ({ to, icon: Icon, label, onClick, collapsed, target }) => (
 const DashboardLayout = () => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  
+  const officeLogo = user?.office_logo || user?.Office?.logo;
+
+  // Dynamic Favicon logic
+  useEffect(() => {
+    if (officeLogo) {
+      const link = document.querySelector("link[rel~='icon']") || document.createElement('link');
+      link.rel = 'icon';
+      link.href = `${IMAGE_BASE_URL.replace('/uploads', '')}${officeLogo}`;
+      document.getElementsByTagName('head')[0].appendChild(link);
+    }
+  }, [officeLogo]);
   const navigate = useNavigate();
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setCollapsed] = useState(false);
@@ -45,6 +57,7 @@ const DashboardLayout = () => {
         title: 'DATA INSIGHTS',
         items: [
           { to: '/', icon: BarChart2, label: 'Reports & Analytics' },
+          { to: '/sales-report', icon: BarChart3, label: 'Sales Performance' },
         ]
       },
       {
@@ -218,16 +231,25 @@ const DashboardLayout = () => {
               <Menu size={20} />
             </button>
             <div className="hidden sm:block">
-              <p className="text-sm leading-tight text-gray-500 dark:text-gray-400">
-                Welcome back, <span className="font-bold text-gray-900 dark:text-white">{user?.name?.split(' ')[0]}</span>
-              </p>
-              <p className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-1 font-medium mt-0.5">
-                <Building2 size={10} className="text-blue-500" />
-                {user?.Office?.name || 'Main Panel'}
-                {user?.Office?.Parent?.name && (
-                  <> <span className="text-gray-300 dark:text-gray-700">/</span> {user.Office.Parent.name}</>
+              <div className="flex items-center gap-3">
+                {officeLogo && (
+                  <div className="w-10 h-10 rounded-xl overflow-hidden border border-gray-100 dark:border-white/5 shadow-sm shrink-0 bg-white dark:bg-gray-800">
+                    <img src={`${IMAGE_BASE_URL}${officeLogo}`} className="w-full h-full object-cover" alt="" />
+                  </div>
                 )}
-              </p>
+                <div>
+                  <p className="text-sm leading-tight text-gray-500 dark:text-gray-400">
+                    Welcome back, <span className="font-bold text-gray-900 dark:text-white">{user?.name?.split(' ')[0]}</span>
+                  </p>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-1 font-medium mt-0.5">
+                    <Building2 size={10} className="text-blue-500" />
+                    {user?.Office?.name || user?.office || 'Main Panel'}
+                    {user?.Office?.Parent?.name && (
+                      <> <span className="text-gray-300 dark:text-gray-700">/</span> {user.Office.Parent.name}</>
+                    )}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 

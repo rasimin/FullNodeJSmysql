@@ -162,6 +162,7 @@ const login = async (req, res) => {
         office_id: user.office_id,
         office_type: user.Office?.type,
         parent_office_id: user.Office?.parent_id,
+        office_logo: user.Office?.logo,
         avatar: user.avatar
       }
     });
