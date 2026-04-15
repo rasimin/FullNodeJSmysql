@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { 
   LayoutDashboard, Users, Building2, ShieldCheck, LogOut, Shield,
-  Menu, X, History, FileText, Sun, Moon, ChevronLeft, ChevronRight, UserCircle, Car, Tags, BarChart2, Search
+  Menu, X, History, FileText, Sun, Moon, ChevronLeft, ChevronRight, UserCircle, Car, Tags, BarChart2, Search, Rocket
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IMAGE_BASE_URL } from '../config';
@@ -70,7 +70,7 @@ const DashboardLayout = () => {
     if (userRole === 'Super Admin' || userRole === 'Admin Pusat') {
       securityItems.push(
         { to: '/security-settings', icon: Shield, label: 'Security Configuration' },
-        { to: '/admin-sessions', icon: Users, label: 'Monitor Sesi Aktif' },
+        { to: '/admin-sessions', icon: Users, label: 'Active Sessions Monitor' },
         { to: '/roles', icon: ShieldCheck, label: 'Role Management' },
         { to: '/activities', icon: FileText, label: 'Activity Logs' },
         { to: '/audit-trails', icon: History, label: 'Audit Trails' }
@@ -188,6 +188,17 @@ const DashboardLayout = () => {
               No menu found
             </div>
           )}
+          {/* Landing Page Link at Bottom */}
+          <div className="mt-auto px-1 pt-4 border-t border-gray-100 dark:border-gray-800">
+             <SidebarItem 
+               to="/landing-page" 
+               icon={Rocket} 
+               label="Landing Page (Showroom)" 
+               onClick={() => setSidebarOpen(false)}
+               collapsed={isCollapsed}
+               target="_blank"
+             />
+          </div>
         </nav>
 
         {/* Collapse Toggle */}

@@ -19,6 +19,7 @@ import Catalog from './pages/Catalog';
 import SecuritySettings from './pages/SecuritySettings';
 import Sessions from './pages/Sessions';
 import AdminSessions from './pages/AdminSessions';
+import LandingPage from './pages/LandingPage';
 import DashboardLayout from './layouts/DashboardLayout';
 
 function App() {
@@ -51,6 +52,7 @@ function App() {
 
               {/* Standalone Page (New Tab) */}
               <Route path="/catalog" element={<Catalog />} />
+              <Route path="/landing-page" element={<LandingPage />} />
             </Route>
           </Routes>
         </BrowserRouter>

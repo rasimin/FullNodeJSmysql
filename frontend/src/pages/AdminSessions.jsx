@@ -27,7 +27,7 @@ const AdminSessions = () => {
       setUserSessions(res.data);
     } catch (err) {
       console.error(err);
-      notify('error', 'Gagal memuat data sesi');
+      notify('error', 'Failed to load session data');
     }
     setLoading(false);
   };
@@ -37,14 +37,14 @@ const AdminSessions = () => {
   }, []);
 
   const handleRevokeSession = async (sessionId) => {
-    if (!window.confirm('Hapus sesi perangkat ini?')) return;
-    notify('loading', 'Menghentikan sesi...');
+    if (!window.confirm('Terminate this device session?')) return;
+    notify('loading', 'Terminating session...');
     try {
       await api.delete(`/auth/admin/sessions/${sessionId}`);
-      notify('success', 'Sesi berhasil dihentikan');
+      notify('success', 'Session terminated successfully');
       fetchAllSessions();
     } catch (err) {
-      notify('error', 'Gagal menghentikan sesi');
+      notify('error', 'Failed to terminate session');
     }
   };
 
@@ -60,8 +60,8 @@ const AdminSessions = () => {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Active Users Monitor</h1>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Memantau seluruh pengguna yang sedang login</p>
+          <h1 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Active Sessions Monitor</h1>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Monitor all users currently logged in</p>
         </div>
         
         <div className="flex items-center gap-3 bg-white dark:bg-gray-800 p-2 rounded-2xl shadow-sm border border-gray-100 dark:border-white/5 w-full md:w-auto">
@@ -69,7 +69,7 @@ const AdminSessions = () => {
             <Search size={18} />
             <input 
               type="text" 
-              placeholder="Cari User..."
+              placeholder="Search users..."
               className="bg-transparent border-none outline-none text-sm font-medium text-gray-700 dark:text-gray-200 w-full"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -92,7 +92,7 @@ const AdminSessions = () => {
           ) : filteredData.length === 0 ? (
             <div className="card p-20 text-center border-dashed border-2 border-gray-200 dark:border-white/10">
               <Users className="mx-auto text-gray-300 mb-4" size={48} />
-              <p className="text-gray-400 font-bold uppercase tracking-widest">Tidak ada pengguna aktif ditemukan</p>
+              <p className="text-gray-400 font-bold uppercase tracking-widest">No active users found</p>
             </div>
           ) : (
             filteredData.map((item) => (
