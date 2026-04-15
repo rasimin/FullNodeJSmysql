@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback, useLayoutEffect } from 'react';
 import api from '../services/api';
 import { 
-  Search, Filter, Car, Smartphone, X, Image as ImageIcon, 
-  ChevronRight, Info, CheckCircle, ShoppingCart, Sparkles, TrendingUp,
+  Search, Filter, Car, Bike, X, Image as ImageIcon, 
+  ChevronRight, ChevronLeft, Info, CheckCircle, ShoppingCart, Sparkles, TrendingUp,
   Sun, Moon, UserCircle, LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,19 +11,35 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, NavLink } from 'react-router-dom';
 import { IMAGE_BASE_URL } from '../config';
 
+// Debounce hook to prevent search input stuttering
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  return debouncedValue;
+}
+
+const FILTER_OPTIONS = [
+  { value: '', label: 'All' },
+  { value: 'Mobil', label: 'Mobil' },
+  { value: 'Motor', label: 'Motor' },
+];
+
 const Catalog = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [localSearch, setLocalSearch] = useState('');
+  const searchTerm = useDebounce(localSearch, 350);
   const [filterType, setFilterType] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [priceRange, setPriceRange] = useState({ min: 0, max: 5000000000 }); // Max 5 Billion
-  const [usePriceSlider, setUsePriceSlider] = useState(true);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [filters, setFilters] = useState({
     brand: '',
@@ -34,6 +50,41 @@ const Catalog = () => {
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // Refs for sliding pill indicator
+  const filterContainerRef = useRef(null);
+  const filterButtonRefs = useRef({});
+  const [pillStyle, setPillStyle] = useState({ left: 0, width: 0 });
+
+  // Calculate pill indicator position
+  const updatePillPosition = useCallback(() => {
+    const activeKey = filterType || '';
+    const btn = filterButtonRefs.current[activeKey];
+    const container = filterContainerRef.current;
+    if (btn && container) {
+      const containerRect = container.getBoundingClientRect();
+      const btnRect = btn.getBoundingClientRect();
+      setPillStyle({
+        left: btnRect.left - containerRect.left,
+        width: btnRect.width,
+      });
+    }
+  }, [filterType]);
+
+  useLayoutEffect(() => {
+    updatePillPosition();
+  }, [filterType, updatePillPosition]);
+
+  useEffect(() => {
+    window.addEventListener('resize', updatePillPosition);
+    return () => window.removeEventListener('resize', updatePillPosition);
+  }, [updatePillPosition]);
+
+  // Run on mount after first render
+  useEffect(() => {
+    const t = setTimeout(updatePillPosition, 100);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     fetchVehicles();
@@ -97,10 +148,57 @@ const Catalog = () => {
     }).format(p || 0);
   };
 
+  // Format number with dots for display in price textbox
+  const formatNumberDots = (val) => {
+    if (!val && val !== 0) return '';
+    return parseInt(val).toLocaleString('id-ID');
+  };
+
+  // Parse formatted number back to raw
+  const parseFormattedNumber = (str) => {
+    return str.replace(/\./g, '').replace(/,/g, '');
+  };
+
+  // Sync slider -> textbox and vice versa
+  const handleMinPriceText = (e) => {
+    const raw = parseFormattedNumber(e.target.value);
+    if (raw === '' || /^\d+$/.test(raw)) {
+      setFilters({...filters, minPrice: raw});
+      setPage(1);
+    }
+  };
+  const handleMaxPriceText = (e) => {
+    const raw = parseFormattedNumber(e.target.value);
+    if (raw === '' || /^\d+$/.test(raw)) {
+      setFilters({...filters, maxPrice: raw});
+      setPage(1);
+    }
+  };
+
   const userRole = user?.role || user?.Role?.name;
 
+  // Card staggered animation variants
+  const cardVariants = {
+    hidden: { opacity: 0, y: 30, scale: 0.97 },
+    visible: (i) => ({
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: {
+        delay: i * 0.06,
+        duration: 0.5,
+        ease: [0.25, 0.46, 0.45, 0.94]
+      }
+    }),
+    exit: { 
+      opacity: 0, 
+      y: -10,
+      transition: { duration: 0.2 }
+    }
+  };
+
   return (
-    <div className="relative min-h-screen bg-slate-50 dark:bg-[#0a0b0f] p-5 md:p-10 lg:p-14 transition-colors duration-500 overflow-x-hidden">
+    <div className="relative min-h-screen bg-slate-50 dark:bg-[#0a0b0f] p-5 md:p-10 lg:p-14 transition-colors duration-500 overflow-x-hidden overflow-y-scroll">
       {/* Dynamic Ambient Background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[10%] -left-[10%] w-[500px] h-[500px] bg-indigo-600/10 dark:bg-indigo-600/10 blur-[120px] rounded-full" />
@@ -129,13 +227,55 @@ const Catalog = () => {
                     type="text"
                     placeholder="Cari brand..."
                     className="w-full h-12 bg-gray-100 dark:bg-white/5 border-none rounded-[24px] pl-12 pr-4 text-sm text-gray-900 dark:text-white placeholder:text-gray-500 focus:ring-1 focus:ring-gray-300 dark:focus:ring-white/20 transition-all outline-none"
-                    value={searchTerm}
-                    onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+                    value={localSearch}
+                    onChange={(e) => { setLocalSearch(e.target.value); setPage(1); }}
                   />
                 </div>
-                
-                {/* 2. Theme & Profile */}
-                <div className="flex items-center gap-1.5 flex-shrink-0">
+
+                {/* 2. Filters (Pills with sliding indicator) */}
+                <div className="flex items-center justify-between gap-2 w-full md:w-auto mt-1 md:mt-0 order-last md:order-none">
+                  <div 
+                    ref={filterContainerRef}
+                    className="relative flex-1 md:flex-none flex items-center gap-1 p-1 bg-gray-100 dark:bg-black/20 rounded-full overflow-x-auto no-scrollbar"
+                  >
+                    {/* Sliding active pill background */}
+                    <motion.div
+                      className="absolute top-1 bottom-1 rounded-full bg-white dark:bg-white shadow-sm z-0"
+                      animate={{
+                        left: pillStyle.left,
+                        width: pillStyle.width,
+                      }}
+                      transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                      style={{ position: 'absolute' }}
+                    />
+
+                    {FILTER_OPTIONS.map((opt) => (
+                      <button 
+                        key={opt.value}
+                        ref={el => filterButtonRefs.current[opt.value] = el}
+                        onClick={() => { setFilterType(opt.value); setPage(1); }} 
+                        className={`relative z-10 whitespace-nowrap h-9 px-5 md:px-6 rounded-full text-[11px] font-bold transition-colors duration-200 flex items-center justify-center gap-1.5 flex-1 md:flex-none
+                        ${filterType === opt.value ? 'text-gray-900 dark:text-gray-900' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                      >
+                        {opt.value === 'Mobil' && <Car size={14} />}
+                        {opt.value === 'Motor' && <Bike size={14} />}
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button 
+                    onClick={() => setShowAdvanced(!showAdvanced)}
+                    className={`h-9 px-5 md:px-6 rounded-full text-[11px] font-extrabold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 flex-shrink-0 
+                    ${showAdvanced ? 'bg-gray-950 text-white dark:bg-white dark:text-gray-950' : 'bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'}`}
+                  >
+                    <Filter size={14} /> 
+                    <span className="md:hidden">{showAdvanced ? 'Hide' : 'Filter'}</span>
+                  </button>
+                </div>
+
+                {/* 3. Theme & Profile (pushed to far right) */}
+                <div className="flex items-center gap-1.5 flex-shrink-0 ml-auto order-first md:order-last">
                   <button onClick={toggleTheme} className="w-10 h-10 rounded-full flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10 md:bg-gray-100 md:dark:bg-white/5 transition-colors">
                     {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
                   </button>
@@ -171,44 +311,6 @@ const Catalog = () => {
 
                     {showUserMenu && <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />}
                   </div>
-                </div>
-
-                {/* 3. Filters (Circles on Desktop, full row on mobile) */}
-                <div className="flex items-center justify-between gap-2 w-full md:w-auto mt-1 md:mt-0">
-                  <div className="flex-1 md:flex-none flex items-center gap-1.5 p-1 md:p-0 bg-gray-100 dark:bg-black/20 md:bg-transparent md:dark:bg-transparent rounded-[20px] overflow-x-auto no-scrollbar">
-                    <button onClick={() => { setFilterType(''); setPage(1); }} 
-                      className={`whitespace-nowrap h-9 px-4 md:w-10 md:h-10 md:px-0 rounded-[16px] md:rounded-full text-[10px] font-bold transition-all flex items-center justify-center gap-1.5 flex-1 md:flex-none 
-                      ${!filterType ? 'bg-white dark:bg-white dark:text-gray-950 text-black md:bg-gray-900 md:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 md:bg-gray-100 md:dark:bg-white/5 hover:md:bg-gray-200'}`}
-                    >
-                      <span className="md:hidden">All</span>
-                      <span className="hidden md:block text-[9px] tracking-wide">ALL</span>
-                    </button>
-                    
-                    <button onClick={() => { setFilterType('Mobil'); setPage(1); }} 
-                      className={`whitespace-nowrap h-9 px-4 md:w-10 md:h-10 md:px-0 rounded-[16px] md:rounded-full text-[10px] font-bold transition-all flex items-center justify-center gap-1.5 flex-1 md:flex-none group relative
-                      ${filterType === 'Mobil' ? 'bg-white dark:bg-white dark:text-gray-950 text-black md:bg-gray-900 md:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 md:bg-gray-100 md:dark:bg-white/5 hover:md:bg-gray-200'}`}
-                    >
-                      <Car size={14} />
-                      <span className="md:hidden">Car</span>
-                    </button>
-                    
-                    <button onClick={() => { setFilterType('Motor'); setPage(1); }} 
-                      className={`whitespace-nowrap h-9 px-4 md:w-10 md:h-10 md:px-0 rounded-[16px] md:rounded-full text-[10px] font-bold transition-all flex items-center justify-center gap-1.5 flex-1 md:flex-none group relative
-                      ${filterType === 'Motor' ? 'bg-white dark:bg-white dark:text-gray-950 text-black md:bg-gray-900 md:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 md:bg-gray-100 md:dark:bg-white/5 hover:md:bg-gray-200'}`}
-                    >
-                      <Smartphone size={14} />
-                      <span className="md:hidden">Motor</span>
-                    </button>
-                  </div>
-
-                  <button 
-                    onClick={() => setShowAdvanced(!showAdvanced)}
-                    className={`h-9 px-4 md:w-10 md:h-10 md:px-0 rounded-[16px] md:rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 flex-shrink-0 
-                    ${showAdvanced ? 'bg-gray-950 text-white dark:bg-white dark:text-gray-950' : 'bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 hover:md:bg-gray-200'}`}
-                  >
-                    <Filter size={14} /> 
-                    <span className="md:hidden">{showAdvanced ? 'Hide' : 'Filter'}</span>
-                  </button>
                 </div>
               </div>
 
@@ -253,86 +355,78 @@ const Catalog = () => {
 
                         <div className="md:col-span-2 space-y-4">
                            <div className="flex justify-between items-end px-1">
-                              <div className="flex items-center gap-2">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Price Range</label>
-                                <button 
-                                  onClick={() => setUsePriceSlider(!usePriceSlider)}
-                                  className="px-2 py-0.5 bg-gray-100 dark:bg-white/5 text-[8px] font-black uppercase rounded text-indigo-500 hover:bg-gray-200"
-                                >
-                                  {usePriceSlider ? 'Switch to Manual' : 'Switch to Slider'}
-                                </button>
-                              </div>
+                              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Price Range</label>
                               <p className="text-[10px] font-black text-gray-900 dark:text-white">
                                 {formatPrice(filters.minPrice || priceRange.min)} — {formatPrice(filters.maxPrice || priceRange.max)}
                               </p>
                            </div>
                            
-                           {usePriceSlider ? (
-                             <div className="flex items-center gap-2 mb-2">
-                               <div className="flex-1 relative h-6 flex items-center px-1 group">
-                                  {/* Custom Dual Range Slider Rail */}
-                                  <div className="absolute inset-x-1 h-1.5 bg-gray-100 dark:bg-white/10 rounded-lg overflow-hidden">
-                                    <div 
-                                      className="absolute h-full bg-gray-950 dark:bg-white transition-all duration-300"
-                                      style={{
-                                        left: `${(( (parseInt(filters.minPrice) || priceRange.min) - priceRange.min) / (priceRange.max - priceRange.min)) * 100}%`,
-                                        width: `${(((parseInt(filters.maxPrice) || priceRange.max) - (parseInt(filters.minPrice) || priceRange.min)) / (priceRange.max - priceRange.min)) * 100}%`
-                                      }}
-                                    />
-                                  </div>
-                                  
-                                  <input 
-                                    type="range" 
-                                    min={priceRange.min}
-                                    max={priceRange.max}
-                                    step="5000000"
-                                    value={filters.minPrice || priceRange.min}
-                                    onChange={(e) => {
-                                      const val = Math.min(parseInt(e.target.value), (parseInt(filters.maxPrice) || priceRange.max) - 10000000);
-                                      setFilters({...filters, minPrice: val.toString()});
-                                      setPage(1);
-                                    }}
-                                    className="absolute inset-x-0 w-full h-1.5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white dark:[&::-webkit-slider-thumb]:bg-gray-900 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-gray-900 dark:[&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-xl [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:active:scale-125 z-20"
-                                  />
-                                  <input 
-                                    type="range" 
-                                    min={priceRange.min}
-                                    max={priceRange.max}
-                                    step="5000000"
-                                    value={filters.maxPrice || priceRange.max}
-                                    onChange={(e) => {
-                                      const val = Math.max(parseInt(e.target.value), (parseInt(filters.minPrice) || priceRange.min) + 10000000);
-                                      setFilters({...filters, maxPrice: val.toString()});
-                                      setPage(1);
-                                    }}
-                                    className="absolute inset-x-0 w-full h-1.5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gray-900 dark:[&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white dark:[&::-webkit-slider-thumb]:border-gray-900 [&::-webkit-slider-thumb]:shadow-xl [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:active:scale-125 z-30"
-                                  />
-                               </div>
+                           {/* Dual Textboxes */}
+                           <div className="grid grid-cols-2 gap-2">
+                             <div className="space-y-1">
+                               <p className="text-[8px] text-gray-400 font-bold uppercase">Min Price (IDR)</p>
+                               <input 
+                                 type="text"
+                                 value={filters.minPrice ? formatNumberDots(filters.minPrice) : ''}
+                                 onChange={handleMinPriceText}
+                                 placeholder={formatNumberDots(priceRange.min)}
+                                 className="w-full h-10 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-3 text-[10px] font-bold text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-gray-900 dark:focus:ring-white/20 transition-all"
+                               />
                              </div>
-                           ) : (
-                             <div className="grid grid-cols-2 gap-2 mt-2">
-                               <div className="space-y-1">
-                                 <p className="text-[8px] text-gray-400 font-bold uppercase">Min Price (IDR)</p>
-                                 <input 
-                                   type="number"
-                                   value={filters.minPrice}
-                                   onChange={(e) => { setFilters({...filters, minPrice: e.target.value}); setPage(1); }}
-                                   placeholder={priceRange.min.toString()}
-                                   className="w-full h-10 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-3 text-[10px] font-bold text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-gray-900 dark:focus:ring-white/20 transition-all"
-                                 />
-                               </div>
-                               <div className="space-y-1">
-                                 <p className="text-[8px] text-gray-400 font-bold uppercase">Max Price (IDR)</p>
-                                 <input 
-                                   type="number"
-                                   value={filters.maxPrice}
-                                   onChange={(e) => { setFilters({...filters, maxPrice: e.target.value}); setPage(1); }}
-                                   placeholder={priceRange.max.toString()}
-                                   className="w-full h-10 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-3 text-[10px] font-bold text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-gray-900 dark:focus:ring-white/20 transition-all"
-                                 />
-                               </div>
+                             <div className="space-y-1">
+                               <p className="text-[8px] text-gray-400 font-bold uppercase">Max Price (IDR)</p>
+                               <input 
+                                 type="text"
+                                 value={filters.maxPrice ? formatNumberDots(filters.maxPrice) : ''}
+                                 onChange={handleMaxPriceText}
+                                 placeholder={formatNumberDots(priceRange.max)}
+                                 className="w-full h-10 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-3 text-[10px] font-bold text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-gray-900 dark:focus:ring-white/20 transition-all"
+                               />
                              </div>
-                           )}
+                           </div>
+
+                           {/* Dual Range Slider (always visible, synced) */}
+                           <div className="flex items-center gap-2">
+                             <div className="flex-1 relative h-6 flex items-center px-1 group">
+                                {/* Custom Dual Range Slider Rail */}
+                                <div className="absolute inset-x-1 h-1.5 bg-gray-100 dark:bg-white/10 rounded-lg overflow-hidden">
+                                  <div 
+                                    className="absolute h-full bg-gray-950 dark:bg-white transition-all duration-300"
+                                    style={{
+                                      left: `${(( (parseInt(filters.minPrice) || priceRange.min) - priceRange.min) / (priceRange.max - priceRange.min)) * 100}%`,
+                                      width: `${(((parseInt(filters.maxPrice) || priceRange.max) - (parseInt(filters.minPrice) || priceRange.min)) / (priceRange.max - priceRange.min)) * 100}%`
+                                    }}
+                                  />
+                                </div>
+                                
+                                <input 
+                                  type="range" 
+                                  min={priceRange.min}
+                                  max={priceRange.max}
+                                  step="5000000"
+                                  value={filters.minPrice || priceRange.min}
+                                  onChange={(e) => {
+                                    const val = Math.min(parseInt(e.target.value), (parseInt(filters.maxPrice) || priceRange.max) - 10000000);
+                                    setFilters({...filters, minPrice: val.toString()});
+                                    setPage(1);
+                                  }}
+                                  className="absolute inset-x-0 w-full h-1.5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white dark:[&::-webkit-slider-thumb]:bg-gray-900 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-gray-900 dark:[&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-xl [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:active:scale-125 z-20"
+                                />
+                                <input 
+                                  type="range" 
+                                  min={priceRange.min}
+                                  max={priceRange.max}
+                                  step="5000000"
+                                  value={filters.maxPrice || priceRange.max}
+                                  onChange={(e) => {
+                                    const val = Math.max(parseInt(e.target.value), (parseInt(filters.minPrice) || priceRange.min) + 10000000);
+                                    setFilters({...filters, maxPrice: val.toString()});
+                                    setPage(1);
+                                  }}
+                                  className="absolute inset-x-0 w-full h-1.5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gray-900 dark:[&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white dark:[&::-webkit-slider-thumb]:border-gray-900 [&::-webkit-slider-thumb]:shadow-xl [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:active:scale-125 z-30"
+                                />
+                             </div>
+                           </div>
                         </div>
 
                         <div className="md:col-span-4 py-4 flex justify-between items-center border-t border-gray-50 dark:border-white/5 mt-2">
@@ -369,11 +463,11 @@ const Catalog = () => {
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
             {filteredVehicles.map((v, i) => (
               <motion.article
-                layout
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
+                custom={i}
+                variants={cardVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
                 key={v.id}
                 onClick={() => { setSelectedVehicle(v); setActiveImageIndex(0); }}
                 className="group relative bg-[#fcfcfd] dark:bg-gray-900 rounded-[24px] overflow-hidden border border-gray-100 dark:border-gray-800 hover:shadow-xl dark:hover:shadow-black/50 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer"
