@@ -102,9 +102,9 @@ const Catalog = () => {
         <div className="absolute bottom-[10%] -right-[10%] w-[500px] h-[500px] bg-emerald-600/10 dark:bg-emerald-600/10 blur-[120px] rounded-full" />
       </div>
 
-      <div className="relative z-10 w-full max-w-[1400px] mx-auto space-y-12">
+      <div className="relative z-10 w-full max-w-5xl mx-auto space-y-12">
         {/* Page Header */}
-        <header className="flex flex-col gap-2 pt-8 px-2">
+        <header className="flex flex-col gap-3 pt-8 px-2 md:items-center md:text-center">
            <h1 className="text-5xl md:text-7xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-none">
              Product <span className="text-gray-400">Catalog</span>
            </h1>
@@ -115,79 +115,94 @@ const Catalog = () => {
 
         {/* Main Search & Filters Bar */}
         <div className="sticky top-4 z-40">
-           <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-gray-200 dark:border-white/10 p-2 md:p-3 rounded-[32px] shadow-xl flex flex-col transition-all duration-500">
-              <div className="flex flex-col gap-4">
-                {/* Top Row: Search & User/Theme */}
-                <div className="flex items-center gap-2 w-full">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                    <input 
-                      type="text"
-                      placeholder="Cari brand..."
-                      className="w-full h-12 bg-gray-100 dark:bg-white/5 border-none rounded-[20px] pl-12 pr-4 text-sm text-gray-900 dark:text-white placeholder:text-gray-500 focus:ring-1 focus:ring-gray-300 dark:focus:ring-white/20 transition-all outline-none"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <button onClick={toggleTheme} className="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
-                      {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+           <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-gray-200 dark:border-white/10 p-2 md:p-2.5 rounded-[32px] md:rounded-[36px] shadow-xl transition-all duration-500">
+              <div className="flex flex-wrap md:flex-nowrap items-center gap-x-2 gap-y-3">
+                {/* 1. Search */}
+                <div className="relative flex-1 min-w-[200px]">
+                  <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                  <input 
+                    type="text"
+                    placeholder="Cari brand..."
+                    className="w-full h-12 bg-gray-100 dark:bg-white/5 border-none rounded-[24px] pl-12 pr-4 text-sm text-gray-900 dark:text-white placeholder:text-gray-500 focus:ring-1 focus:ring-gray-300 dark:focus:ring-white/20 transition-all outline-none"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                
+                {/* 2. Theme & Profile */}
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button onClick={toggleTheme} className="w-10 h-10 rounded-full flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10 md:bg-gray-100 md:dark:bg-white/5 transition-colors">
+                    {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+                  </button>
+                  <div className="relative">
+                    <button 
+                      onClick={() => setShowUserMenu(!showUserMenu)}
+                      className="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center text-gray-500 dark:text-gray-400 font-bold text-[10px] overflow-hidden border border-transparent hover:ring-2 hover:ring-gray-200 dark:hover:ring-white/10 transition-all"
+                    >
+                       {user?.avatar ? <img src={`${IMAGE_BASE_URL}${user.avatar}`} alt="" className="w-full h-full object-cover" /> : (user?.name?.charAt(0)?.toUpperCase() || 'U')}
                     </button>
-                    <div className="relative">
-                      <button 
-                        onClick={() => setShowUserMenu(!showUserMenu)}
-                        className="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center text-gray-500 dark:text-gray-400 font-bold text-[10px] overflow-hidden border border-transparent transition-all"
-                      >
-                         {user?.avatar ? <img src={`${IMAGE_BASE_URL}${user.avatar}`} alt="" className="w-full h-full object-cover" /> : (user?.name?.charAt(0)?.toUpperCase() || 'U')}
-                      </button>
-                      
-                      <AnimatePresence>
-                        {showUserMenu && (
-                          <motion.div 
-                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                            className="absolute right-0 top-full mt-3 w-48 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[20px] shadow-2xl py-2 z-50 overflow-hidden"
-                          >
-                            <div className="px-4 py-3 border-b border-gray-50 dark:border-gray-800">
-                              <p className="text-[10px] font-bold text-gray-900 dark:text-white truncate">{user?.name}</p>
-                              <p className="text-[8px] text-gray-400 uppercase tracking-widest mt-0.5">{userRole}</p>
-                            </div>
-                            <NavLink to="/profile" className="flex items-center gap-3 px-4 py-2 text-[10px] font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                              <UserCircle size={14} /> Profile
-                            </NavLink>
-                            <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2 text-[10px] font-bold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors">
-                              <LogOut size={14} /> Logout
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
-                      {/* Click Outside Overlay */}
+                    
+                    <AnimatePresence>
                       {showUserMenu && (
-                        <div 
-                          className="fixed inset-0 z-40" 
-                          onClick={() => setShowUserMenu(false)}
-                        />
+                        <motion.div 
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                          className="absolute right-0 top-full mt-3 w-48 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[20px] shadow-xl py-2 z-50 overflow-hidden"
+                        >
+                          <div className="px-4 py-3 border-b border-gray-50 dark:border-gray-800">
+                            <p className="text-[10px] font-bold text-gray-900 dark:text-white truncate">{user?.name}</p>
+                            <p className="text-[8px] text-gray-400 uppercase tracking-widest mt-0.5">{userRole}</p>
+                          </div>
+                          <NavLink to="/profile" className="flex items-center gap-3 px-4 py-2 text-[10px] font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                            <UserCircle size={14} /> Profile
+                          </NavLink>
+                          <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2 text-[10px] font-bold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors">
+                            <LogOut size={14} /> Logout
+                          </button>
+                        </motion.div>
                       )}
-                    </div>
+                    </AnimatePresence>
+
+                    {showUserMenu && <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />}
                   </div>
                 </div>
 
-                {/* Bottom Row: Type Filters & Advanced */}
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex-1 flex items-center gap-1 p-1 bg-gray-100 dark:bg-black/20 rounded-[20px] overflow-x-auto no-scrollbar">
-                    <button onClick={() => setFilterType('')} className={`flex-1 whitespace-nowrap px-4 h-9 rounded-[16px] text-[10px] font-bold transition-all ${!filterType ? 'bg-white dark:bg-white dark:text-gray-950 text-black shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}>All</button>
-                    <button onClick={() => setFilterType('Mobil')} className={`flex-1 whitespace-nowrap px-4 h-9 rounded-[16px] text-[10px] font-bold transition-all flex items-center justify-center gap-1.5 ${filterType === 'Mobil' ? 'bg-white dark:bg-white dark:text-gray-950 text-black shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}><Car size={12} /> Car</button>
-                    <button onClick={() => setFilterType('Motor')} className={`flex-1 whitespace-nowrap px-4 h-9 rounded-[16px] text-[10px] font-bold transition-all flex items-center justify-center gap-1.5 ${filterType === 'Motor' ? 'bg-white dark:bg-white dark:text-gray-950 text-black shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}><Smartphone size={12} /> Motor</button>
+                {/* 3. Filters (Circles on Desktop, full row on mobile) */}
+                <div className="flex items-center justify-between gap-2 w-full md:w-auto mt-1 md:mt-0">
+                  <div className="flex-1 md:flex-none flex items-center gap-1.5 p-1 md:p-0 bg-gray-100 dark:bg-black/20 md:bg-transparent md:dark:bg-transparent rounded-[20px] overflow-x-auto no-scrollbar">
+                    <button onClick={() => setFilterType('')} 
+                      className={`whitespace-nowrap h-9 px-4 md:w-10 md:h-10 md:px-0 rounded-[16px] md:rounded-full text-[10px] font-bold transition-all flex items-center justify-center gap-1.5 flex-1 md:flex-none 
+                      ${!filterType ? 'bg-white dark:bg-white dark:text-gray-950 text-black md:bg-gray-900 md:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 md:bg-gray-100 md:dark:bg-white/5 hover:md:bg-gray-200'}`}
+                    >
+                      <span className="md:hidden">All</span>
+                      <span className="hidden md:block text-[9px] tracking-wide">ALL</span>
+                    </button>
+                    
+                    <button onClick={() => setFilterType('Mobil')} 
+                      className={`whitespace-nowrap h-9 px-4 md:w-10 md:h-10 md:px-0 rounded-[16px] md:rounded-full text-[10px] font-bold transition-all flex items-center justify-center gap-1.5 flex-1 md:flex-none group relative
+                      ${filterType === 'Mobil' ? 'bg-white dark:bg-white dark:text-gray-950 text-black md:bg-gray-900 md:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 md:bg-gray-100 md:dark:bg-white/5 hover:md:bg-gray-200'}`}
+                    >
+                      <Car size={14} />
+                      <span className="md:hidden">Car</span>
+                    </button>
+                    
+                    <button onClick={() => setFilterType('Motor')} 
+                      className={`whitespace-nowrap h-9 px-4 md:w-10 md:h-10 md:px-0 rounded-[16px] md:rounded-full text-[10px] font-bold transition-all flex items-center justify-center gap-1.5 flex-1 md:flex-none group relative
+                      ${filterType === 'Motor' ? 'bg-white dark:bg-white dark:text-gray-950 text-black md:bg-gray-900 md:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 md:bg-gray-100 md:dark:bg-white/5 hover:md:bg-gray-200'}`}
+                    >
+                      <Smartphone size={14} />
+                      <span className="md:hidden">Motor</span>
+                    </button>
                   </div>
 
                   <button 
                     onClick={() => setShowAdvanced(!showAdvanced)}
-                    className={`flex items-center gap-1.5 px-4 h-10 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all flex-shrink-0 ${showAdvanced ? 'bg-gray-950 text-white dark:bg-white dark:text-gray-950' : 'bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400'}`}
+                    className={`h-9 px-4 md:w-10 md:h-10 md:px-0 rounded-[16px] md:rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 flex-shrink-0 
+                    ${showAdvanced ? 'bg-gray-950 text-white dark:bg-white dark:text-gray-950' : 'bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 hover:md:bg-gray-200'}`}
                   >
-                    <Filter size={12} /> {showAdvanced ? 'Hide' : 'Filter'}
+                    <Filter size={14} /> 
+                    <span className="md:hidden">{showAdvanced ? 'Hide' : 'Filter'}</span>
                   </button>
                 </div>
               </div>
@@ -199,9 +214,10 @@ const Catalog = () => {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                    transition={{ duration: 0.3, ease: 'easeInOut' }}
+                    className="overflow-hidden"
                   >
-                    <div className="pt-6 pb-2 px-4 grid grid-cols-1 md:grid-cols-4 gap-8 border-t border-gray-100 dark:border-white/5 mt-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                    <div className="pt-6 pb-2 px-4 grid grid-cols-1 md:grid-cols-4 gap-8 border-t border-gray-100 dark:border-white/5 mt-6">
                         <div className="space-y-3">
                           <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Brand Selection</label>
                           <select 
@@ -298,7 +314,7 @@ const Catalog = () => {
 
         {/* Grid Section */}
         {loading ? (
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="aspect-[3/4] bg-white/5 rounded-[32px] animate-pulse" />
             ))}
@@ -311,7 +327,7 @@ const Catalog = () => {
              <p className="text-gray-500 text-xl">Belum ada unit tersedia untuk kategori ini.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
             {filteredVehicles.map((v, i) => (
               <motion.article
                 layout
