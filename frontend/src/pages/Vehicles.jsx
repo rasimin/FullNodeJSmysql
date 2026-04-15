@@ -18,6 +18,7 @@ const Vehicles = () => {
   const [vehicles, setVehicles] = useState([]);
   const [brands, setBrands] = useState([]);
   const [modelHistory, setModelHistory] = useState([]);
+  const [typeHistory, setTypeHistory] = useState([]);
   const [offices, setOffices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -51,7 +52,8 @@ const Vehicles = () => {
     plate_number: '', price: '', status: 'Available', 
     purchase_price: '', service_cost: '', sold_date: '',
     entry_date: new Date().toISOString().split('T')[0],
-    description: '', office_id: '', sales_agent_id: '', color: '', odometer: ''
+    description: '', office_id: '', sales_agent_id: '', color: '', odometer: '',
+    transmission: 'Manual', fuel_type: 'Bensin'
   });
 
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -68,13 +70,16 @@ const Vehicles = () => {
 
   const fetchMetadata = async () => {
     try {
-      const [b, h, o, s] = await Promise.all([
+      const [b, h, t, o, s] = await Promise.all([
         api.get('/vehicles/brands'),
         api.get('/vehicles/model-history'),
+        api.get('/vehicles/type-history'),
         isHeadOffice ? api.get('/offices') : Promise.resolve({ data: [] }),
         api.get('/sales-agents/active')
       ]);
-      setBrands(b.data); setModelHistory(h.data);
+      setBrands(b.data); 
+      setModelHistory(h.data);
+      setTypeHistory(t.data);
       if (isHeadOffice) setOffices(o.data);
       setSalesAgents(s.data);
     } catch (e) { console.error(e); }
@@ -119,7 +124,9 @@ const Vehicles = () => {
         sales_agent_id: vehicle.sales_agent_id || '',
         color: vehicle.color || '',
         odometer: vehicle.odometer || '',
-        description: vehicle.description || ''
+        description: vehicle.description || '',
+        transmission: vehicle.transmission || 'Manual',
+        fuel_type: vehicle.fuel_type || 'Bensin'
       });
       fetchBookingHistory(vehicle.id);
     } else {
@@ -128,7 +135,8 @@ const Vehicles = () => {
         plate_number: '', price: '', status: 'Available',
         purchase_price: '', service_cost: '', sold_date: '',
         entry_date: new Date().toISOString().split('T')[0],
-        description: '', office_id: user?.office_id || '', sales_agent_id: '', color: '', odometer: ''
+        description: '', office_id: user?.office_id || '', sales_agent_id: '', color: '', odometer: '',
+        transmission: 'Manual', fuel_type: 'Bensin'
       });
       setBookingHistory([]);
     }
@@ -159,8 +167,14 @@ const Vehicles = () => {
     e.target.value = '';
   };
 
+  const sanitizePlate = (val) => val.replace(/[^a-zA-Z0-9\s]/g, '').toUpperCase();
+  const sanitizePhone = (val) => val.replace(/[^0-9+]/g, '');
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.brand || !formData.model || !formData.office_id) {
+       return notify('error', 'Brand, Model and Branch Office are required!');
+    }
     notify('loading', editingVehicle ? 'Updating...' : 'Adding...');
     
     try {
@@ -169,12 +183,18 @@ const Vehicles = () => {
       const allowedFields = [
         'type', 'brand', 'model', 'year', 'plate_number', 'price', 'status',
         'purchase_price', 'service_cost', 'sold_date', 'entry_date',
-        'description', 'office_id', 'sales_agent_id', 'color', 'odometer'
+        'description', 'office_id', 'sales_agent_id', 'color', 'odometer',
+        'transmission', 'fuel_type'
       ];
       
       allowedFields.forEach(field => {
         if (formData[field] !== undefined) {
-          payload[field] = formData[field] === null ? '' : formData[field];
+          let val = formData[field];
+          // Convert empty strings to null for ID and numeric fields to avoid FK errors
+          if (val === '' && ['sales_agent_id', 'office_id', 'purchase_price', 'service_cost', 'odometer'].includes(field)) {
+            val = null;
+          }
+          payload[field] = val;
         }
       });
 
@@ -394,7 +414,12 @@ const Vehicles = () => {
                   <td className="px-6 py-4"><span className={`badge ${v.status === 'Available' ? 'badge-green' : v.status === 'Sold' ? 'badge-red' : 'badge-yellow'}`}>{v.status}</span></td>
                   <td className="px-6 py-4"><div className="flex justify-center gap-2">
                     {v.status === 'Available' && <button onClick={() => openBookingModal(v)} className="flex items-center gap-1.5 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-black uppercase rounded-xl shadow-lg shadow-orange-500/20 transition-all active:scale-95"><Bookmark size={12} /> Book Now</button>}
-                    {v.status === 'Booked' && <button onClick={() => preConfirmAction(v, 'sold')} className="flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black uppercase rounded-xl shadow-lg shadow-green-500/20 transition-all active:scale-95"><CheckCircle size={12} /> Sell Unit</button>}
+                    {v.status === 'Booked' && (
+                      <div className="flex gap-1">
+                        <button onClick={() => preConfirmAction(v, 'sold')} className="flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black uppercase rounded-xl shadow-lg shadow-green-500/20 transition-all active:scale-95"><CheckCircle size={12} /> Sell</button>
+                        <button onClick={() => preConfirmAction(v, 'cancel')} className="flex items-center gap-1.5 px-3 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 text-[10px] font-black uppercase rounded-xl hover:bg-red-600 hover:text-white transition-all active:scale-95" title="Cancel Booking"><XCircle size={12} /></button>
+                      </div>
+                    )}
                     {v.status === 'Sold' && <div className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-400 text-[10px] font-black uppercase rounded-xl">Completed</div>}
                   </div></td>
                   <td className="px-6 py-4 text-right">
@@ -435,7 +460,12 @@ const Vehicles = () => {
                 </div>
                 <div className="flex gap-1 pt-2 border-t border-gray-100 dark:border-gray-800" onClick={e => e.stopPropagation()}>
                   {v.status === 'Available' ? <button onClick={() => openBookingModal(v)} className="flex-1 py-1.5 bg-orange-600 text-white rounded-lg text-[9px] font-black uppercase shadow-sm hover:shadow-md">Book</button> :
-                   v.status === 'Booked' ? <button onClick={() => preConfirmAction(v, 'sold')} className="flex-1 py-1.5 bg-green-600 text-white rounded-lg text-[9px] font-black uppercase shadow-sm hover:shadow-md">Sell</button> :
+                   v.status === 'Booked' ? (
+                     <div className="flex flex-1 gap-1">
+                       <button onClick={() => preConfirmAction(v, 'sold')} className="flex-1 py-1.5 bg-green-600 text-white rounded-lg text-[9px] font-black uppercase shadow-sm hover:shadow-md">Sell</button>
+                       <button onClick={() => preConfirmAction(v, 'cancel')} className="px-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 rounded-lg text-[9px] font-black flex items-center justify-center hover:bg-red-600 hover:text-white transition-all"><XCircle size={12} /></button>
+                     </div>
+                   ) :
                    <div className="flex-1 py-1.5 text-center text-white text-[9px] font-black uppercase bg-gray-400 dark:bg-gray-800 rounded-lg">Sold</div>}
                   <button onClick={() => openModal(v)} className="w-8 flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-400 hover:text-blue-600 rounded-lg shrink-0"><Edit size={12} /></button>
                   <button onClick={() => setConfirmDeleteId(v.id)} className="w-8 flex items-center justify-center bg-red-50 dark:bg-red-900/30 text-red-500 hover:bg-red-600 hover:text-white rounded-lg shrink-0 transition-colors"><Trash2 size={12} /></button>
@@ -454,11 +484,23 @@ const Vehicles = () => {
                 <div className="space-y-6">
                   <div className="flex items-center gap-3"><div className="w-1 h-5 bg-blue-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Detail Spesifikasi</h4></div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <Select label="Category" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} options={[{value:'Motor', label:'Motorcycle'}, {value:'Mobil', label:'Car'}]} disabled={isViewOnly} />
-                    <Input label="Brand / Merk" value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} required readOnly={isViewOnly} />
+                    <Select 
+                      label="Category" 
+                      value={formData.type} 
+                      onChange={e => setFormData({...formData, type: e.target.value})} 
+                      options={[
+                        { value: 'Mobil', label: 'Mobil' },
+                        { value: 'Motor', label: 'Motor' },
+                        ...typeHistory.filter(t => t !== 'Mobil' && t !== 'Motor').map(t => ({ value: t, label: t }))
+                      ]} 
+                      disabled={isViewOnly} 
+                    />
+                    <Select label="Brand / Merk" value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} options={brands.map(b => ({ value: b.name, label: b.name }))} required disabled={isViewOnly} />
                     <Input label="Model / Type" value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} required readOnly={isViewOnly} />
-                    <Input label="Plate Number" value={formData.plate_number} onChange={e => setFormData({...formData, plate_number: e.target.value})} required readOnly={isViewOnly} />
-                    <Input label="Year" type="number" value={formData.year} onChange={e => setFormData({...formData, year: e.target.value})} required readOnly={isViewOnly} />
+                    <Input label="Plate Number" value={formData.plate_number} onChange={e => setFormData({...formData, plate_number: sanitizePlate(e.target.value)})} required readOnly={isViewOnly} />
+                    <Select label="Year" value={formData.year} onChange={e => setFormData({...formData, year: e.target.value})} options={Array.from({length: 40}, (_, i) => ({ value: (new Date().getFullYear() - i).toString(), label: (new Date().getFullYear() - i).toString() }))} required disabled={isViewOnly} />
+                    <Select label="Transmission" value={formData.transmission} onChange={e => setFormData({...formData, transmission: e.target.value})} options={[{value:'Manual', label:'Manual'}, {value:'Automatic', label:'Automatic'}, {value:'CVT', label:'CVT'}, {value:'Triptonic', label:'Triptonic'}]} disabled={isViewOnly} />
+                    <Select label="Fuel Type" value={formData.fuel_type} onChange={e => setFormData({...formData, fuel_type: e.target.value})} options={[{value:'Bensin', label:'Bensin'}, {value:'Diesel', label:'Diesel / Solar'}, {value:'Electric', label:'Electric (EV)'}, {value:'Hybrid', label:'Hybrid'}]} disabled={isViewOnly} />
                     <Input label="Color" value={formData.color} onChange={e => setFormData({...formData, color: e.target.value})} readOnly={isViewOnly} />
                     <Input label="Odometer (KM)" value={displayCurrency(formData.odometer)} onChange={e => handleCurrencyChange(setFormData, formData, 'odometer', e.target.value)} readOnly={isViewOnly} />
                     <Input label="Sales Price" value={displayCurrency(formData.price)} onChange={e => handleCurrencyChange(setFormData, formData, 'price', e.target.value)} required readOnly={isViewOnly} />
@@ -474,7 +516,17 @@ const Vehicles = () => {
                     <Input label="Entry Date" type="date" value={formData.entry_date} onChange={e => setFormData({...formData, entry_date: e.target.value})} readOnly={isViewOnly} />
                     {(formData.status === 'Sold' || formData.sold_date) && <Input label="Sold Date" type="date" value={formData.sold_date} onChange={e => setFormData({...formData, sold_date: e.target.value})} readOnly={isViewOnly} />}
                     {isHeadOffice ? (
-                      <Select label="Branch Office" value={formData.office_id} onChange={e => setFormData({...formData, office_id: e.target.value})} options={offices.map(o => ({ value: o.id, label: o.name }))} required disabled={isViewOnly} />
+                      <Select 
+                        label="Branch Office" 
+                        value={formData.office_id} 
+                        onChange={e => setFormData({...formData, office_id: e.target.value})} 
+                        options={[
+                          { value: '', label: '-- Pilih Cabang --' },
+                          ...offices.map(o => ({ value: o.id, label: o.name }))
+                        ]} 
+                        required 
+                        disabled={isViewOnly} 
+                      />
                     ) : <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[8px] text-gray-400 font-black uppercase">Current Branch</p><p className="text-[10px] font-bold">{user?.Office?.name}</p></div>}
                   </div>
                   <textarea className="input h-20 p-3 text-xs" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Notes..." readOnly={isViewOnly} />
@@ -549,28 +601,27 @@ const Vehicles = () => {
         </form>
       </Modal>
 
-      {/* OTHER MODALS (Booking, Confirm) remain the same */}
       <Modal isOpen={isConfirmActionModalOpen} onClose={() => setIsConfirmActionModalOpen(false)} title="Konfirmasi Transaksi">
         <div className="space-y-6 pt-2">
-          <p className="text-sm">Konfirmasi {actionType === 'sold' ? 'Penjualan' : 'Pembatalan'} untuk <strong>{editingVehicle?.brand} {editingVehicle?.model}</strong>?</p>
+          <p className="text-sm text-gray-600 dark:text-gray-300">Konfirmasi {actionType === 'sold' ? 'Penjualan' : 'Pembatalan'} untuk <strong className="text-gray-900 dark:text-white">{editingVehicle?.brand} {editingVehicle?.model}</strong>?</p>
           <div className="space-y-3">
              {actionType === 'sold' && (
                <>
                  <Select label="Agent Penjual" value={bookingData.sales_agent_id} onChange={e => setBookingData({...bookingData, sales_agent_id: e.target.value})} options={salesAgents.map(a => ({ value: a.id, label: a.name }))} required />
-                 <button onClick={handleConfirmSale} className="w-full py-3 bg-green-600 text-white rounded-xl font-bold">KONFIRMASI JUAL</button>
+                 <button onClick={handleConfirmSale} className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-lg shadow-green-500/20 transition-all active:scale-95 uppercase text-xs tracking-widest">KONFIRMASI JUAL</button>
                </>
              )}
-             {actionType === 'cancel' && <button onClick={handleCancelBooking} className="w-full py-3 bg-red-600 text-white rounded-xl font-bold">BATALKAN BOOKING</button>}
-             <button onClick={() => setIsConfirmActionModalOpen(false)} className="w-full py-3 bg-gray-100 rounded-xl font-bold">TUTUP</button>
+             {actionType === 'cancel' && <button onClick={handleCancelBooking} className="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold shadow-lg shadow-red-500/20 transition-all active:scale-95 uppercase text-xs tracking-widest">BATALKAN BOOKING SEKARANG</button>}
+             <button onClick={() => setIsConfirmActionModalOpen(false)} className="w-full py-3 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all uppercase text-xs tracking-widest">KEMBALI</button>
           </div>
         </div>
       </Modal>
 
-      <Modal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} title="Form Reservasi Booking">
-         <form onSubmit={handleBookingSubmit} className="space-y-4">
-            <Input label="Nama Konsumen" value={bookingData.customer_name} onChange={e => setBookingData({...bookingData, customer_name: e.target.value})} required />
-            <Input label="Nomor HP" value={bookingData.customer_phone} onChange={e => setBookingData({...bookingData, customer_phone: e.target.value})} required />
-            <Input label="Down Payment" value={displayCurrency(bookingData.down_payment)} onChange={e => handleCurrencyChange(setBookingData, bookingData, 'down_payment', e.target.value)} />
+       <Modal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} title="Form Reservasi Booking">
+          <form onSubmit={handleBookingSubmit} className="space-y-4">
+             <Input label="Nama Konsumen" value={bookingData.customer_name} onChange={e => setBookingData({...bookingData, customer_name: e.target.value})} required />
+             <Input label="Nomor HP" placeholder="+62..." value={bookingData.customer_phone} onChange={e => setBookingData({...bookingData, customer_phone: sanitizePhone(e.target.value)})} required />
+             <Input label="Down Payment" value={displayCurrency(bookingData.down_payment)} onChange={e => handleCurrencyChange(setBookingData, bookingData, 'down_payment', e.target.value)} />
             <Select 
               label="Sales Agent (Optional)" 
               value={bookingData.sales_agent_id} 

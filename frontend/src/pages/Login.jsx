@@ -66,7 +66,16 @@ const Login = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Password</label>
+            <div className="flex justify-between items-center mb-1.5">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+              <button 
+                type="button" 
+                onClick={() => alert('Please contact your Super Admin to reset your password.')}
+                className="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Forgot Password?
+              </button>
+            </div>
             <input
               type="password" required value={password}
               onChange={(e) => setPassword(e.target.value)}

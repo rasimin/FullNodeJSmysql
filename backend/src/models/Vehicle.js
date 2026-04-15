@@ -8,7 +8,7 @@ const Vehicle = sequelize.define('Vehicle', {
     primaryKey: true,
   },
   type: {
-    type: DataTypes.ENUM('Mobil', 'Motor'),
+    type: DataTypes.STRING(50),
     allowNull: false,
   },
   brand: {
@@ -78,6 +78,14 @@ const Vehicle = sequelize.define('Vehicle', {
   },
   color: {
     type: DataTypes.STRING(50),
+    allowNull: true,
+  },
+  transmission: {
+    type: DataTypes.STRING(30),
+    allowNull: true,
+  },
+  fuel_type: {
+    type: DataTypes.STRING(30),
     allowNull: true,
   }
 }, {

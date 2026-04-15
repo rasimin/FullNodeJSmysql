@@ -154,6 +154,11 @@ const createVehicle = async (req, res) => {
       }
     }
 
+    // Sanitize empty strings to null for association fields
+    ['sales_agent_id', 'office_id'].forEach(field => {
+      if (req.body[field] === '') req.body[field] = null;
+    });
+
     const vehicle = await Vehicle.create({
       ...req.body,
       user_id: user.id,
@@ -179,7 +184,8 @@ const updateVehicle = async (req, res) => {
     const allowedFields = [
       'type', 'brand', 'model', 'year', 'plate_number', 'price', 'status',
       'purchase_price', 'service_cost', 'sold_date', 'entry_date',
-      'description', 'office_id', 'sales_agent_id', 'color', 'odometer'
+      'description', 'office_id', 'sales_agent_id', 'color', 'odometer',
+      'transmission', 'fuel_type'
     ];
     
     const updateData = {};
@@ -353,6 +359,18 @@ const getModelHistory = async (req, res) => {
   }
 };
 
+const getTypeHistory = async (req, res) => {
+  try {
+    const types = await Vehicle.findAll({
+      attributes: [[sequelize.fn('DISTINCT', sequelize.col('type')), 'type']],
+      order: [['type', 'ASC']]
+    });
+    res.json(types.map(t => t.type));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 const createBrand = async (req, res) => {
   try {
     const brand = await VehicleBrand.create(req.body, { userId: req.user.id });
@@ -450,6 +468,7 @@ module.exports = {
   setPrimaryImage,
   getBrands,
   getModelHistory,
+  getTypeHistory,
   createBrand,
   updateBrand,
   deleteBrand,

@@ -16,6 +16,7 @@ const SalesReport = () => {
   const [agentDetails, setAgentDetails] = useState([]);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [search, setSearch] = useState('');
 
   const fetchReport = async () => {
     setLoading(true);
@@ -123,7 +124,16 @@ const SalesReport = () => {
       <div className="card bg-white dark:bg-gray-900 p-0 overflow-hidden border-none shadow-2xl shadow-gray-200/50 dark:shadow-none">
         <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
            <h2 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">Agent Leaderboard</h2>
-           <button className="p-2 bg-gray-50 dark:bg-white/5 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><Search size={16} /></button>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+              <input 
+                type="text" 
+                placeholder="Search Agent..." 
+                className="pl-10 pr-4 py-2 bg-gray-50 dark:bg-white/5 rounded-xl text-[10px] font-black uppercase text-gray-700 dark:text-gray-200 outline-none border border-transparent focus:border-blue-500 transition-all w-48"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
         </div>
         
         <div className="overflow-x-auto">
@@ -138,7 +148,7 @@ const SalesReport = () => {
                 </tr>
              </thead>
              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {agents.map((agent, idx) => (
+                {agents.filter(a => a.name.toLowerCase().includes(search.toLowerCase())).map((agent, idx) => (
                   <tr key={agent.id} className="group hover:bg-gray-50/50 dark:hover:bg-white/5 transition-all">
                     <td className="px-6 py-5">
                        <div className="flex items-center gap-4">

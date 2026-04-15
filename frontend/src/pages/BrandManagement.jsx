@@ -100,8 +100,8 @@ const BrandManagement = () => {
                   <td className="px-6 py-4 font-bold">{b.name}</td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
-                       {b.for_motorcycle && <span className="badge badge-orange">Motor</span>}
-                       {b.for_car && <span className="badge badge-blue">Mobil</span>}
+                       {b.for_motorcycle && <span className="badge badge-orange">Motorcycle</span>}
+                       {b.for_car && <span className="badge badge-blue">Car</span>}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -133,8 +133,8 @@ const BrandManagement = () => {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                   {b.for_motorcycle && <span className="px-2 py-0.5 rounded-md bg-orange-50 dark:bg-orange-950/20 text-orange-600 text-[9px] font-bold border border-orange-100 dark:border-orange-800">MOTOR</span>}
-                   {b.for_car && <span className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/20 text-blue-600 text-[9px] font-bold border border-blue-100 dark:border-blue-800">MOBIL</span>}
+                   {b.for_motorcycle && <span className="px-2 py-0.5 rounded-md bg-orange-50 dark:bg-orange-950/20 text-orange-600 text-[9px] font-bold border border-orange-100 dark:border-orange-800">MOTORCYCLE</span>}
+                   {b.for_car && <span className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/20 text-blue-600 text-[9px] font-bold border border-blue-100 dark:border-blue-800">CAR</span>}
                 </div>
               </motion.div>
             ))}
@@ -148,8 +148,8 @@ const BrandManagement = () => {
           <div className="space-y-2">
             <p className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">Category</p>
             <div className="flex gap-6 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border">
-              <label className="flex items-center gap-2 cursor-pointer grow"><input type="checkbox" checked={formData.for_motorcycle} onChange={e => setFormData({...formData, for_motorcycle: e.target.checked})} className="w-5 h-5 rounded border-gray-300 text-orange-600" /><span className="text-sm font-medium">Motor</span></label>
-              <label className="flex items-center gap-2 cursor-pointer grow"><input type="checkbox" checked={formData.for_car} onChange={e => setFormData({...formData, for_car: e.target.checked})} className="w-5 h-5 rounded border-gray-300 text-blue-600" /><span className="text-sm font-medium">Mobil</span></label>
+              <label className="flex items-center gap-2 cursor-pointer grow"><input type="checkbox" checked={formData.for_motorcycle} onChange={e => setFormData({...formData, for_motorcycle: e.target.checked})} className="w-5 h-5 rounded border-gray-300 text-orange-600" /><span className="text-sm font-medium">Motorcycle</span></label>
+              <label className="flex items-center gap-2 cursor-pointer grow"><input type="checkbox" checked={formData.for_car} onChange={e => setFormData({...formData, for_car: e.target.checked})} className="w-5 h-5 rounded border-gray-300 text-blue-600" /><span className="text-sm font-medium">Car</span></label>
             </div>
           </div>
           <button type="submit" className="btn-primary w-full py-3 mt-4">{editingBrand ? 'Update Brand' : 'Save Brand'}</button>
