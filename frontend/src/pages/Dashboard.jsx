@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import api from '../services/api';
 import { 
   Users, ShieldCheck, Building2, Activity, UserCircle, 
-  LogIn, LogOut, PlusCircle, Edit3, Trash2, Globe 
+  LogIn, LogOut, PlusCircle, Edit3, Trash2, Globe, FileText
 } from 'lucide-react';
 
 const safeDate = (str) => {
@@ -46,6 +46,28 @@ const Dashboard = () => {
   const userRole = user?.role || user?.Role?.name;
   const userOffice = user?.office || user?.Office?.name;
 
+  const handleExportPdf = async () => {
+    try {
+      const alertDiv = document.createElement('div');
+      alertDiv.innerText = 'Downloading PDF...';
+      alertDiv.className = 'fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded shadow z-50';
+      document.body.appendChild(alertDiv);
+      setTimeout(() => alertDiv.remove(), 2000);
+
+      const res = await api.get('/export/dashboard/pdf', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.setAttribute('download', 'dashboard_report.pdf');
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (e) {
+      console.error('Failed to export PDF', e);
+      alert('Failed to export PDF');
+    }
+  };
+
   const statCards = [
     { title: 'Total Users',   value: stats.totalUsers,   icon: Users,       iconClass: 'icon-box icon-blue'   },
     { title: 'Total Roles',   value: stats.totalRoles,   icon: ShieldCheck, iconClass: 'icon-box icon-purple' },
@@ -59,26 +81,34 @@ const Dashboard = () => {
       <motion.div
         initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2 }}
-        className="card p-5"
+        className="card p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
       >
-        <h1 className="text-base font-bold text-gray-900 dark:text-white">
-          Welcome back, {user?.name}! 👋
-        </h1>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Role: <span className="font-semibold text-blue-600 dark:text-blue-400">{userRole || '—'}</span>
-          </p>
-          <div className="h-3 w-px bg-gray-200 dark:bg-gray-800 hidden sm:block"></div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-            <Building2 size={14} className="text-blue-500" />
-            {user?.Office?.name || 'Main Panel'}
-            {user?.Office?.Parent?.name && (
-              <span className="text-xs text-gray-400">
-                 (Branch of <span className="font-medium text-gray-700 dark:text-gray-300">{user.Office.Parent.name}</span>)
-              </span>
-            )}
-          </p>
+        <div>
+          <h1 className="text-base font-bold text-gray-900 dark:text-white">
+            Welcome back, {user?.name}! 👋
+          </h1>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Role: <span className="font-semibold text-blue-600 dark:text-blue-400">{userRole || '—'}</span>
+            </p>
+            <div className="h-3 w-px bg-gray-200 dark:bg-gray-800 hidden sm:block"></div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+              <Building2 size={14} className="text-blue-500" />
+              {user?.Office?.name || 'Main Panel'}
+              {user?.Office?.Parent?.name && (
+                <span className="text-xs text-gray-400">
+                   (Branch of <span className="font-medium text-gray-700 dark:text-gray-300">{user.Office.Parent.name}</span>)
+                </span>
+              )}
+            </p>
+          </div>
         </div>
+        <button 
+          onClick={handleExportPdf}
+          className="btn-primary gap-2 h-10 px-4 text-xs font-bold uppercase tracking-wide bg-red-600 hover:bg-red-700 border-none shrink-0"
+        >
+          <FileText size={16} /> Export PDF
+        </button>
       </motion.div>
 
       {/* Stat Cards */}

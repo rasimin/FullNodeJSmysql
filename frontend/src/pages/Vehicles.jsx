@@ -116,7 +116,10 @@ const Vehicles = () => {
         purchase_price: vehicle.purchase_price || '',
         service_cost: vehicle.service_cost || '',
         office_id: vehicle.office_id || '',
-        sales_agent_id: vehicle.sales_agent_id || ''
+        sales_agent_id: vehicle.sales_agent_id || '',
+        color: vehicle.color || '',
+        odometer: vehicle.odometer || '',
+        description: vehicle.description || ''
       });
       fetchBookingHistory(vehicle.id);
     } else {
@@ -136,21 +139,72 @@ const Vehicles = () => {
     try { const r = await api.get(`/bookings/vehicle/${id}/history`); setBookingHistory(r.data); } catch (e) { console.error(e); }
   };
 
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setSelectedFiles(prev => {
+      const currentImagesCount = editingVehicle?.images?.length || 0;
+      const totalPlanned = prev.length + files.length;
+      
+      if (currentImagesCount + totalPlanned > 10) {
+        const availableSlots = 10 - (currentImagesCount + prev.length);
+        alert(`Maksimal 10 gambar per kendaraan! (Sisa slot: ${availableSlots})`);
+        return [...prev, ...files.slice(0, availableSlots)];
+      }
+      return [...prev, ...files];
+    });
+    
+    // Reset input value so the same file selection triggers onChange next time
+    e.target.value = '';
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     notify('loading', editingVehicle ? 'Updating...' : 'Adding...');
-    const data = new FormData();
-    Object.keys(formData).forEach(key => {
-      if (formData[key] !== null && formData[key] !== undefined) {
-        data.append(key, formData[key]);
-      }
-    });
-    selectedFiles.forEach(file => data.append('images', file));
-
+    
     try {
-      editingVehicle ? await api.put(`/vehicles/${editingVehicle.id}`, data) : await api.post('/vehicles', data);
-      notify('success', 'Success!'); setIsModalOpen(false); fetchVehicles();
-    } catch (err) { notify('error', 'Failed'); }
+      // Clean payload: strip associations and ensure no nulls for text fields
+      const payload = {};
+      const allowedFields = [
+        'type', 'brand', 'model', 'year', 'plate_number', 'price', 'status',
+        'purchase_price', 'service_cost', 'sold_date', 'entry_date',
+        'description', 'office_id', 'sales_agent_id', 'color', 'odometer'
+      ];
+      
+      allowedFields.forEach(field => {
+        if (formData[field] !== undefined) {
+          payload[field] = formData[field] === null ? '' : formData[field];
+        }
+      });
+
+      let vehicleId = editingVehicle?.id;
+
+      if (editingVehicle) {
+        await api.put(`/vehicles/${vehicleId}`, payload);
+      } else {
+        const res = await api.post('/vehicles', payload);
+        vehicleId = res.data.id || res.data.vehicleId || res.data?.vehicle?.id || res.data.data?.id;
+      }
+
+      // Upload extra images if any are selected
+      if (selectedFiles.length > 0 && vehicleId) {
+        const uploadData = new FormData();
+        selectedFiles.forEach(file => uploadData.append('images', file));
+        await api.post(`/vehicles/${vehicleId}/images`, uploadData, {
+          headers: { 'Content-Type': undefined } // Let axios auto-set multipart/form-data with boundary
+        });
+      }
+      setSelectedFiles([]);
+
+      notify('success', 'Success!'); 
+      setIsModalOpen(false); 
+      fetchVehicles();
+    } catch (err) { 
+        console.error('Save error:', err);
+        const msg = err.response?.data?.message || 'Failed to save changes';
+        notify('error', msg); 
+    }
   };
 
   const handleDelete = async () => {
@@ -222,22 +276,46 @@ const Vehicles = () => {
     } catch { notify('error', 'Cancel failed'); }
   };
 
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    if (selectedFiles.length + files.length > 10) return alert('Max 10 images');
-    setSelectedFiles([...selectedFiles, ...files]);
-  };
+
 
   const handleSetPrimaryImage = async (imgId) => {
-    try { await api.patch(`/vehicles/images/${imgId}/primary`); fetchVehicles(); if (editingVehicle) { const r = await api.get(`/vehicles/${editingVehicle.id}`); setEditingVehicle(r.data); } } catch (e) { console.error(e); }
+    try {
+      notify('loading', 'Setting primary...');
+      await api.put(`/vehicles/${editingVehicle.id}/images/${imgId}/primary`);
+      // Refresh vehicle data to get updated images
+      const r = await api.get(`/vehicles/${editingVehicle.id}`);
+      const freshImages = r.data.images || r.data.Images || [];
+      setEditingVehicle(prev => ({ ...prev, images: freshImages }));
+      fetchVehicles();
+      notify('success', 'Primary image updated!');
+    } catch (e) { 
+      console.error('Set primary error:', e);
+      notify('error', e.response?.data?.message || 'Failed to set primary image');
+    }
   };
 
   const handleDeleteImage = async (imgId) => {
-    if (!window.confirm('Delete image?')) return;
-    try { await api.delete(`/vehicles/images/${imgId}`); if (editingVehicle) { const r = await api.get(`/vehicles/${editingVehicle.id}`); setEditingVehicle(r.data); } } catch (e) { console.error(e); }
+    if (!window.confirm('Hapus gambar ini?')) return;
+    try {
+      notify('loading', 'Deleting image...');
+      await api.delete(`/vehicles/${editingVehicle.id}/images/${imgId}`);
+      // Immediately remove from local state
+      setEditingVehicle(prev => ({
+        ...prev,
+        images: (prev.images || []).filter(img => img.id !== imgId)
+      }));
+      fetchVehicles();
+      notify('success', 'Image deleted!');
+    } catch (e) {
+      console.error('Delete image error:', e);
+      notify('error', e.response?.data?.message || 'Failed to delete image');
+    }
   };
 
-  const displayCurrency = (val) => val ? parseInt(val).toLocaleString('id-ID') : '';
+  const displayCurrency = (val) => {
+    if (val === null || val === undefined || val === '') return '';
+    return parseInt(val).toLocaleString('id-ID');
+  };
   const handleCurrencyChange = (setter, state, field, val) => {
     const num = val.replace(/\D/g, '');
     setter({ ...state, [field]: num });
@@ -287,7 +365,8 @@ const Vehicles = () => {
 
       {viewMode === 'table' ? (
         <div className="card overflow-hidden border-none shadow-xl">
-          <table className="w-full text-left">
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left min-w-[800px]">
             <thead className="bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-800">
               <tr>
                 <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Unit Info</th>
@@ -301,7 +380,7 @@ const Vehicles = () => {
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {vehicles.map((v, i) => (
                 <tr key={v.id} className="hover:bg-blue-50/20 transition-colors">
-                  <td className="px-6 py-4"><div className="flex items-center gap-3"><div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${v.type === 'Mobil' ? 'bg-indigo-50 text-indigo-600' : 'bg-orange-50 text-orange-600'}`}><Car size={20} /></div><div><p className="text-sm font-black text-gray-900">{v.brand} {v.model}</p><p className="text-[10px] text-gray-400 font-bold uppercase">{v.type} • {v.year} • {v.plate_number}</p></div></div></td>
+                  <td className="px-6 py-4"><div className="flex items-center gap-3"><div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden ${v.type === 'Mobil' ? 'bg-indigo-50 text-indigo-600' : 'bg-orange-50 text-orange-600'}`}>{v.images?.length > 0 ? <img src={`${IMAGE_BASE_URL}${v.images[0].image_url}`} className="w-full h-full object-cover" alt="Unit" /> : <Car size={20} />}</div><div><p className="text-sm font-black text-gray-900">{v.brand} {v.model}</p><p className="text-[10px] text-gray-400 font-bold uppercase">{v.type} • {v.year} • {v.plate_number}</p></div></div></td>
                   <td className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase">{v.Office?.name || '-'}</td>
                   <td className="px-6 py-4 font-black text-blue-600">{formatPrice(v.price)}</td>
                   <td className="px-6 py-4"><span className={`badge ${v.status === 'Available' ? 'badge-green' : v.status === 'Sold' ? 'badge-red' : 'badge-yellow'}`}>{v.status}</span></td>
@@ -311,21 +390,41 @@ const Vehicles = () => {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {vehicles.map((v) => (
-            <div key={v.id} className="card p-4 flex flex-col justify-between gap-4 group hover:border-blue-500/30 transition-all" onClick={() => openModal(v, true)}>
-              <div className="flex items-start justify-between"><div className="flex items-center gap-3 min-w-0"><div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${v.type === 'Mobil' ? 'bg-indigo-50 text-indigo-600' : 'bg-orange-50 text-orange-600'}`}><Car size={18} /></div><div className="min-w-0"><h3 className="text-xs font-black text-gray-900 uppercase truncate">{v.brand} {v.model}</h3><p className="text-[10px] text-gray-400 font-bold uppercase">{v.plate_number}</p></div></div><span className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase ${v.status === 'Available' ? 'bg-green-100 text-green-700' : v.status === 'Sold' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'}`}>{v.status}</span></div>
-              <div className="space-y-2"><p className="text-sm font-black text-blue-600 flex justify-between items-center">{formatPrice(v.price)} <span className="text-[9px] font-bold text-gray-400">{v.year}</span></p><div className="flex items-center gap-1.5 text-[9px] text-gray-400 font-bold uppercase truncate"><MapPin size={10} className="text-gray-300" /> {v.Office?.name}</div></div>
-              <div className="flex gap-1.5 pt-3 border-t border-gray-100 dark:border-gray-800" onClick={e => e.stopPropagation()}>
-                {v.status === 'Available' ? <button onClick={() => openBookingModal(v)} className="flex-1 py-2 bg-orange-600 text-white rounded-xl text-[10px] font-black uppercase">Reservation</button> :
-                 v.status === 'Booked' ? <button onClick={() => preConfirmAction(v, 'sold')} className="flex-1 py-2 bg-green-600 text-white rounded-xl text-[10px] font-black uppercase">Sell Now</button> :
-                 <div className="flex-1 py-2 text-center text-gray-400 text-[10px] font-black uppercase bg-gray-50 rounded-xl">Sold Out</div>}
-                <button onClick={() => openModal(v)} className="w-10 flex items-center justify-center bg-gray-100 text-gray-400 hover:text-blue-600 rounded-xl"><Edit size={14} /></button>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          {vehicles.map((v) => {
+            const displayImage = v.images?.find(img => img.is_primary)?.image_url || v.images?.[0]?.image_url;
+            return (
+              <div key={v.id} className="card p-3 md:p-4 flex flex-col justify-between gap-3 group hover:border-blue-500/30 transition-all" onClick={() => openModal(v, true)}>
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1 mb-1">
+                  <span className={`px-2 py-0.5 rounded text-[8px] md:text-[9px] font-black uppercase w-max ${v.status === 'Available' ? 'bg-green-100 text-green-700' : v.status === 'Sold' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'}`}>{v.status}</span>
+                  <p className="text-[8px] md:text-[10px] text-gray-400 font-bold uppercase truncate">{v.plate_number} • {v.year}</p>
+                </div>
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center shrink-0 overflow-hidden ${v.type === 'Mobil' ? 'bg-indigo-50 text-indigo-600' : 'bg-orange-50 text-orange-600'}`}>
+                    {displayImage ? <img src={`${IMAGE_BASE_URL}${displayImage}`} className="w-full h-full object-cover" alt="Vehicle" /> : <Car size={20} />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-xs md:text-sm font-black text-gray-900 uppercase truncate" title={`${v.brand} ${v.model}`}>{v.brand} {v.model}</h3>
+                    <p className="text-[9px] md:text-[10px] text-gray-500 font-bold uppercase truncate">{v.type}</p>
+                  </div>
+                </div>
+                <div className="space-y-1.5 mt-auto">
+                  <p className="text-xs md:text-sm font-black text-blue-600 truncate">{formatPrice(v.price)}</p>
+                  <div className="flex items-center gap-1 text-[8px] md:text-[9px] text-gray-400 font-bold uppercase truncate"><MapPin size={8} className="text-gray-300 md:w-2.5 md:h-2.5" /> {v.Office?.name}</div>
+                </div>
+                <div className="flex gap-1 pt-2 border-t border-gray-100 dark:border-gray-800" onClick={e => e.stopPropagation()}>
+                  {v.status === 'Available' ? <button onClick={() => openBookingModal(v)} className="flex-1 py-1.5 bg-orange-600 text-white rounded-lg text-[9px] font-black uppercase shadow-sm hover:shadow-md">Book</button> :
+                   v.status === 'Booked' ? <button onClick={() => preConfirmAction(v, 'sold')} className="flex-1 py-1.5 bg-green-600 text-white rounded-lg text-[9px] font-black uppercase shadow-sm hover:shadow-md">Sell</button> :
+                   <div className="flex-1 py-1.5 text-center text-gray-400 text-[9px] font-black uppercase bg-gray-50 rounded-lg">Sold</div>}
+                  <button onClick={() => openModal(v)} className="w-8 flex items-center justify-center bg-gray-100 text-gray-400 hover:text-blue-600 rounded-lg shrink-0"><Edit size={12} /></button>
+                  <button onClick={() => setConfirmDeleteId(v.id)} className="w-8 flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-600 hover:text-white rounded-lg shrink-0 transition-colors"><Trash2 size={12} /></button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -368,20 +467,29 @@ const Vehicles = () => {
                 <div className="space-y-6">
                   <div className="flex items-center gap-2"><div className="w-1 h-5 bg-indigo-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 uppercase tracking-widest">Media Gallery</h4></div>
                   <div className="grid grid-cols-2 gap-2">
-                    {editingVehicle?.Images?.map((img) => (
+                    {editingVehicle?.images?.map((img) => (
                       <div key={img.id} className="relative group aspect-square rounded-xl overflow-hidden bg-gray-100">
                         <img src={`${IMAGE_BASE_URL}${img.image_url}`} className="w-full h-full object-cover" />
                         {img.is_primary && <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-blue-600 text-white text-[7px] font-black uppercase rounded">Primary</div>}
                         {!isViewOnly && (
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
-                            <button type="button" onClick={() => handleSetPrimaryImage(img.id)} className="p-1.5 bg-white text-blue-600 rounded-md"><CheckCircle size={10} /></button>
-                            <button type="button" onClick={() => handleDeleteImage(img.id)} className="p-1.5 bg-white text-red-600 rounded-md"><Trash2 size={10} /></button>
+                          <div className="absolute top-1 right-1 flex flex-col gap-1 sm:top-auto sm:right-auto sm:inset-0 sm:bg-black/40 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity items-center justify-center flex-row">
+                            <button type="button" onClick={() => handleSetPrimaryImage(img.id)} className="p-2 bg-white text-blue-600 rounded-lg shadow-lg sm:shadow-none"><CheckCircle size={14} /></button>
+                            <button type="button" onClick={() => handleDeleteImage(img.id)} className="p-2 bg-white text-red-600 rounded-lg shadow-lg sm:shadow-none"><Trash2 size={14} /></button>
                           </div>
                         )}
                       </div>
                     ))}
-                    {!isViewOnly && (editingVehicle?.Images?.length || 0) < 10 && (
-                      <label className="aspect-square rounded-xl border-2 border-dashed border-gray-200 hover:border-blue-500 flex flex-col items-center justify-center transition-all cursor-pointer"><Camera size={18} className="text-gray-300" /><input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} /></label>
+                    {selectedFiles.map((file, index) => (
+                      <div key={index} className="relative group aspect-square rounded-xl overflow-hidden bg-gray-100 opacity-90 border border-green-500/30 shadow-sm border-dashed">
+                        <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" />
+                        <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-green-600 text-white text-[7px] font-black uppercase rounded">Baru</div>
+                        <div className="absolute top-1 right-1 flex flex-col gap-1 sm:top-auto sm:right-auto sm:inset-0 sm:bg-black/40 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity items-center justify-center flex-row">
+                          <button type="button" onClick={() => setSelectedFiles(selectedFiles.filter((_, i) => i !== index))} className="p-2 bg-white text-red-600 rounded-lg shadow-lg sm:shadow-none"><Trash2 size={14} /></button>
+                        </div>
+                      </div>
+                    ))}
+                    {!isViewOnly && ((editingVehicle?.images?.length || 0) + selectedFiles.length) < 10 && (
+                      <label className="aspect-square rounded-xl border-2 border-dashed border-gray-200 hover:border-blue-500 flex flex-col items-center justify-center transition-all cursor-pointer bg-gray-50/50 hover:bg-blue-50/20"><Camera size={18} className="text-gray-300" /><input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} /></label>
                     )}
                   </div>
                 </div>

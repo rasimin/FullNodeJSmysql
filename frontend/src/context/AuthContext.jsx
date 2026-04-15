@@ -7,16 +7,12 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
-
-  const [idleTimer, setIdleTimer] = useState(null);
-
   useEffect(() => {
     const fetchUser = async () => {
       if (token) {
         try {
           const response = await api.get('/auth/me');
           setUser(response.data);
-          setupIdleTimer();
         } catch (error) {
           console.error('Failed to fetch user', error);
           logout();
@@ -24,51 +20,51 @@ export const AuthProvider = ({ children }) => {
       }
       setLoading(false);
     };
-
     fetchUser();
-    return () => clearIdleTimer();
   }, [token]);
 
-  const clearIdleTimer = () => {
-    if (idleTimer) clearTimeout(idleTimer);
-  };
+  // Idle Timer Logic
+  useEffect(() => {
+    if (!token) return;
 
-  const setupIdleTimer = async () => {
-    clearIdleTimer();
-    
-    try {
-      // Get timeout from settings (default to 15 mins if fails)
-      const res = await api.get('/settings');
-      const timeoutSetting = res.data.find(s => s.key === 'security_inactivity_timeout');
-      const timeoutMins = timeoutSetting ? parseInt(timeoutSetting.value) : 15;
-      
-      const timeoutMs = timeoutMins * 60 * 1000;
+    let timeoutId;
+    let events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    let attachedResetTimer = null;
 
-      const resetTimer = () => {
-        clearIdleTimer();
-        const timer = setTimeout(() => {
-          console.log('Inactivity timeout reached. Logging out...');
-          logout();
-          alert('Sesi Anda telah berakhir karena tidak ada aktivitas selama ' + timeoutMins + ' menit.');
-        }, timeoutMs);
-        setIdleTimer(timer);
+    const setup = async () => {
+      let timeoutMins = 15;
+      try {
+        const res = await api.get('/settings');
+        const timeoutSetting = res.data.find(s => s.key === 'security_inactivity_timeout');
+        if (timeoutSetting) timeoutMins = parseInt(timeoutSetting.value);
+      } catch (e) {}
+
+      attachedResetTimer = () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          if (localStorage.getItem('token')) {
+            logout();
+            alert(`Sesi Anda telah berakhir karena tidak ada aktivitas selama ${timeoutMins} menit.`);
+            window.location.href = '/login';
+          }
+        }, timeoutMins * 60 * 1000);
       };
 
-      // Events to track
-      const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-      events.forEach(event => document.addEventListener(event, resetTimer));
-      
-      resetTimer(); // Initialize
+      events.forEach(event => document.addEventListener(event, attachedResetTimer));
+      attachedResetTimer(); // start initially
+    };
 
-      return () => {
-        events.forEach(event => document.removeEventListener(event, resetTimer));
-        clearIdleTimer();
+    setup();
+
+    return () => {
+      if (attachedResetTimer) {
+        events.forEach(event => document.removeEventListener(event, attachedResetTimer));
       }
-    } catch (err) {
-      console.warn('Could not fetch activity timeout, using default 15m');
-      // Default fallback if settings can't be fetched
-    }
-  };
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [token]);
+
+  // (Setup logic handled in useEffect above)
 
   const login = async (email, password) => {
     const response = await api.post('/auth/login', { email, password });
@@ -86,7 +82,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
     setToken(null);
     setUser(null);
-    clearIdleTimer();
   };
 
   return (

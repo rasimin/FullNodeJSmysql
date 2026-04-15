@@ -6,6 +6,7 @@ import DynamicIsland from '../components/DynamicIsland';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { motion, AnimatePresence } from 'framer-motion';
+import { IMAGE_BASE_URL } from '../config';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -204,7 +205,9 @@ const UserManagement = () => {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 shrink-0 font-bold text-xs">{u.name?.charAt(0).toUpperCase()}</div>
+                      <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 shrink-0 font-bold text-xs overflow-hidden">
+                        {u.avatar ? <img src={`${IMAGE_BASE_URL}${u.avatar}`} alt={u.name} className="w-full h-full object-cover" /> : u.name?.charAt(0).toUpperCase()}
+                      </div>
                       <div className="min-w-0">
                         <h3 className="text-xs md:text-sm font-bold text-gray-900 dark:text-white truncate">{u.name}</h3>
                         <p className="text-[9px] md:text-[10px] text-blue-600 font-mono truncate">@{u.username}</p>

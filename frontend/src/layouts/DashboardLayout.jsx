@@ -50,11 +50,11 @@ const DashboardLayout = () => {
       {
         title: 'MANAGEMENT',
         items: [
-          { to: '/catalog', icon: LayoutDashboard, label: 'Product Catalog', target: '_blank' },
           { to: '/brands', icon: Tags, label: 'Brand Management' },
           { to: '/vehicles', icon: Car, label: 'Vehicles' },
           { to: '/offices', icon: Building2, label: 'Office Management' },
           { to: '/sales-agents', icon: Users, label: 'Sales Agent' },
+          { to: '/catalog', icon: LayoutDashboard, label: 'Product Catalog', target: '_blank' },
         ]
       },
       {

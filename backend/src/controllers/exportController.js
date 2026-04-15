@@ -1,5 +1,6 @@
 const ExcelJS = require('exceljs');
-const { User, Role, Office } = require('../models');
+const PDFDocument = require('pdfkit');
+const { User, Role, Office, ActivityLog } = require('../models');
 const { Op } = require('sequelize');
 
 const exportUsers = async (req, res) => {
@@ -63,6 +64,58 @@ const exportUsers = async (req, res) => {
   }
 };
 
+const exportDashboardPdf = async (req, res) => {
+  try {
+    const totalUsers = await User.count();
+    const totalRoles = await Role.count();
+    const totalOffices = await Office.count();
+
+    const recentActivities = await ActivityLog.findAll({
+      limit: 10,
+      order: [['created_at', 'DESC']],
+      include: [{ model: User, attributes: ['name'] }]
+    });
+
+    const doc = new PDFDocument({ margin: 50 });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="dashboard_report.pdf"');
+    
+    doc.pipe(res);
+
+    // Header
+    doc.fontSize(20).text('Dashboard Analytics Report', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(12).text(`Generated on: ${new Date().toLocaleString('id-ID')}`, { align: 'center' });
+    doc.moveDown(2);
+
+    // Stats
+    doc.fontSize(16).text('System Statistics', { underline: true });
+    doc.moveDown(0.5);
+    doc.fontSize(12).text(`Total Users: ${totalUsers}`);
+    doc.text(`Total Roles: ${totalRoles}`);
+    doc.text(`Total Offices: ${totalOffices}`);
+    doc.moveDown(2);
+
+    // Activities
+    doc.fontSize(16).text('Recent Activities (Last 10)', { underline: true });
+    doc.moveDown(0.5);
+
+    recentActivities.forEach((activity, index) => {
+      const userName = activity.User ? activity.User.name : 'Unknown';
+      const date = activity.created_at ? new Date(activity.created_at).toLocaleString('id-ID') : new Date().toLocaleString('id-ID');
+      doc.fontSize(10).text(`${index + 1}. [${date}] ${userName} - ${activity.action}`);
+    });
+
+    doc.end();
+
+  } catch (error) {
+    console.error('PDF Export Error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
-  exportUsers
+  exportUsers,
+  exportDashboardPdf
 };

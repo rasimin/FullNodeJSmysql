@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { 
-  getVehicles, createVehicle, updateVehicle, deleteVehicle,
+  getVehicles, getVehicleById, createVehicle, updateVehicle, deleteVehicle,
   getBrands, getModelHistory, createBrand, updateBrand, deleteBrand,
   uploadVehicleImages, deleteVehicleImage, setPrimaryImage, getVehicleSummary
 } = require('../controllers/vehicleController');
@@ -20,6 +20,7 @@ router.get('/model-history', getModelHistory);
 
 // Vehicle CRUD
 router.post('/', authorize(['Super Admin', 'Admin Pusat', 'Admin Cabang']), createVehicle);
+router.get('/:id', getVehicleById);
 router.put('/:id', authorize(['Super Admin', 'Admin Pusat', 'Admin Cabang']), updateVehicle);
 router.delete('/:id', authorize(['Super Admin', 'Admin Pusat']), deleteVehicle);
 

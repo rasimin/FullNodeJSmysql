@@ -6,6 +6,24 @@ const fs = require('fs');
 
 const { getPagination, getPagingData } = require('../utils/pagination');
 
+const getVehicleById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const vehicle = await Vehicle.findByPk(id, {
+      include: [
+        { model: Office, attributes: ['id', 'name', 'parent_id'] },
+        { model: User, attributes: ['name'] },
+        { model: SalesAgent, as: 'salesAgent', attributes: ['name', 'sales_code'] },
+        { model: VehicleImage, as: 'images', attributes: ['id', 'image_url', 'is_primary'] }
+      ]
+    });
+    if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
+    res.json(vehicle);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 const getVehicles = async (req, res) => {
   try {
     const { page, size, search, officeId: filterOfficeId, type, status } = req.query;
@@ -151,7 +169,28 @@ const updateVehicle = async (req, res) => {
     const vehicle = await Vehicle.findByPk(id);
     if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
 
-    const updateData = { ...req.body };
+    // Sanitize update data: ensure numeric fields are numbers/null and remove non-column keys
+    const allowedFields = [
+      'type', 'brand', 'model', 'year', 'plate_number', 'price', 'status',
+      'purchase_price', 'service_cost', 'sold_date', 'entry_date',
+      'description', 'office_id', 'sales_agent_id', 'color', 'odometer'
+    ];
+    
+    const updateData = {};
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        let val = req.body[field];
+        // Handle empty strings for numeric/date fields
+        if (val === '' || val === null) {
+          if (['price', 'year', 'purchase_price', 'service_cost', 'odometer', 'office_id', 'sales_agent_id'].includes(field)) {
+             val = (['price', 'year', 'office_id'].includes(field)) ? vehicle[field] : null; // Keep existing if required, else null
+          } else {
+             val = null;
+          }
+        }
+        updateData[field] = val;
+      }
+    });
     
     // Auto-manage sold_date based on status change
     if (updateData.status === 'Sold' && vehicle.status !== 'Sold' && !updateData.sold_date) {
@@ -161,18 +200,18 @@ const updateVehicle = async (req, res) => {
     }
 
     // Validate office_id if changing
-    if (updateData.office_id && updateData.office_id !== vehicle.office_id) {
+    if (updateData.office_id && parseInt(updateData.office_id) !== vehicle.office_id) {
       const isSuperAdmin = user.Role?.name === 'Super Admin';
-      const currentOffice = await Office.findByPk(user.office_id);
+      const currentOffice = user.office_id ? await Office.findByPk(user.office_id) : null;
 
       if (isSuperAdmin) {
         // Skip validation for Super Admin
-      } else if (currentOffice.parent_id) {
-         // Branch user cannot change office_id of a vehicle (or only to their own which is redundant)
-         if (updateData.office_id !== user.office_id) {
+      } else if (currentOffice && currentOffice.parent_id) {
+         // Branch user cannot change office_id of a vehicle
+         if (parseInt(updateData.office_id) !== user.office_id) {
            return res.status(403).json({ message: 'Anda tidak memiliki akses untuk memindahkan unit ke kantor lain' });
          }
-      } else {
+      } else if (currentOffice) {
         // Head office user validation
         const allowedOffices = await Office.findAll({
           where: {
@@ -194,7 +233,12 @@ const updateVehicle = async (req, res) => {
 
     res.json({ message: 'Vehicle updated successfully' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Update Vehicle Error:', error);
+    res.status(500).json({ 
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      error: error
+    });
   }
 };
 
@@ -391,6 +435,7 @@ const getVehicleSummary = async (req, res) => {
 
 module.exports = {
   getVehicles,
+  getVehicleById,
   createVehicle,
   updateVehicle,
   deleteVehicle,
