@@ -50,6 +50,7 @@ const Catalog = () => {
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   // Refs for sliding pill indicator
   const filterContainerRef = useRef(null);
@@ -206,15 +207,24 @@ const Catalog = () => {
       </div>
 
       <div className="relative z-10 w-full max-w-5xl mx-auto space-y-12">
-        {/* Page Header */}
-        <header className="flex flex-col gap-3 pt-8 px-2 md:items-center md:text-center">
-           <h1 className="text-5xl md:text-7xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-none">
-             Product <span className="text-gray-400">Catalog</span>
-           </h1>
-           <p className="text-gray-500 dark:text-gray-400 text-lg font-light tracking-wide max-w-2xl">
-             Temukan unit impian Anda dengan standar kualitas terbaik dan proses yang transparan.
-           </p>
-        </header>
+        <AnimatePresence>
+          {!isSearchFocused && !localSearch && (
+            <motion.header 
+              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+              animate={{ opacity: 1, height: 'auto', marginBottom: '3rem' }}
+              exit={{ opacity: 0, height: 0, marginBottom: 0, overflow: 'hidden' }}
+              transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+              className="flex flex-col gap-3 pt-8 px-2 md:items-center md:text-center"
+            >
+               <h1 className="text-5xl md:text-7xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-none">
+                 Product <span className="text-gray-400">Catalog</span>
+               </h1>
+               <p className="text-gray-500 dark:text-gray-400 text-lg font-light tracking-wide max-w-2xl">
+                 Temukan unit impian Anda dengan standar kualitas terbaik dan proses yang transparan.
+               </p>
+            </motion.header>
+          )}
+        </AnimatePresence>
 
         {/* Main Search & Filters Bar */}
         <div className="sticky top-4 z-40">
@@ -229,6 +239,8 @@ const Catalog = () => {
                     className="w-full h-12 bg-gray-100 dark:bg-white/5 border-none rounded-[24px] pl-12 pr-4 text-sm text-gray-900 dark:text-white placeholder:text-gray-500 focus:ring-1 focus:ring-gray-300 dark:focus:ring-white/20 transition-all outline-none"
                     value={localSearch}
                     onChange={(e) => { setLocalSearch(e.target.value); setPage(1); }}
+                    onFocus={() => setIsSearchFocused(true)}
+                    onBlur={() => setIsSearchFocused(false)}
                   />
                 </div>
 
@@ -445,86 +457,110 @@ const Catalog = () => {
            </div>
         </div>
 
-        {/* Grid Section */}
-        {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="aspect-[3/4] bg-white/5 rounded-[32px] animate-pulse" />
-            ))}
-          </div>
-        ) : filteredVehicles.length === 0 ? (
-          <div className="text-center py-32 space-y-4">
-             <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto text-gray-700">
-               <ImageIcon size={48} />
-             </div>
-             <p className="text-gray-500 text-xl">Belum ada unit tersedia untuk kategori ini.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
-            {filteredVehicles.map((v, i) => (
-              <motion.article
-                custom={i}
-                variants={cardVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                key={v.id}
-                onClick={() => { setSelectedVehicle(v); setActiveImageIndex(0); }}
-                className="group relative bg-[#fcfcfd] dark:bg-gray-900 rounded-[24px] overflow-hidden border border-gray-100 dark:border-gray-800 hover:shadow-xl dark:hover:shadow-black/50 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer"
+        {/* Grid Section with Smooth Transition */}
+        <div className="min-h-[400px]">
+          <AnimatePresence mode="wait">
+            {loading ? (
+              <motion.div 
+                key="loading"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6"
               >
-                {/* Visual Badge */}
-                <div className="absolute top-5 right-5 z-20">
-                   {i % 3 === 0 ? (
-                     <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500 text-white text-[10px] font-bold rounded-full shadow-lg">
-                       <Sparkles size={10} /> NEW ARRIVAL
-                     </span>
-                   ) : (
-                     <span className="flex items-center gap-1.5 px-3 py-1 bg-gray-900 text-white text-[10px] font-bold rounded-full shadow-lg">
-                       <TrendingUp size={10} /> BEST PRICE
-                     </span>
-                   )}
-                </div>
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="aspect-[3/4] bg-white/5 rounded-[32px] animate-pulse border border-white/5" />
+                ))}
+              </motion.div>
+            ) : filteredVehicles.length === 0 ? (
+              <motion.div 
+                key="empty"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="text-center py-32 space-y-4"
+              >
+                 <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto text-gray-700">
+                   <ImageIcon size={48} />
+                 </div>
+                 <p className="text-gray-500 text-xl">Belum ada unit tersedia untuk kategori ini.</p>
+              </motion.div>
+            ) : (
+              <motion.div 
+                key="results"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6"
+              >
+                {filteredVehicles.map((v, i) => (
+                  <motion.article
+                    custom={i}
+                    variants={cardVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    key={v.id}
+                    onClick={() => { setSelectedVehicle(v); setActiveImageIndex(0); }}
+                    className="group relative bg-[#fcfcfd] dark:bg-gray-900 rounded-[24px] overflow-hidden border border-gray-100 dark:border-gray-800 hover:shadow-xl dark:hover:shadow-black/50 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer"
+                  >
+                    {/* Visual Badge */}
+                    <div className="absolute top-5 right-5 z-20">
+                       {i % 3 === 0 ? (
+                         <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500 text-white text-[10px] font-bold rounded-full shadow-lg">
+                           <Sparkles size={10} /> NEW ARRIVAL
+                         </span>
+                       ) : (
+                         <span className="flex items-center gap-1.5 px-3 py-1 bg-gray-900 text-white text-[10px] font-bold rounded-full shadow-lg">
+                           <TrendingUp size={10} /> BEST PRICE
+                         </span>
+                       )}
+                    </div>
 
-                <div className="p-4">
-                  <div className="relative aspect-[4/3] rounded-[20px] overflow-hidden bg-gray-50 dark:bg-gray-800">
-                    {v.images && v.images.length > 0 ? (
-                      <img 
-                        src={`${IMAGE_BASE_URL}${v.images.find(img => img.is_primary)?.image_url || v.images[0].image_url}`} 
-                        alt={v.model}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-200">
-                        <ImageIcon size={60} />
+                    <div className="p-4">
+                      <div className="relative aspect-[4/3] rounded-[20px] overflow-hidden bg-gray-50 dark:bg-gray-800">
+                        {v.images && v.images.length > 0 ? (
+                          <img 
+                            src={`${IMAGE_BASE_URL}${v.images.find(img => img.is_primary)?.image_url || v.images[0].image_url}`} 
+                            alt={v.model}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-200">
+                            <ImageIcon size={60} />
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
+                    </div>
 
-                <div className="p-3 md:p-7 pt-2">
-                  <header>
-                    <p className="text-[8px] md:text-[10px] text-gray-400 font-light tracking-[0.2em] uppercase mb-1">{v.brand}</p>
-                    <h3 className="text-sm md:text-xl font-bold text-gray-900 dark:text-white leading-tight mb-2 uppercase tracking-tight line-clamp-1">{v.model}</h3>
-                  </header>
+                    <div className="p-3 md:p-7 pt-2">
+                      <header>
+                        <p className="text-[8px] md:text-[10px] text-gray-400 font-light tracking-[0.2em] uppercase mb-1">{v.brand}</p>
+                        <h3 className="text-sm md:text-xl font-bold text-gray-900 dark:text-white leading-tight mb-2 uppercase tracking-tight line-clamp-1">{v.model}</h3>
+                      </header>
 
-                  <div className="flex flex-wrap items-center gap-1.5 md:gap-3 mb-4 md:mb-6">
-                    <span className="text-[9px] md:text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-2 md:px-3 py-0.5 md:py-1 rounded-full">{v.year}</span>
-                    <span className="text-[9px] md:text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-2 md:px-3 py-0.5 md:py-1 rounded-full">{parseInt(v.odometer || 0).toLocaleString()} km</span>
-                  </div>
+                      <div className="flex flex-wrap items-center gap-1.5 md:gap-3 mb-4 md:mb-6">
+                        <span className="text-[9px] md:text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-2 md:px-3 py-0.5 md:py-1 rounded-full">{v.year}</span>
+                        <span className="text-[9px] md:text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-2 md:px-3 py-0.5 md:py-1 rounded-full">{parseInt(v.odometer || 0).toLocaleString()} km</span>
+                      </div>
 
-                  <footer className="pt-5 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                     <p className="text-sm md:text-lg font-extrabold text-gray-950 dark:text-white tracking-tight">
-                       {formatPrice(v.price)}
-                     </p>
-                     <div className="w-8 h-8 md:w-10 md:h-10 rounded-full border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-400 group-hover:bg-gray-900 dark:group-hover:bg-white group-hover:text-white dark:group-hover:text-gray-900 transition-all duration-300">
-                       <ChevronRight size={16} />
-                     </div>
-                  </footer>
-                </div>
-              </motion.article>
-            ))}
-          </div>
-        )}
+                      <footer className="pt-5 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                         <p className="text-sm md:text-lg font-extrabold text-gray-950 dark:text-white tracking-tight">
+                           {formatPrice(v.price)}
+                         </p>
+                         <div className="w-8 h-8 md:w-10 md:h-10 rounded-full border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-400 group-hover:bg-gray-900 dark:group-hover:bg-white group-hover:text-white dark:group-hover:text-gray-900 transition-all duration-300">
+                           <ChevronRight size={16} />
+                         </div>
+                      </footer>
+                    </div>
+                  </motion.article>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
         {/* Pagination */}
         {totalPages > 1 && (
@@ -576,14 +612,28 @@ const Catalog = () => {
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-200"><ImageIcon size={120} /></div>
                 )}
-                <button onClick={() => setSelectedVehicle(null)} className="absolute top-8 left-8 p-4 bg-white/20 backdrop-blur-md rounded-full text-white lg:hidden"><X size={24} /></button>
+                
+                {/* Close Button - High Contrast for mobile */}
+                <button 
+                  onClick={() => setSelectedVehicle(null)} 
+                  className="absolute top-6 left-6 p-3 bg-gray-900/60 backdrop-blur-md rounded-full text-white lg:hidden z-30 border border-white/10 shadow-lg"
+                >
+                  <X size={20} />
+                </button>
 
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3 p-3 bg-white/10 backdrop-blur-xl rounded-[24px]">
-                  {selectedVehicle.images?.map((img, idx) => (
-                    <button key={img.id} onClick={() => setActiveImageIndex(idx)} className={`w-14 h-14 rounded-[16px] overflow-hidden border-2 transition-all ${activeImageIndex === idx ? 'border-white scale-110' : 'border-transparent opacity-50'}`}>
-                      <img src={`${IMAGE_BASE_URL}${img.image_url}`} className="w-full h-full object-cover" alt="" />
-                    </button>
-                  ))}
+                {/* Thumbnails - Relative positioning on mobile to avoid overlap */}
+                <div className="absolute inset-x-0 bottom-0 lg:bottom-8 flex justify-center p-4 lg:p-0 z-20 pointer-events-none">
+                  <div className="flex gap-3 p-2 lg:p-3 bg-gray-900/40 lg:bg-white/10 backdrop-blur-xl rounded-[20px] lg:rounded-[24px] pointer-events-auto border border-white/5">
+                    {selectedVehicle.images?.map((img, idx) => (
+                      <button 
+                        key={img.id} 
+                        onClick={() => setActiveImageIndex(idx)} 
+                        className={`w-12 h-12 lg:w-14 lg:h-14 rounded-[12px] lg:rounded-[16px] overflow-hidden border-2 transition-all ${activeImageIndex === idx ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                      >
+                        <img src={`${IMAGE_BASE_URL}${img.image_url}`} className="w-full h-full object-cover" alt="" />
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
