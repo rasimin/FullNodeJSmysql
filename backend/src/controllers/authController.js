@@ -344,8 +344,58 @@ const revokeUserSession = async (req, res) => {
   }
 };
 
+const getAllActiveSessions = async (req, res) => {
+  try {
+    const sessions = await UserSession.findAll({
+      where: { 
+        is_revoked: false,
+        expires_at: { [Op.gt]: new Date() }
+      },
+      include: [{ 
+        model: User, 
+        attributes: ['id', 'name', 'username', 'email', 'avatar'],
+        include: [{ model: Role, attributes: ['name'] }, { model: Office, attributes: ['name'] }]
+      }],
+      order: [['createdAt', 'DESC']]
+    });
+    
+    // Group sessions by user
+    const usersWithSessions = {};
+    sessions.forEach(s => {
+      const u = s.User;
+      if (!u) return;
+      if (!usersWithSessions[u.id]) {
+        usersWithSessions[u.id] = {
+          user: u,
+          sessions: []
+        };
+      }
+      usersWithSessions[u.id].sessions.push(s);
+    });
+    
+    res.json(Object.values(usersWithSessions));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch global sessions' });
+  }
+};
+
+const revokeAnySession = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const session = await UserSession.findByPk(id);
+    if (!session) return res.status(404).json({ message: 'Session not found' });
+    
+    await session.update({ is_revoked: true });
+    res.json({ message: 'Session terminated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to terminate session' });
+  }
+};
+
 module.exports = { 
   register, login, getMe, updateProfile, logout, 
   getSessions, revokeSession, revokeOtherSessions,
-  getUserSessions, revokeUserSession
+  getUserSessions, revokeUserSession,
+  getAllActiveSessions, revokeAnySession
 };

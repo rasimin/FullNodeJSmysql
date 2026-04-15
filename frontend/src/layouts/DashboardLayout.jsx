@@ -70,14 +70,13 @@ const DashboardLayout = () => {
     if (userRole === 'Super Admin' || userRole === 'Admin Pusat') {
       securityItems.push(
         { to: '/security-settings', icon: Shield, label: 'Security Configuration' },
-        { to: '/sessions', icon: ShieldCheck, label: 'Active Sessions' },
+        { to: '/admin-sessions', icon: Users, label: 'Monitor Sesi Aktif' },
         { to: '/roles', icon: ShieldCheck, label: 'Role Management' },
         { to: '/activities', icon: FileText, label: 'Activity Logs' },
         { to: '/audit-trails', icon: History, label: 'Audit Trails' }
       );
     } else {
       securityItems.push(
-        { to: '/sessions', icon: ShieldCheck, label: 'Active Sessions' },
         { to: '/activities', icon: FileText, label: 'My Activities' }
       );
     }
@@ -263,6 +262,11 @@ const DashboardLayout = () => {
                         className="flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                       >
                         <UserCircle size={14} /> Profile
+                      </NavLink>
+                      <NavLink to="/sessions" onClick={() => setShowUserMenu(false)}
+                        className="flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      >
+                        <ShieldCheck size={14} /> My Sessions
                       </NavLink>
                       <button onClick={() => { handleLogout(); setShowUserMenu(false); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950"

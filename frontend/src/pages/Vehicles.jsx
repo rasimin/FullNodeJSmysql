@@ -341,8 +341,8 @@ const Vehicles = () => {
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
           <div className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
-             <button onClick={() => setViewMode('table')} className={`p-1.5 rounded-lg flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'table' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'}`}><FileSpreadsheet size={16} /> <span className="hidden md:inline">Grid</span></button>
-             <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-lg flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'}`}><Car size={16} /> <span className="hidden md:inline">Card</span></button>
+             <button onClick={() => setViewMode('table')} className={`p-1.5 rounded-lg flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'table' ? 'bg-white dark:bg-blue-600 text-blue-600 dark:text-white shadow-sm' : 'text-gray-400'}`}><FileSpreadsheet size={16} /> <span className="hidden md:inline">Grid</span></button>
+             <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-lg flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-blue-600 text-blue-600 dark:text-white shadow-sm' : 'text-gray-400'}`}><Car size={16} /> <span className="hidden md:inline">Card</span></button>
           </div>
           <button onClick={() => openModal()} className="btn-primary gap-2 h-11 px-6 text-xs font-black shadow-lg shadow-blue-500/20 uppercase tracking-widest"><Plus size={18} /> Add New</button>
         </div>
@@ -361,7 +361,7 @@ const Vehicles = () => {
             onClick={() => { setFilterStatus(s.status); setCurrentPage(1); }} 
             className={`card p-4 flex items-center gap-4 border-b-4 transition-all text-left ${filterStatus === s.status ? `${s.borderClass} ${s.bgClass} opacity-100 shadow-xl shadow-blue-500/5` : 'border-b-gray-200 dark:border-b-gray-700 opacity-60 hover:opacity-100'}`}
           >
-            <div className={`p-3 rounded-xl ${s.color === 'blue' ? 'bg-blue-50 text-blue-600' : s.color === 'green' ? 'bg-green-50 text-green-600' : s.color === 'orange' ? 'bg-orange-50 text-orange-600' : 'bg-purple-50 text-purple-600'}`}><s.icon size={22} /></div>
+            <div className={`p-3 rounded-xl ${s.color === 'blue' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : s.color === 'green' ? 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400' : s.color === 'orange' ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400' : 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'}`}><s.icon size={22} /></div>
             <div><p className="text-[10px] text-gray-500 uppercase font-black">{s.label}</p><p className="text-xl font-black">{s.count}</p></div>
           </button>
         ))}
@@ -417,16 +417,16 @@ const Vehicles = () => {
             return (
               <div key={v.id} className="card p-3 md:p-4 flex flex-col justify-between gap-3 group hover:border-blue-500/30 transition-all" onClick={() => openModal(v, true)}>
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-1 mb-1">
-                  <span className={`px-2 py-0.5 rounded text-[8px] md:text-[9px] font-black uppercase w-max ${v.status === 'Available' ? 'bg-green-100 text-green-700' : v.status === 'Sold' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'}`}>{v.status}</span>
+                  <span className={`px-2 py-0.5 rounded text-[8px] md:text-[9px] font-black uppercase w-max ${v.status === 'Available' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : v.status === 'Sold' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'}`}>{v.status}</span>
                   <p className="text-[8px] md:text-[10px] text-gray-400 font-bold uppercase truncate">{v.plate_number} • {v.year}</p>
                 </div>
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center shrink-0 overflow-hidden ${v.type === 'Mobil' ? 'bg-indigo-50 text-indigo-600' : 'bg-orange-50 text-orange-600'}`}>
+                  <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center shrink-0 overflow-hidden ${v.type === 'Mobil' ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'}`}>
                     {displayImage ? <img src={`${IMAGE_BASE_URL}${displayImage}`} className="w-full h-full object-cover" alt="Vehicle" /> : <Car size={20} />}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-xs md:text-sm font-black text-gray-900 uppercase truncate" title={`${v.brand} ${v.model}`}>{v.brand} {v.model}</h3>
-                    <p className="text-[9px] md:text-[10px] text-gray-500 font-bold uppercase truncate">{v.type}</p>
+                    <h3 className="text-xs md:text-sm font-black text-gray-900 dark:text-white uppercase truncate" title={`${v.brand} ${v.model}`}>{v.brand} {v.model}</h3>
+                    <p className="text-[9px] md:text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase truncate">{v.type}</p>
                   </div>
                 </div>
                 <div className="space-y-1.5 mt-auto">
@@ -436,9 +436,9 @@ const Vehicles = () => {
                 <div className="flex gap-1 pt-2 border-t border-gray-100 dark:border-gray-800" onClick={e => e.stopPropagation()}>
                   {v.status === 'Available' ? <button onClick={() => openBookingModal(v)} className="flex-1 py-1.5 bg-orange-600 text-white rounded-lg text-[9px] font-black uppercase shadow-sm hover:shadow-md">Book</button> :
                    v.status === 'Booked' ? <button onClick={() => preConfirmAction(v, 'sold')} className="flex-1 py-1.5 bg-green-600 text-white rounded-lg text-[9px] font-black uppercase shadow-sm hover:shadow-md">Sell</button> :
-                   <div className="flex-1 py-1.5 text-center text-gray-400 text-[9px] font-black uppercase bg-gray-50 rounded-lg">Sold</div>}
-                  <button onClick={() => openModal(v)} className="w-8 flex items-center justify-center bg-gray-100 text-gray-400 hover:text-blue-600 rounded-lg shrink-0"><Edit size={12} /></button>
-                  <button onClick={() => setConfirmDeleteId(v.id)} className="w-8 flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-600 hover:text-white rounded-lg shrink-0 transition-colors"><Trash2 size={12} /></button>
+                   <div className="flex-1 py-1.5 text-center text-white text-[9px] font-black uppercase bg-gray-400 dark:bg-gray-800 rounded-lg">Sold</div>}
+                  <button onClick={() => openModal(v)} className="w-8 flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-400 hover:text-blue-600 rounded-lg shrink-0"><Edit size={12} /></button>
+                  <button onClick={() => setConfirmDeleteId(v.id)} className="w-8 flex items-center justify-center bg-red-50 dark:bg-red-900/30 text-red-500 hover:bg-red-600 hover:text-white rounded-lg shrink-0 transition-colors"><Trash2 size={12} /></button>
                 </div>
               </div>
             );
@@ -452,7 +452,7 @@ const Vehicles = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
              <div className="lg:col-span-2 space-y-8">
                 <div className="space-y-6">
-                  <div className="flex items-center gap-3"><div className="w-1 h-5 bg-blue-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 uppercase tracking-widest">Detail Spesifikasi</h4></div>
+                  <div className="flex items-center gap-3"><div className="w-1 h-5 bg-blue-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Detail Spesifikasi</h4></div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <Select label="Category" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} options={[{value:'Motor', label:'Motorcycle'}, {value:'Mobil', label:'Car'}]} disabled={isViewOnly} />
                     <Input label="Brand / Merk" value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} required readOnly={isViewOnly} />
@@ -467,7 +467,7 @@ const Vehicles = () => {
                 </div>
 
                 <div className="space-y-6">
-                  <div className="flex items-center gap-3"><div className="w-1 h-5 bg-green-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 uppercase tracking-widest">Financial & Inventory</h4></div>
+                  <div className="flex items-center gap-3"><div className="w-1 h-5 bg-green-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Financial & Inventory</h4></div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <Input label="Purchase Price" icon={Wallet} value={displayCurrency(formData.purchase_price)} onChange={e => handleCurrencyChange(setFormData, formData, 'purchase_price', e.target.value)} readOnly={isViewOnly} />
                     <Input label="Service Cost" icon={Wrench} value={displayCurrency(formData.service_cost)} onChange={e => handleCurrencyChange(setFormData, formData, 'service_cost', e.target.value)} readOnly={isViewOnly} />
@@ -483,7 +483,7 @@ const Vehicles = () => {
 
              <div className="space-y-8">
                 <div className="space-y-6">
-                  <div className="flex items-center gap-2"><div className="w-1 h-5 bg-indigo-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 uppercase tracking-widest">Media Gallery</h4></div>
+                  <div className="flex items-center gap-2"><div className="w-1 h-5 bg-indigo-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Media Gallery</h4></div>
                   <div className="grid grid-cols-2 gap-2">
                     {editingVehicle?.images?.map((img) => (
                       <div key={img.id} className="relative group aspect-square rounded-xl overflow-hidden bg-gray-100">
@@ -514,7 +514,7 @@ const Vehicles = () => {
 
                 {bookingHistory.length > 0 && (
                   <div className="space-y-6">
-                    <div className="flex items-center gap-2"><div className="w-1 h-5 bg-amber-500 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 uppercase tracking-widest">Recent Activity</h4></div>
+                    <div className="flex items-center gap-2"><div className="w-1 h-5 bg-amber-500 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Recent Activity</h4></div>
                     <div className="space-y-3 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
                       {bookingHistory.map(bh => (
                         <div key={bh.id} className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-row sm:items-center justify-between gap-4 transition-all hover:bg-white dark:hover:bg-gray-800">

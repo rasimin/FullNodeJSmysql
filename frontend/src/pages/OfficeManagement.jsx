@@ -111,12 +111,12 @@ const OfficeManagement = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                    {flatOffices.map(o => (
-                     <tr key={o.id} className={`${o.isParent ? 'bg-white' : 'bg-gray-50/20'} hover:bg-blue-50/30 transition-colors`}>
+                     <tr key={o.id} className={`${o.isParent ? 'bg-white dark:bg-gray-900/50' : 'bg-gray-50/20 dark:bg-gray-800/20'} hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors`}>
                         <td className="px-6 py-4">
                            <div className={`flex items-center gap-4 ${!o.isParent ? 'pl-10' : ''}`}>
                              {!o.isParent && <CornerDownRight size={14} className="text-blue-300" />}
-                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${o.isParent ? 'bg-purple-100 text-purple-600' : 'bg-blue-50 text-blue-500'}`}><Building2 size={16} /></div>
-                             <div><p className={`text-sm font-black ${o.isParent ? 'text-gray-900' : 'text-gray-600'}`}>{o.name}</p><p className="text-[9px] text-gray-400 font-bold uppercase">{o.type.replace('_', ' ')}</p></div>
+                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${o.isParent ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-500 dark:text-blue-400'}`}><Building2 size={16} /></div>
+                             <div><p className={`text-sm font-black ${o.isParent ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-300'}`}>{o.name}</p><p className="text-[9px] text-gray-400 font-bold uppercase">{o.type.replace('_', ' ')}</p></div>
                            </div>
                         </td>
                         <td className="px-6 py-4 text-right">
@@ -141,7 +141,7 @@ const OfficeManagement = () => {
                         <button onClick={() => setConfirmDeleteId(o.id)} className="text-gray-400"><Trash2 size={14} /></button>
                       </div>
                    </div>
-                   <h4 className="text-[10px] font-black text-gray-800 uppercase leading-tight line-clamp-2">{o.name}</h4>
+                   <h4 className="text-[10px] font-black text-gray-800 dark:text-gray-100 uppercase leading-tight line-clamp-2">{o.name}</h4>
                    <span className="text-[8px] font-black text-gray-400 uppercase mt-1 block">{o.isParent ? 'ROOT' : 'BRANCH'}</span>
                 </div>
               ))}
