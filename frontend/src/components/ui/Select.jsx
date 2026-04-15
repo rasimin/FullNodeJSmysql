@@ -1,7 +1,7 @@
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
 
-const Select = ({ label, value, onChange, options, required = false, placeholder = 'Select option', icon: Icon, className = '' }) => (
+const Select = ({ label, value, onChange, options, required = false, placeholder = 'Select option', icon: Icon, className = '', disabled = false }) => (
   <div className={`space-y-1.5 ${className}`}>
     {label && (
       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -15,8 +15,8 @@ const Select = ({ label, value, onChange, options, required = false, placeholder
         </div>
       )}
       <select
-        value={value} onChange={onChange} required={required}
-        className={`input appearance-none cursor-pointer pr-8 ${Icon ? 'pl-9' : ''}`}
+        value={value} onChange={onChange} required={required} disabled={disabled}
+        className={`input appearance-none cursor-pointer pr-8 ${Icon ? 'pl-9' : ''} ${disabled ? 'bg-gray-50 dark:bg-gray-900/50 cursor-not-allowed' : ''}`}
       >
         <option value="" disabled>{placeholder}</option>
         {options.map((opt) => (

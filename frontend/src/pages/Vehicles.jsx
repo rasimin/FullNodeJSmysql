@@ -238,13 +238,22 @@ const Vehicles = () => {
     e.preventDefault();
     notify('loading', 'Processing...');
     try {
+      // Clean numeric fields before sending
+      const cleanData = {
+        ...bookingData,
+        down_payment: bookingData.down_payment?.toString().replace(/\D/g, '') || 0
+      };
+      
       if (bookingData.id) {
-        await api.put(`/bookings/${bookingData.id}`, bookingData);
+        await api.put(`/bookings/${bookingData.id}`, cleanData);
       } else {
-        await api.post('/bookings', bookingData);
+        await api.post('/bookings', cleanData);
       }
       notify('success', 'Booking saved!'); setIsBookingModalOpen(false); fetchVehicles();
-    } catch (err) { notify('error', 'Booking failed'); }
+    } catch (err) { 
+      console.error('Booking Submit Error:', err);
+      notify('error', err.response?.data?.message || 'Booking failed'); 
+    }
   };
 
   const preConfirmAction = (v, type) => {
@@ -373,19 +382,28 @@ const Vehicles = () => {
                 <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Office</th>
                 <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Price</th>
                 <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Action</th>
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Menu</th>
+                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Admin Controls</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {vehicles.map((v, i) => (
-                <tr key={v.id} className="hover:bg-blue-50/20 transition-colors">
-                  <td className="px-6 py-4"><div className="flex items-center gap-3"><div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden ${v.type === 'Mobil' ? 'bg-indigo-50 text-indigo-600' : 'bg-orange-50 text-orange-600'}`}>{v.images?.length > 0 ? <img src={`${IMAGE_BASE_URL}${v.images[0].image_url}`} className="w-full h-full object-cover" alt="Unit" /> : <Car size={20} />}</div><div><p className="text-sm font-black text-gray-900">{v.brand} {v.model}</p><p className="text-[10px] text-gray-400 font-bold uppercase">{v.type} • {v.year} • {v.plate_number}</p></div></div></td>
+                <tr key={v.id} className="hover:bg-blue-50/20 transition-colors group">
+                  <td className="px-6 py-4"><div className="flex items-center gap-3"><div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden ${v.type === 'Mobil' ? 'bg-indigo-50 text-indigo-600' : 'bg-orange-50 text-orange-600'}`}>{v.images?.length > 0 ? <img src={`${IMAGE_BASE_URL}${v.images[0].image_url}`} className="w-full h-full object-cover" alt="Unit" /> : <Car size={20} />}</div><div><p className="text-sm font-black text-gray-900 dark:text-gray-100">{v.brand} {v.model}</p><p className="text-[10px] text-gray-400 font-bold uppercase">{v.type} • {v.year} • {v.plate_number}</p></div></div></td>
                   <td className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase">{v.Office?.name || '-'}</td>
                   <td className="px-6 py-4 font-black text-blue-600">{formatPrice(v.price)}</td>
                   <td className="px-6 py-4"><span className={`badge ${v.status === 'Available' ? 'badge-green' : v.status === 'Sold' ? 'badge-red' : 'badge-yellow'}`}>{v.status}</span></td>
-                  <td className="px-6 py-4"><div className="flex justify-center gap-2">{v.status === 'Available' && <button onClick={() => openBookingModal(v)} className="px-3 py-1 bg-orange-600 text-white text-[9px] font-black uppercase rounded-lg shadow-lg">Book</button>}{v.status === 'Booked' && <button onClick={() => preConfirmAction(v, 'sold')} className="px-3 py-1 bg-green-600 text-white text-[9px] font-black uppercase rounded-lg shadow-lg">Sell</button>}</div></td>
-                  <td className="px-6 py-4 text-right"><div className="flex justify-end gap-1.5 text-gray-400"><button onClick={() => openModal(v, true)} className="hover:text-purple-600"><Eye size={16} /></button><button onClick={() => openModal(v)} className="hover:text-blue-600"><Edit size={16} /></button><button onClick={() => setConfirmDeleteId(v.id)} className="hover:text-red-500"><Trash2 size={16} /></button></div></td>
+                  <td className="px-6 py-4"><div className="flex justify-center gap-2">
+                    {v.status === 'Available' && <button onClick={() => openBookingModal(v)} className="flex items-center gap-1.5 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-black uppercase rounded-xl shadow-lg shadow-orange-500/20 transition-all active:scale-95"><Bookmark size={12} /> Book Now</button>}
+                    {v.status === 'Booked' && <button onClick={() => preConfirmAction(v, 'sold')} className="flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black uppercase rounded-xl shadow-lg shadow-green-500/20 transition-all active:scale-95"><CheckCircle size={12} /> Sell Unit</button>}
+                    {v.status === 'Sold' && <div className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-400 text-[10px] font-black uppercase rounded-xl">Completed</div>}
+                  </div></td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex justify-end gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => openModal(v, true)} className="p-2 hover:bg-purple-100 hover:text-purple-600 rounded-lg transition-colors" title="View Detail"><Eye size={16} /></button>
+                      <button onClick={() => openModal(v)} className="p-2 hover:bg-blue-100 hover:text-blue-600 rounded-lg transition-colors" title="Edit Unit"><Edit size={16} /></button>
+                      <button onClick={() => setConfirmDeleteId(v.id)} className="p-2 hover:bg-red-100 hover:text-red-500 rounded-lg transition-colors" title="Delete Unit"><Trash2 size={16} /></button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -436,30 +454,30 @@ const Vehicles = () => {
                 <div className="space-y-6">
                   <div className="flex items-center gap-3"><div className="w-1 h-5 bg-blue-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 uppercase tracking-widest">Detail Spesifikasi</h4></div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <Select label="Category" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} options={[{value:'Motor', label:'Motorcycle'}, {value:'Mobil', label:'Car'}]} />
-                    <Input label="Brand / Merk" value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} required />
-                    <Input label="Model / Type" value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} required />
-                    <Input label="Plate Number" value={formData.plate_number} onChange={e => setFormData({...formData, plate_number: e.target.value})} required />
-                    <Input label="Year" type="number" value={formData.year} onChange={e => setFormData({...formData, year: e.target.value})} required />
-                    <Input label="Color" value={formData.color} onChange={e => setFormData({...formData, color: e.target.value})} />
-                    <Input label="Odometer (KM)" value={displayCurrency(formData.odometer)} onChange={e => handleCurrencyChange(setFormData, formData, 'odometer', e.target.value)} />
-                    <Input label="Sales Price" value={displayCurrency(formData.price)} onChange={e => handleCurrencyChange(setFormData, formData, 'price', e.target.value)} required />
-                    <Select label="Unit Status" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} options={[{value:'Available', label:'Available'}, {value:'Sold', label:'Sold'}, {value:'Booked', label:'Booked'}]} />
+                    <Select label="Category" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} options={[{value:'Motor', label:'Motorcycle'}, {value:'Mobil', label:'Car'}]} disabled={isViewOnly} />
+                    <Input label="Brand / Merk" value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} required readOnly={isViewOnly} />
+                    <Input label="Model / Type" value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} required readOnly={isViewOnly} />
+                    <Input label="Plate Number" value={formData.plate_number} onChange={e => setFormData({...formData, plate_number: e.target.value})} required readOnly={isViewOnly} />
+                    <Input label="Year" type="number" value={formData.year} onChange={e => setFormData({...formData, year: e.target.value})} required readOnly={isViewOnly} />
+                    <Input label="Color" value={formData.color} onChange={e => setFormData({...formData, color: e.target.value})} readOnly={isViewOnly} />
+                    <Input label="Odometer (KM)" value={displayCurrency(formData.odometer)} onChange={e => handleCurrencyChange(setFormData, formData, 'odometer', e.target.value)} readOnly={isViewOnly} />
+                    <Input label="Sales Price" value={displayCurrency(formData.price)} onChange={e => handleCurrencyChange(setFormData, formData, 'price', e.target.value)} required readOnly={isViewOnly} />
+                    <Select label="Unit Status" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} options={[{value:'Available', label:'Available'}, {value:'Sold', label:'Sold'}, {value:'Booked', label:'Booked'}]} disabled={isViewOnly} />
                   </div>
                 </div>
 
                 <div className="space-y-6">
                   <div className="flex items-center gap-3"><div className="w-1 h-5 bg-green-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 uppercase tracking-widest">Financial & Inventory</h4></div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <Input label="Purchase Price" icon={Wallet} value={displayCurrency(formData.purchase_price)} onChange={e => handleCurrencyChange(setFormData, formData, 'purchase_price', e.target.value)} />
-                    <Input label="Service Cost" icon={Wrench} value={displayCurrency(formData.service_cost)} onChange={e => handleCurrencyChange(setFormData, formData, 'service_cost', e.target.value)} />
-                    <Input label="Entry Date" type="date" value={formData.entry_date} onChange={e => setFormData({...formData, entry_date: e.target.value})} />
-                    {(formData.status === 'Sold' || formData.sold_date) && <Input label="Sold Date" type="date" value={formData.sold_date} onChange={e => setFormData({...formData, sold_date: e.target.value})} />}
+                    <Input label="Purchase Price" icon={Wallet} value={displayCurrency(formData.purchase_price)} onChange={e => handleCurrencyChange(setFormData, formData, 'purchase_price', e.target.value)} readOnly={isViewOnly} />
+                    <Input label="Service Cost" icon={Wrench} value={displayCurrency(formData.service_cost)} onChange={e => handleCurrencyChange(setFormData, formData, 'service_cost', e.target.value)} readOnly={isViewOnly} />
+                    <Input label="Entry Date" type="date" value={formData.entry_date} onChange={e => setFormData({...formData, entry_date: e.target.value})} readOnly={isViewOnly} />
+                    {(formData.status === 'Sold' || formData.sold_date) && <Input label="Sold Date" type="date" value={formData.sold_date} onChange={e => setFormData({...formData, sold_date: e.target.value})} readOnly={isViewOnly} />}
                     {isHeadOffice ? (
-                      <Select label="Branch Office" value={formData.office_id} onChange={e => setFormData({...formData, office_id: e.target.value})} options={offices.map(o => ({ value: o.id, label: o.name }))} required />
+                      <Select label="Branch Office" value={formData.office_id} onChange={e => setFormData({...formData, office_id: e.target.value})} options={offices.map(o => ({ value: o.id, label: o.name }))} required disabled={isViewOnly} />
                     ) : <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[8px] text-gray-400 font-black uppercase">Current Branch</p><p className="text-[10px] font-bold">{user?.Office?.name}</p></div>}
                   </div>
-                  <textarea className="input h-20 p-3 text-xs" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Notes..." />
+                  <textarea className="input h-20 p-3 text-xs" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Notes..." readOnly={isViewOnly} />
                 </div>
              </div>
 
@@ -553,6 +571,15 @@ const Vehicles = () => {
             <Input label="Nama Konsumen" value={bookingData.customer_name} onChange={e => setBookingData({...bookingData, customer_name: e.target.value})} required />
             <Input label="Nomor HP" value={bookingData.customer_phone} onChange={e => setBookingData({...bookingData, customer_phone: e.target.value})} required />
             <Input label="Down Payment" value={displayCurrency(bookingData.down_payment)} onChange={e => handleCurrencyChange(setBookingData, bookingData, 'down_payment', e.target.value)} />
+            <Select 
+              label="Sales Agent (Optional)" 
+              value={bookingData.sales_agent_id} 
+              onChange={e => setBookingData({...bookingData, sales_agent_id: e.target.value})} 
+              options={[
+                { value: '', label: '-- Pilih Agent (Opsional) --' },
+                ...salesAgents.map(a => ({ value: a.id, label: a.name }))
+              ]} 
+            />
             <button type="submit" className="btn-primary w-full py-4 bg-orange-600 border-none">SIMPAN RESERVASI</button>
          </form>
       </Modal>

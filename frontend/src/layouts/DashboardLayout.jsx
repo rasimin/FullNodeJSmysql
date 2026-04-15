@@ -70,12 +70,16 @@ const DashboardLayout = () => {
     if (userRole === 'Super Admin' || userRole === 'Admin Pusat') {
       securityItems.push(
         { to: '/security-settings', icon: Shield, label: 'Security Configuration' },
+        { to: '/sessions', icon: ShieldCheck, label: 'Active Sessions' },
         { to: '/roles', icon: ShieldCheck, label: 'Role Management' },
         { to: '/activities', icon: FileText, label: 'Activity Logs' },
         { to: '/audit-trails', icon: History, label: 'Audit Trails' }
       );
     } else {
-      securityItems.push({ to: '/activities', icon: FileText, label: 'My Activities' });
+      securityItems.push(
+        { to: '/sessions', icon: ShieldCheck, label: 'Active Sessions' },
+        { to: '/activities', icon: FileText, label: 'My Activities' }
+      );
     }
     
     return groups;

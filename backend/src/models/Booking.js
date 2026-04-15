@@ -9,23 +9,23 @@ const Booking = sequelize.define('Booking', {
   },
   customer_name: {
     type: DataTypes.STRING,
-    allowNullable: false
+    allowNull: false
   },
   customer_phone: {
     type: DataTypes.STRING,
-    allowNullable: false
+    allowNull: false
   },
   id_number: {
     type: DataTypes.STRING,
-    allowNullable: true
+    allowNull: true
   },
   booking_date: {
     type: DataTypes.DATEONLY,
-    allowNullable: false
+    allowNull: false
   },
   expiry_date: {
     type: DataTypes.DATEONLY,
-    allowNullable: true
+    allowNull: true
   },
   down_payment: {
     type: DataTypes.DECIMAL(15, 2),
@@ -37,15 +37,15 @@ const Booking = sequelize.define('Booking', {
   },
   notes: {
     type: DataTypes.TEXT,
-    allowNullable: true
+    allowNull: true
   },
   sales_agent_id: {
     type: DataTypes.INTEGER,
-    allowNullable: true
+    allowNull: true
   },
   booked_by_agent_id: {
     type: DataTypes.INTEGER,
-    allowNullable: true
+    allowNull: true
   }
 }, {
   tableName: 'bookings',

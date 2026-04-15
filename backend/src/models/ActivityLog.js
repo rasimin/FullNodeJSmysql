@@ -9,7 +9,7 @@ const ActivityLog = sequelize.define('ActivityLog', {
   },
   user_id: {
     type: DataTypes.BIGINT,
-    allowNull: false,
+    allowNull: true,
   },
   action: {
     type: DataTypes.STRING(255),

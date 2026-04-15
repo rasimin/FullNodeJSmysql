@@ -57,7 +57,7 @@ const Vehicle = sequelize.define('Vehicle', {
   },
   user_id: {
     type: DataTypes.BIGINT,
-    allowNull: false,
+    allowNull: true,
   },
   description: {
     type: DataTypes.TEXT,

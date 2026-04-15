@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { Search, Plus, FileSpreadsheet, Trash2, Edit, User, Mail, Lock, Shield, Building2 } from 'lucide-react';
+import { Search, Plus, FileSpreadsheet, Trash2, Edit, User, Mail, Lock, Shield, Building2, Monitor, LogOut, XCircle, Smartphone, Clock } from 'lucide-react';
 import Modal from '../components/Modal';
 import DynamicIsland from '../components/DynamicIsland';
 import Input from '../components/ui/Input';
@@ -22,6 +22,12 @@ const UserManagement = () => {
   const [notification, setNotification] = useState({ status: 'idle', message: '' });
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [viewMode, setViewMode] = useState(window.innerWidth < 768 ? 'grid' : 'table');
+  
+  // Session Related State
+  const [isSessionsModalOpen, setIsSessionsModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [userSessions, setUserSessions] = useState([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
 
   const storedUser = JSON.parse(localStorage.getItem('user') || localStorage.getItem('user_data') || '{}');
   const user = storedUser.user || storedUser; 
@@ -87,12 +93,40 @@ const UserManagement = () => {
 
   const handleDelete = async () => {
     notify('loading', 'Deleting...');
+    const idToDelete = confirmDeleteId;
     setConfirmDeleteId(null);
     try {
-      await api.delete(`/users/${confirmDeleteId}`);
+      await api.delete(`/users/${idToDelete}`);
       notify('success', 'User deleted');
       fetchUsers();
-    } catch { notify('error', 'Delete failed'); }
+    } catch (err) { 
+      notify('error', err.response?.data?.message || 'Delete failed'); 
+    }
+  };
+
+  const handleViewSessions = async (id) => {
+    setSelectedUserId(id);
+    setIsSessionsModalOpen(true);
+    setSessionsLoading(true);
+    try {
+      const r = await api.get(`/users/${id}/sessions`);
+      setUserSessions(r.data);
+    } catch (err) {
+      notify('error', 'Failed to fetch sessions');
+    }
+    setSessionsLoading(false);
+  };
+
+  const handleRevokeSession = async (sessionId) => {
+    try {
+      await api.delete(`/users/${selectedUserId}/sessions/${sessionId}`);
+      notify('success', 'Session revoked');
+      // Refresh list
+      const r = await api.get(`/users/${selectedUserId}/sessions`);
+      setUserSessions(r.data);
+    } catch (err) {
+      notify('error', 'Failed to revoke session');
+    }
   };
 
   const headers = ['Name', 'User', 'Email', 'Role', 'Office', 'Status', 'Actions'];
@@ -179,6 +213,7 @@ const UserManagement = () => {
                         </td>
                         <td className="px-5 py-3.5">
                           <div className="flex gap-1">
+                            <button onClick={() => handleViewSessions(u.id)} className="btn-icon p-1.5 text-blue-500 hover:bg-blue-50" title="View Sessions"><Monitor size={14} /></button>
                             <button onClick={() => openModal(u)} className="btn-icon p-1.5 text-amber-500 hover:bg-amber-50"><Edit size={14} /></button>
                             <button onClick={() => setConfirmDeleteId(u.id)} className="btn-icon p-1.5 text-red-500 hover:bg-red-50"><Trash2 size={14} /></button>
                           </div>
@@ -214,6 +249,7 @@ const UserManagement = () => {
                       </div>
                     </div>
                     <div className="flex gap-0.5">
+                      <button onClick={() => handleViewSessions(u.id)} className="btn-icon p-1 text-blue-500"><Monitor size={12} /></button>
                       <button onClick={() => openModal(u)} className="btn-icon p-1 text-amber-500"><Edit size={12} /></button>
                       <button onClick={() => setConfirmDeleteId(u.id)} className="btn-icon p-1 text-red-500"><Trash2 size={12} /></button>
                     </div>
@@ -271,6 +307,40 @@ const UserManagement = () => {
           </label>
           <button type="submit" className="btn-primary w-full py-2.5">{editingUser ? 'Save Changes' : 'Create User'}</button>
         </form>
+      </Modal>
+
+      {/* Sessions Modal */}
+      <Modal isOpen={isSessionsModalOpen} onClose={() => setIsSessionsModalOpen(false)} title="Active User Sessions" maxWidth="max-w-2xl">
+        <div className="space-y-4">
+          {sessionsLoading ? (
+            <div className="p-10 text-center text-xs text-gray-400 font-bold uppercase animate-pulse">Fetching sessions...</div>
+          ) : userSessions.length === 0 ? (
+            <div className="p-10 text-center text-xs text-gray-400 font-bold uppercase">No active sessions for this user</div>
+          ) : (
+            <div className="grid gap-3">
+              {userSessions.map(s => (
+                <div key={s.id} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800 flex items-center justify-between transition-all hover:shadow-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-white dark:bg-gray-900 rounded-lg text-gray-400">
+                      {s.user_agent?.toLowerCase().includes('mobile') ? <Smartphone size={20} /> : <Monitor size={20} />}
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-tight">{s.ip_address || 'Unknown IP'}</p>
+                      <p className="text-[9px] text-gray-400 font-bold flex items-center gap-1"><Clock size={10} /> {new Date(s.createdAt).toLocaleString('id-ID')}</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => handleRevokeSession(s.id)}
+                    className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg"
+                  >
+                    <LogOut size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <button onClick={() => setIsSessionsModalOpen(false)} className="w-full py-3 bg-gray-100 dark:bg-gray-800 rounded-xl text-[10px] font-black uppercase">Close</button>
+        </div>
       </Modal>
     </div>
   );

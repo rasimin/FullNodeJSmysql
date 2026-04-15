@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Input = ({ label, type = 'text', placeholder, value, onChange, required = false, icon: Icon, className = '' }) => (
+const Input = ({ label, type = 'text', placeholder, value, onChange, required = false, icon: Icon, className = '', disabled = false, readOnly = false }) => (
   <div className={`space-y-1.5 ${className}`}>
     {label && (
       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -16,7 +16,8 @@ const Input = ({ label, type = 'text', placeholder, value, onChange, required = 
       <input
         type={type} value={value} onChange={onChange}
         required={required} placeholder={placeholder}
-        className={`input ${Icon ? 'pl-9' : ''}`}
+        disabled={disabled} readOnly={readOnly}
+        className={`input ${Icon ? 'pl-9' : ''} ${disabled || readOnly ? 'bg-gray-50 dark:bg-gray-900/50 cursor-not-allowed' : ''}`}
       />
     </div>
   </div>

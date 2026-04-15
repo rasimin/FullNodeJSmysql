@@ -20,8 +20,8 @@ User.belongsTo(Office, { foreignKey: 'office_id' });
 Office.hasMany(User, { foreignKey: 'office_id' });
 
 // User Sessions
-UserSession.belongsTo(User, { foreignKey: 'user_id' });
-User.hasMany(UserSession, { foreignKey: 'user_id' });
+UserSession.belongsTo(User, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+User.hasMany(UserSession, { foreignKey: 'user_id', onDelete: 'CASCADE' });
 
 // Sales Agent Relationships
 SalesAgent.belongsTo(Office, { foreignKey: 'office_id' });
@@ -32,14 +32,14 @@ Office.belongsTo(Office, { as: 'parent', foreignKey: 'parent_id' });
 Office.hasMany(Office, { as: 'branches', foreignKey: 'parent_id' });
 
 // Activity Log Relationship
-ActivityLog.belongsTo(User, { foreignKey: 'user_id' });
-User.hasMany(ActivityLog, { foreignKey: 'user_id' });
+ActivityLog.belongsTo(User, { foreignKey: 'user_id', onDelete: 'SET NULL' });
+User.hasMany(ActivityLog, { foreignKey: 'user_id', onDelete: 'SET NULL' });
 
 // Vehicle Relationships
 Vehicle.belongsTo(Office, { foreignKey: 'office_id' });
-Vehicle.belongsTo(User, { foreignKey: 'user_id' });
+Vehicle.belongsTo(User, { foreignKey: 'user_id', onDelete: 'SET NULL' });
 Office.hasMany(Vehicle, { foreignKey: 'office_id', as: 'vehicles' });
-User.hasMany(Vehicle, { foreignKey: 'user_id', as: 'vehicles' });
+User.hasMany(Vehicle, { foreignKey: 'user_id', as: 'vehicles', onDelete: 'SET NULL' });
 
 Vehicle.belongsTo(SalesAgent, { foreignKey: 'sales_agent_id', as: 'salesAgent' });
 SalesAgent.hasMany(Vehicle, { foreignKey: 'sales_agent_id', as: 'soldVehicles' });
@@ -62,7 +62,7 @@ Booking.belongsTo(SalesAgent, { foreignKey: 'booked_by_agent_id', as: 'bookedByA
 SalesAgent.hasMany(Booking, { foreignKey: 'sales_agent_id', as: 'bookings' });
 
 // Audit Trail Relationship
-AuditTrail.belongsTo(User, { foreignKey: 'user_id' });
+AuditTrail.belongsTo(User, { foreignKey: 'user_id', onDelete: 'SET NULL' });
 
 // Global Hook for Audit Trails
 const createAuditLog = async (options) => {

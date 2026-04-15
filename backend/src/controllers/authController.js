@@ -274,4 +274,78 @@ const logout = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getMe, updateProfile, logout };
+const getSessions = async (req, res) => {
+  try {
+    const sessions = await UserSession.findAll({
+      where: { user_id: req.user.id, is_revoked: false },
+      order: [['createdAt', 'DESC']]
+    });
+    res.json(sessions);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch sessions' });
+  }
+};
+
+const revokeSession = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const session = await UserSession.findOne({ where: { id, user_id: req.user.id } });
+    if (!session) return res.status(404).json({ message: 'Session not found' });
+    
+    await session.update({ is_revoked: true });
+    res.json({ message: 'Session revoked successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to revoke session' });
+  }
+};
+
+const revokeOtherSessions = async (req, res) => {
+  try {
+    const currentToken = req.headers.authorization?.split(' ')[1];
+    await UserSession.update(
+      { is_revoked: true },
+      { 
+        where: { 
+          user_id: req.user.id, 
+          is_revoked: false,
+          token: { [Op.ne]: currentToken }
+        } 
+      }
+    );
+    res.json({ message: 'All other sessions revoked successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to revoke other sessions' });
+  }
+};
+
+const getUserSessions = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const sessions = await UserSession.findAll({
+      where: { user_id: id, is_revoked: false },
+      order: [['createdAt', 'DESC']]
+    });
+    res.json(sessions);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch user sessions' });
+  }
+};
+
+const revokeUserSession = async (req, res) => {
+  try {
+    const { id, sessionId } = req.params;
+    const session = await UserSession.findOne({ where: { id: sessionId, user_id: id } });
+    if (!session) return res.status(404).json({ message: 'Session not found' });
+    
+    await session.update({ is_revoked: true });
+    res.json({ message: 'User session revoked successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to revoke user session' });
+  }
+};
+
+module.exports = { 
+  register, login, getMe, updateProfile, logout, 
+  getSessions, revokeSession, revokeOtherSessions,
+  getUserSessions, revokeUserSession
+};

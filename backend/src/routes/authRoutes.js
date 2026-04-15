@@ -10,4 +10,10 @@ router.post('/logout', authenticate, logout);
 router.get('/me', authenticate, getMe);
 router.put('/me', authenticate, upload.single('avatar'), updateProfile);
 
+// Session Management
+const { getSessions, revokeSession, revokeOtherSessions } = require('../controllers/authController');
+router.get('/sessions', authenticate, getSessions);
+router.delete('/sessions/all-others', authenticate, revokeOtherSessions);
+router.delete('/sessions/:id', authenticate, revokeSession);
+
 module.exports = router;

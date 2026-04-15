@@ -19,6 +19,11 @@ const Catalog = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [priceRange, setPriceRange] = useState({ min: 0, max: 5000000000 }); // Max 5 Billion
+  const [usePriceSlider, setUsePriceSlider] = useState(true);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [filters, setFilters] = useState({
     brand: '',
@@ -32,15 +37,27 @@ const Catalog = () => {
 
   useEffect(() => {
     fetchVehicles();
-  }, []);
+  }, [page, searchTerm, filterType, filters]);
 
   const fetchVehicles = async () => {
     setLoading(true);
     try {
       const res = await api.get('/vehicles', {
-        params: { status: 'Available', size: 200 }
+        params: { 
+          status: 'Available', 
+          page, 
+          size: 12,
+          search: searchTerm,
+          type: filterType,
+          brand: filters.brand,
+          year: filters.year,
+          minPrice: filters.minPrice,
+          maxPrice: filters.maxPrice
+        }
       });
       setVehicles(res.data.items);
+      setTotalPages(res.data.totalPages);
+      setTotalItems(res.data.totalItems);
     } catch (err) {
       console.error(err);
     } finally {
@@ -69,18 +86,6 @@ const Catalog = () => {
   const uniqueYears = useMemo(() => {
     return [...new Set(vehicles.map(v => v.year))].sort((a,b) => b-a);
   }, [vehicles]);
-
-  const priceRange = useMemo(() => {
-    if (vehicles.length === 0) return { min: 0, max: 1000000000 };
-    const prices = vehicles.map(v => v.price);
-    return { min: Math.min(...prices), max: Math.max(...prices) };
-  }, [vehicles]);
-
-  useEffect(() => {
-    if (vehicles.length > 0 && !filters.maxPrice) {
-      setFilters(prev => ({ ...prev, minPrice: priceRange.min.toString(), maxPrice: priceRange.max.toString() }));
-    }
-  }, [vehicles, priceRange]);
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
@@ -125,7 +130,7 @@ const Catalog = () => {
                     placeholder="Cari brand..."
                     className="w-full h-12 bg-gray-100 dark:bg-white/5 border-none rounded-[24px] pl-12 pr-4 text-sm text-gray-900 dark:text-white placeholder:text-gray-500 focus:ring-1 focus:ring-gray-300 dark:focus:ring-white/20 transition-all outline-none"
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
                   />
                 </div>
                 
@@ -171,7 +176,7 @@ const Catalog = () => {
                 {/* 3. Filters (Circles on Desktop, full row on mobile) */}
                 <div className="flex items-center justify-between gap-2 w-full md:w-auto mt-1 md:mt-0">
                   <div className="flex-1 md:flex-none flex items-center gap-1.5 p-1 md:p-0 bg-gray-100 dark:bg-black/20 md:bg-transparent md:dark:bg-transparent rounded-[20px] overflow-x-auto no-scrollbar">
-                    <button onClick={() => setFilterType('')} 
+                    <button onClick={() => { setFilterType(''); setPage(1); }} 
                       className={`whitespace-nowrap h-9 px-4 md:w-10 md:h-10 md:px-0 rounded-[16px] md:rounded-full text-[10px] font-bold transition-all flex items-center justify-center gap-1.5 flex-1 md:flex-none 
                       ${!filterType ? 'bg-white dark:bg-white dark:text-gray-950 text-black md:bg-gray-900 md:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 md:bg-gray-100 md:dark:bg-white/5 hover:md:bg-gray-200'}`}
                     >
@@ -179,7 +184,7 @@ const Catalog = () => {
                       <span className="hidden md:block text-[9px] tracking-wide">ALL</span>
                     </button>
                     
-                    <button onClick={() => setFilterType('Mobil')} 
+                    <button onClick={() => { setFilterType('Mobil'); setPage(1); }} 
                       className={`whitespace-nowrap h-9 px-4 md:w-10 md:h-10 md:px-0 rounded-[16px] md:rounded-full text-[10px] font-bold transition-all flex items-center justify-center gap-1.5 flex-1 md:flex-none group relative
                       ${filterType === 'Mobil' ? 'bg-white dark:bg-white dark:text-gray-950 text-black md:bg-gray-900 md:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 md:bg-gray-100 md:dark:bg-white/5 hover:md:bg-gray-200'}`}
                     >
@@ -187,7 +192,7 @@ const Catalog = () => {
                       <span className="md:hidden">Car</span>
                     </button>
                     
-                    <button onClick={() => setFilterType('Motor')} 
+                    <button onClick={() => { setFilterType('Motor'); setPage(1); }} 
                       className={`whitespace-nowrap h-9 px-4 md:w-10 md:h-10 md:px-0 rounded-[16px] md:rounded-full text-[10px] font-bold transition-all flex items-center justify-center gap-1.5 flex-1 md:flex-none group relative
                       ${filterType === 'Motor' ? 'bg-white dark:bg-white dark:text-gray-950 text-black md:bg-gray-900 md:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 md:bg-gray-100 md:dark:bg-white/5 hover:md:bg-gray-200'}`}
                     >
@@ -222,7 +227,7 @@ const Catalog = () => {
                           <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Brand Selection</label>
                           <select 
                             value={filters.brand}
-                            onChange={(e) => setFilters({...filters, brand: e.target.value})}
+                            onChange={(e) => { setFilters({...filters, brand: e.target.value}); setPage(1); }}
                             className="w-full h-12 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl px-4 text-xs font-bold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white/20 transition-all cursor-pointer"
                           >
                             <option value="" className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">All Premium Brands</option>
@@ -236,7 +241,7 @@ const Catalog = () => {
                           <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Year Model</label>
                           <select 
                             value={filters.year}
-                            onChange={(e) => setFilters({...filters, year: e.target.value})}
+                            onChange={(e) => { setFilters({...filters, year: e.target.value}); setPage(1); }}
                             className="w-full h-12 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl px-4 text-xs font-bold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white/20 transition-all cursor-pointer"
                           >
                             <option value="" className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">All Release Years</option>
@@ -248,52 +253,86 @@ const Catalog = () => {
 
                         <div className="md:col-span-2 space-y-4">
                            <div className="flex justify-between items-end px-1">
-                              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Price Range</label>
+                              <div className="flex items-center gap-2">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Price Range</label>
+                                <button 
+                                  onClick={() => setUsePriceSlider(!usePriceSlider)}
+                                  className="px-2 py-0.5 bg-gray-100 dark:bg-white/5 text-[8px] font-black uppercase rounded text-indigo-500 hover:bg-gray-200"
+                                >
+                                  {usePriceSlider ? 'Switch to Manual' : 'Switch to Slider'}
+                                </button>
+                              </div>
                               <p className="text-[10px] font-black text-gray-900 dark:text-white">
-                                {formatPrice(filters.minPrice)} — {formatPrice(filters.maxPrice)}
+                                {formatPrice(filters.minPrice || priceRange.min)} — {formatPrice(filters.maxPrice || priceRange.max)}
                               </p>
                            </div>
-                           <div className="relative h-6 flex items-center px-1 group">
-                              {/* Custom Dual Range Slider Rail */}
-                              <div className="absolute inset-x-1 h-1.5 bg-gray-100 dark:bg-white/10 rounded-lg overflow-hidden">
-                                <div 
-                                  className="absolute h-full bg-gray-950 dark:bg-white transition-all duration-300"
-                                  style={{
-                                    left: `${((filters.minPrice - priceRange.min) / (priceRange.max - priceRange.min)) * 100}%`,
-                                    width: `${((filters.maxPrice - filters.minPrice) / (priceRange.max - priceRange.min)) * 100}%`
-                                  }}
-                                />
-                              </div>
-                              
-                              <input 
-                                type="range" 
-                                min={priceRange.min}
-                                max={priceRange.max}
-                                step="1000000"
-                                value={filters.minPrice}
-                                onChange={(e) => {
-                                  const val = Math.min(parseInt(e.target.value), parseInt(filters.maxPrice) - 5000000);
-                                  setFilters({...filters, minPrice: val.toString()});
-                                }}
-                                className="absolute inset-x-0 w-full h-1.5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white dark:[&::-webkit-slider-thumb]:bg-gray-900 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-gray-900 dark:[&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-xl [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:active:scale-125 z-20"
-                              />
-                              <input 
-                                type="range" 
-                                min={priceRange.min}
-                                max={priceRange.max}
-                                step="1000000"
-                                value={filters.maxPrice}
-                                onChange={(e) => {
-                                  const val = Math.max(parseInt(e.target.value), parseInt(filters.minPrice) + 5000000);
-                                  setFilters({...filters, maxPrice: val.toString()});
-                                }}
-                                className="absolute inset-x-0 w-full h-1.5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gray-900 dark:[&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white dark:[&::-webkit-slider-thumb]:border-gray-900 [&::-webkit-slider-thumb]:shadow-xl [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:active:scale-125 z-30"
-                              />
-                           </div>
-                           <div className="flex justify-between text-[8px] text-gray-400 font-bold uppercase tracking-widest px-1 pt-2">
-                              <span>Min {formatPrice(priceRange.min)}</span>
-                              <span>Max {formatPrice(priceRange.max)}</span>
-                           </div>
+                           
+                           {usePriceSlider ? (
+                             <div className="flex items-center gap-2 mb-2">
+                               <div className="flex-1 relative h-6 flex items-center px-1 group">
+                                  {/* Custom Dual Range Slider Rail */}
+                                  <div className="absolute inset-x-1 h-1.5 bg-gray-100 dark:bg-white/10 rounded-lg overflow-hidden">
+                                    <div 
+                                      className="absolute h-full bg-gray-950 dark:bg-white transition-all duration-300"
+                                      style={{
+                                        left: `${(( (parseInt(filters.minPrice) || priceRange.min) - priceRange.min) / (priceRange.max - priceRange.min)) * 100}%`,
+                                        width: `${(((parseInt(filters.maxPrice) || priceRange.max) - (parseInt(filters.minPrice) || priceRange.min)) / (priceRange.max - priceRange.min)) * 100}%`
+                                      }}
+                                    />
+                                  </div>
+                                  
+                                  <input 
+                                    type="range" 
+                                    min={priceRange.min}
+                                    max={priceRange.max}
+                                    step="5000000"
+                                    value={filters.minPrice || priceRange.min}
+                                    onChange={(e) => {
+                                      const val = Math.min(parseInt(e.target.value), (parseInt(filters.maxPrice) || priceRange.max) - 10000000);
+                                      setFilters({...filters, minPrice: val.toString()});
+                                      setPage(1);
+                                    }}
+                                    className="absolute inset-x-0 w-full h-1.5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white dark:[&::-webkit-slider-thumb]:bg-gray-900 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-gray-900 dark:[&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-xl [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:active:scale-125 z-20"
+                                  />
+                                  <input 
+                                    type="range" 
+                                    min={priceRange.min}
+                                    max={priceRange.max}
+                                    step="5000000"
+                                    value={filters.maxPrice || priceRange.max}
+                                    onChange={(e) => {
+                                      const val = Math.max(parseInt(e.target.value), (parseInt(filters.minPrice) || priceRange.min) + 10000000);
+                                      setFilters({...filters, maxPrice: val.toString()});
+                                      setPage(1);
+                                    }}
+                                    className="absolute inset-x-0 w-full h-1.5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gray-900 dark:[&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white dark:[&::-webkit-slider-thumb]:border-gray-900 [&::-webkit-slider-thumb]:shadow-xl [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:active:scale-125 z-30"
+                                  />
+                               </div>
+                             </div>
+                           ) : (
+                             <div className="grid grid-cols-2 gap-2 mt-2">
+                               <div className="space-y-1">
+                                 <p className="text-[8px] text-gray-400 font-bold uppercase">Min Price (IDR)</p>
+                                 <input 
+                                   type="number"
+                                   value={filters.minPrice}
+                                   onChange={(e) => { setFilters({...filters, minPrice: e.target.value}); setPage(1); }}
+                                   placeholder={priceRange.min.toString()}
+                                   className="w-full h-10 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-3 text-[10px] font-bold text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-gray-900 dark:focus:ring-white/20 transition-all"
+                                 />
+                               </div>
+                               <div className="space-y-1">
+                                 <p className="text-[8px] text-gray-400 font-bold uppercase">Max Price (IDR)</p>
+                                 <input 
+                                   type="number"
+                                   value={filters.maxPrice}
+                                   onChange={(e) => { setFilters({...filters, maxPrice: e.target.value}); setPage(1); }}
+                                   placeholder={priceRange.max.toString()}
+                                   className="w-full h-10 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-3 text-[10px] font-bold text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-gray-900 dark:focus:ring-white/20 transition-all"
+                                 />
+                               </div>
+                             </div>
+                           )}
                         </div>
 
                         <div className="md:col-span-4 py-4 flex justify-between items-center border-t border-gray-50 dark:border-white/5 mt-2">
@@ -390,6 +429,31 @@ const Catalog = () => {
                 </div>
               </motion.article>
             ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-4 mt-12">
+            <button 
+              disabled={page === 1}
+              onClick={() => { setPage(p => p - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              className="w-12 h-12 rounded-full border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-400 hover:bg-gray-900 dark:hover:bg-white hover:text-white dark:hover:text-gray-900 transition-all disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest px-4 py-2 bg-gray-100 dark:bg-white/5 rounded-full">
+                Page {page} of {totalPages}
+              </span>
+            </div>
+            <button 
+              disabled={page === totalPages}
+              onClick={() => { setPage(p => p + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              className="w-12 h-12 rounded-full border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-400 hover:bg-gray-900 dark:hover:bg-white hover:text-white dark:hover:text-gray-900 transition-all disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+            >
+              <ChevronRight size={20} />
+            </button>
           </div>
         )}
 

@@ -27,4 +27,9 @@ router.post('/', authorize(['Super Admin', 'Admin Pusat']), createUser);
 router.put('/:id', authorize(['Super Admin', 'Admin Pusat']), updateUser);
 router.delete('/:id', authorize(['Super Admin']), deleteUser);
 
+// User Session Management (Admin only)
+const { getUserSessions, revokeUserSession } = require('../controllers/authController');
+router.get('/:id/sessions', authorize(['Super Admin', 'Admin Pusat']), getUserSessions);
+router.delete('/:id/sessions/:sessionId', authorize(['Super Admin', 'Admin Pusat']), revokeUserSession);
+
 module.exports = router;

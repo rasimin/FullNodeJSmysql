@@ -26,7 +26,7 @@ const getVehicleById = async (req, res) => {
 
 const getVehicles = async (req, res) => {
   try {
-    const { page, size, search, officeId: filterOfficeId, type, status } = req.query;
+    const { page, size, search, officeId: filterOfficeId, type, status, minPrice, maxPrice } = req.query;
     const { limit, offset } = getPagination(page, size);
     const user = req.user;
     const isSuperAdmin = user.Role?.name === 'Super Admin';
@@ -85,6 +85,12 @@ const getVehicles = async (req, res) => {
 
     if (type) condition.type = type;
     if (status) condition.status = status;
+
+    if (minPrice || maxPrice) {
+      condition.price = {};
+      if (minPrice) condition.price[Op.gte] = parseFloat(minPrice);
+      if (maxPrice) condition.price[Op.lte] = parseFloat(maxPrice);
+    }
 
     const { count, rows: vehicles } = await Vehicle.findAndCountAll({
       where: condition,

@@ -19,8 +19,8 @@ exports.createBooking = async (req, res) => {
       expiry_date,
       down_payment: down_payment || 0,
       notes,
-      sales_agent_id: req.body.sales_agent_id,
-      booked_by_agent_id: req.body.sales_agent_id,
+      sales_agent_id: req.body.sales_agent_id || null,
+      booked_by_agent_id: req.body.sales_agent_id || null,
       user_id: req.user.id,
       office_id: vehicle.office_id,
       status: 'Active'
@@ -29,7 +29,7 @@ exports.createBooking = async (req, res) => {
     // Update status kendaraan menjadi Booked
     await vehicle.update({ 
       status: 'Booked',
-      sales_agent_id: req.body.sales_agent_id 
+      sales_agent_id: req.body.sales_agent_id || null 
     }, { userId: req.user.id });
 
     res.status(201).json(booking);
@@ -140,7 +140,7 @@ exports.confirmSale = async (req, res) => {
     await vehicle.update({ 
       status: 'Sold',
       sold_date: req.body.sold_date || new Date().toISOString().split('T')[0],
-      sales_agent_id: req.body.sales_agent_id || (booking ? booking.sales_agent_id : null)
+      sales_agent_id: req.body.sales_agent_id || (booking ? booking.sales_agent_id : null) || null
     }, { userId: req.user.id });
 
     res.json({ message: 'Unit successfully marked as Sold' });
@@ -185,8 +185,8 @@ exports.updateBooking = async (req, res) => {
       expiry_date: req.body.expiry_date,
       down_payment: req.body.down_payment,
       notes: req.body.notes,
-      sales_agent_id: req.body.sales_agent_id,
-      booked_by_agent_id: req.body.sales_agent_id // Update also booked_by if it's still being edited
+      sales_agent_id: req.body.sales_agent_id || null,
+      booked_by_agent_id: req.body.sales_agent_id || null // Update also booked_by if it's still being edited
     }, { userId: req.user.id });
 
     res.json(booking);
