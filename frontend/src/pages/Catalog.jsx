@@ -266,12 +266,13 @@ const Catalog = () => {
                         key={opt.value}
                         ref={el => filterButtonRefs.current[opt.value] = el}
                         onClick={() => { setFilterType(opt.value); setPage(1); }} 
-                        className={`relative z-10 whitespace-nowrap h-9 px-5 md:px-6 rounded-full text-[11px] font-bold transition-colors duration-200 flex items-center justify-center gap-1.5 flex-1 md:flex-none
+                        className={`relative z-10 whitespace-nowrap h-9 rounded-full text-[11px] font-bold transition-colors duration-200 flex items-center justify-center gap-2
+                        ${!opt.value ? 'px-6 flex-1 md:flex-none' : 'w-11 md:w-12 flex-shrink-0'}
                         ${filterType === opt.value ? 'text-gray-900 dark:text-gray-900' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
                       >
-                        {opt.value === 'Mobil' && <Car size={14} />}
-                        {opt.value === 'Motor' && <Bike size={14} />}
-                        {opt.label}
+                        {opt.value === 'Mobil' && <Car size={16} />}
+                        {opt.value === 'Motor' && <Bike size={18} />}
+                        {!opt.value && opt.label}
                       </button>
                     ))}
                   </div>
@@ -287,7 +288,7 @@ const Catalog = () => {
                 </div>
 
                 {/* 3. Theme & Profile (pushed to far right) */}
-                <div className="flex items-center gap-1.5 flex-shrink-0 ml-auto order-first md:order-last">
+                <div className="flex items-center gap-1.5 flex-shrink-0 md:ml-auto order-none md:order-last">
                   <button onClick={toggleTheme} className="w-10 h-10 rounded-full flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10 md:bg-gray-100 md:dark:bg-white/5 transition-colors">
                     {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
                   </button>
