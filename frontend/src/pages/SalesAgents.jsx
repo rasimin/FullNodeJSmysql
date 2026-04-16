@@ -128,7 +128,13 @@ const SalesAgents = () => {
           <p className="text-sm text-gray-500">Manage sales teams and their assigned offices</p>
         </div>
         <button 
-          onClick={() => { setEditingAgent(null); setIsModalOpen(true); }}
+          onClick={() => { 
+            setEditingAgent(null); 
+            setFormData({ name: '', email: '', phone: '', address: '', bio: '', office_id: '', status: 'Active' });
+            setPreviewUrl(null);
+            setAvatarFile(null);
+            setIsModalOpen(true); 
+          }}
           className="btn-primary"
         >
           <UserPlus size={18} /> Add New Agent

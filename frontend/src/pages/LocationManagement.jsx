@@ -264,24 +264,26 @@ const LocationManagement = () => {
                   {activeActionsId === node.id && (
                     <>
                       {/* Invisible backdrop to close menu on outside click */}
-                      <div className="fixed inset-0 z-20" onClick={(e) => { e.stopPropagation(); setActiveActionsId(null); }} />
+                      {/* Backdrop khusus Mobile (Full screen & blur) / Desktop (Invisible) */}
+                      <div className="fixed inset-0 z-[90] bg-black/20 md:bg-transparent backdrop-blur-[1px] md:backdrop-blur-0" onClick={(e) => { e.stopPropagation(); setActiveActionsId(null); }} />
                       <motion.div 
                         initial={{ opacity: 0, scale: 0.9, y: 10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                        className="absolute right-0 top-full mt-2 w-32 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-xl z-30 overflow-hidden"
+                        className="fixed md:absolute inset-x-10 md:inset-auto md:right-0 top-1/2 md:top-full mt-2 -translate-y-1/2 md:translate-y-0 w-auto md:w-40 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl md:rounded-xl shadow-2xl z-[100] overflow-hidden"
                       >
-                        {node.type !== 'POSTAL_CODE' && (
-                          <button onClick={(e) => { e.stopPropagation(); setActiveActionsId(null); openModal(null, getNextType(node.type), node.id); }} className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-bold text-blue-600 hover:bg-blue-50 transition-colors">
-                            <Plus size={14} /> Tambah
-                          </button>
-                        )}
-                        <button onClick={(e) => { e.stopPropagation(); setActiveActionsId(null); openModal(node); }} className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-bold text-emerald-600 hover:bg-emerald-50 transition-colors border-t border-gray-50 dark:border-gray-700">
-                          <Edit size={14} /> Edit
-                        </button>
-                        <button onClick={(e) => { e.stopPropagation(); setActiveActionsId(null); setConfirmDeleteId(node.id); }} className="w-full flex items-center gap-3 px-4 py-3 text-[11px] font-bold text-red-600 hover:bg-red-50 transition-colors border-t border-gray-50 dark:border-gray-700">
-                          <Trash2 size={14} /> Hapus
-                        </button>
+                         {node.type !== 'POSTAL_CODE' && (
+                           <button onClick={(e) => { e.stopPropagation(); setActiveActionsId(null); openModal(null, getNextType(node.type), node.id); }} className="w-full flex items-center justify-center md:justify-start gap-3 px-6 py-4 md:px-4 md:py-3 text-[12px] md:text-[11px] font-bold text-blue-600 hover:bg-blue-50 transition-colors">
+                             <Plus size={16} /> Tambah
+                           </button>
+                         )}
+                         <button onClick={(e) => { e.stopPropagation(); setActiveActionsId(null); openModal(node); }} className="w-full flex items-center justify-center md:justify-start gap-3 px-6 py-4 md:px-4 md:py-3 text-[12px] md:text-[11px] font-bold text-emerald-600 hover:bg-emerald-50 transition-colors border-t border-gray-50 dark:border-gray-700">
+                           <Edit size={16} /> Edit
+                         </button>
+                         <button onClick={(e) => { e.stopPropagation(); setActiveActionsId(null); setConfirmDeleteId(node.id); }} className="w-full flex items-center justify-center md:justify-start gap-3 px-6 py-4 md:px-4 md:py-3 text-[12px] md:text-[11px] font-bold text-red-600 hover:bg-red-50 transition-colors border-t border-gray-50 dark:border-gray-700">
+                           <Trash2 size={16} /> Hapus
+                         </button>
+                         <button onClick={(e) => { e.stopPropagation(); setActiveActionsId(null); }} className="md:hidden w-full py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest border-t border-gray-100 dark:border-gray-700 bg-gray-50/50">Tutup</button>
                       </motion.div>
                     </>
                   )}
@@ -354,7 +356,7 @@ const LocationManagement = () => {
         </div>
 
         {/* Master Registry Container */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl md:rounded-3xl overflow-hidden shadow-xl shadow-gray-200/50 dark:shadow-none">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl md:rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none relative z-0">
            <div className="px-3 py-3 md:px-6 md:py-5 border-b border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 md:gap-3 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md sticky top-0 z-10">
               <h2 className="text-[10px] md:text-sm font-bold text-gray-900 dark:text-white uppercase tracking-tight">Wilayah Indonesia</h2>
               <div className="flex flex-wrap gap-1 md:gap-2 w-full sm:w-auto">
@@ -401,7 +403,7 @@ const LocationManagement = () => {
                 </div>
               )}
 
-              <div className="p-2 overflow-y-auto max-h-[60vh] custom-scrollbar">
+              <div className="p-2 overflow-y-auto max-h-[60vh] custom-scrollbar pb-40">
                 {loading && treeData.length === 0 ? (
                   <div className="py-24 text-center space-y-4">
                       <div className="w-8 h-8 border-3 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mx-auto" />
