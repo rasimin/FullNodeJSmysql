@@ -11,8 +11,8 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log('Database connected successfully.');
     
-    // Sync models
-    await sequelize.sync({ alter: true }); 
+    // Sync models - using standard sync to avoid ALTER errors on tables with too many legacy indexes
+    await sequelize.sync(); 
     
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);

@@ -9,6 +9,7 @@ import UserManagement from './pages/UserManagement';
 import OfficeManagement from './pages/OfficeManagement';
 import Vehicles from './pages/Vehicles';
 import BrandManagement from './pages/BrandManagement';
+import LocationManagement from './pages/LocationManagement';
 import RoleManagement from './pages/RoleManagement';
 import ActivityLog from './pages/ActivityLog';
 import AuditTrail from './pages/AuditTrail';
@@ -42,6 +43,7 @@ function App() {
                 <Route path="/offices" element={<OfficeManagement />} />
                 <Route path="/activities" element={<ActivityLog />} />
                 <Route path="/roles" element={<RoleManagement />} />
+                <Route path="/locations" element={<LocationManagement />} />
                 <Route path="/audit-trails" element={<AuditTrail />} />
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/profile" element={<Profile />} />

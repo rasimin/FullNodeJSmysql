@@ -4,14 +4,17 @@ const { User, Role, ActivityLog, UserSession } = require('../models');
 const authenticate = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      console.log(`[Auth] Blocked: No Authorization header for ${req.method} ${req.originalUrl}`);
-      return res.status(401).json({ message: 'Authorization header missing' });
+    let token = '';
+    
+    if (authHeader) {
+      token = authHeader.split(' ')[1];
+    } else if (req.query.token) {
+      token = req.query.token;
     }
 
-    const token = authHeader.split(' ')[1];
     if (!token) {
-      return res.status(401).json({ message: 'Token missing' });
+      console.log(`[Auth] Blocked: No token provided for ${req.method} ${req.originalUrl}`);
+      return res.status(401).json({ message: 'Authentication required' });
     }
 
     // Session Check - Realtime validation

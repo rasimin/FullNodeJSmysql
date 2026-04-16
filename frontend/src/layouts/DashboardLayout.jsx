@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { 
   LayoutDashboard, Users, Building2, ShieldCheck, LogOut, Shield,
-  Menu, X, History, FileText, Sun, Moon, ChevronLeft, ChevronRight, UserCircle, Car, Tags, BarChart2, BarChart3, Search, Rocket
+  Menu, X, History, FileText, Sun, Moon, ChevronLeft, ChevronRight, UserCircle, Car, Tags, BarChart2, BarChart3, Search, Rocket, MapPin
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IMAGE_BASE_URL } from '../config';
@@ -67,6 +67,7 @@ const DashboardLayout = () => {
           { to: '/vehicles', icon: Car, label: 'Vehicles' },
           { to: '/offices', icon: Building2, label: 'Office Management' },
           { to: '/sales-agents', icon: Users, label: 'Sales Agent' },
+          { to: '/locations', icon: MapPin, label: 'Regional Data' },
           { to: '/catalog', icon: LayoutDashboard, label: 'Product Catalog', target: '_blank' },
         ]
       },

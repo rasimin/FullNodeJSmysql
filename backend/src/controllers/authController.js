@@ -122,8 +122,29 @@ const login = async (req, res) => {
       // Revoke all previous sessions
       await UserSession.update({ is_revoked: true }, { where: { user_id: user.id, is_revoked: false } });
     } else {
-      // Check max sessions
-      const activeSessionsCount = await UserSession.count({ where: { user_id: user.id, is_revoked: false } });
+      // 1. First, check if there's an existing active session with SAME IP and User-Agent
+      // If found, we revoke those so they don't count towards the limit (treating it as the same device)
+      await UserSession.update(
+        { is_revoked: true },
+        { 
+          where: { 
+            user_id: user.id, 
+            is_revoked: false,
+            ip_address: req.ip,
+            user_agent: req.headers['user-agent']
+          } 
+        }
+      );
+
+      // 2. Now check max sessions against valid, unexpired sessions
+      const activeSessionsCount = await UserSession.count({ 
+        where: { 
+          user_id: user.id, 
+          is_revoked: false,
+          expires_at: { [Op.gt]: new Date() } // Only count sessions that haven't expired
+        } 
+      });
+
       if (activeSessionsCount >= maxSessions) {
         return res.status(403).json({ message: 'Maximum active devices reached. Please logout from other devices first.' });
       }

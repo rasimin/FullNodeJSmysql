@@ -11,6 +11,7 @@ const VehicleImage = require('./VehicleImage');
 const SalesAgent = require('./SalesAgent');
 const SystemSetting = require('./SystemSetting');
 const UserSession = require('./UserSession');
+const Location = require('./Location');
 
 // User Relationships
 User.belongsTo(Role, { foreignKey: 'role_id' });
@@ -60,6 +61,10 @@ User.hasMany(Booking, { foreignKey: 'user_id' });
 Booking.belongsTo(SalesAgent, { foreignKey: 'sales_agent_id', as: 'salesAgent' });
 Booking.belongsTo(SalesAgent, { foreignKey: 'booked_by_agent_id', as: 'bookedByAgent' });
 SalesAgent.hasMany(Booking, { foreignKey: 'sales_agent_id', as: 'bookings' });
+
+// Location Hierarchy
+Location.belongsTo(Location, { as: 'parent', foreignKey: 'parent_id' });
+Location.hasMany(Location, { as: 'children', foreignKey: 'parent_id' });
 
 // Audit Trail Relationship
 AuditTrail.belongsTo(User, { foreignKey: 'user_id', onDelete: 'SET NULL' });
@@ -112,6 +117,7 @@ setupHooks(Booking);
 setupHooks(VehicleImage);
 setupHooks(SalesAgent);
 setupHooks(SystemSetting);
+setupHooks(Location);
 
 module.exports = {
   sequelize,
@@ -126,5 +132,6 @@ module.exports = {
   VehicleImage,
   SalesAgent,
   SystemSetting,
-  UserSession
+  UserSession,
+  Location
 };
