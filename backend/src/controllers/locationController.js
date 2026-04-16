@@ -18,13 +18,59 @@ const fetchJson = (url) => {
 
 const getAllLocations = async (req, res) => {
   try {
-    // We can fetch roots (provinces) and include their children if requested,
-    // or just fetch all and build the tree in frontend.
-    // Here we fetch all but with parent info
+    const { search, parent_id, type } = req.query;
+    const { Op } = require('sequelize');
+
+    if (search) {
+      // 1. Cari data yang cocok (limit 50 match utama)
+      const matches = await Location.findAll({
+        where: {
+          [Op.or]: [
+            { name: { [Op.like]: `%${search}%` } },
+            { region_code: { [Op.like]: `%${search}%` } },
+            { postal_code: { [Op.like]: `%${search}%` } }
+          ]
+        },
+        limit: 50
+      });
+
+      if (matches.length === 0) return res.json([]);
+
+      // 2. Cari semua leluhur (ancestors) untuk membangun struktur pohon
+      const allResultIds = new Set();
+      let nodesToReturn = [];
+
+      // Masukkan matches utama
+      matches.forEach(m => {
+        if (!allResultIds.has(m.id)) {
+          allResultIds.add(m.id);
+          nodesToReturn.push(m);
+        }
+      });
+
+      // Cari orang tua secara rekursif di memory (lebih cepat untuk paket kecil)
+      let currentBatch = [...matches];
+      while (currentBatch.length > 0) {
+        const parentIds = [...new Set(currentBatch.map(m => m.parent_id).filter(pid => pid && !allResultIds.has(pid)))];
+        if (parentIds.length === 0) break;
+
+        const parents = await Location.findAll({ where: { id: parentIds } });
+        parents.forEach(p => {
+          allResultIds.add(p.id);
+          nodesToReturn.push(p);
+        });
+        currentBatch = parents;
+      }
+
+      return res.json(nodesToReturn);
+    } 
+
+    // Jika bukan pencarian, gunakan Lazy Loading standar
     const locations = await Location.findAll({
-      include: [{ model: Location, as: 'parent', attributes: ['name'] }],
-      order: [['type', 'ASC'], ['name', 'ASC']]
+      where: { parent_id: parent_id || null },
+      order: [['name', 'ASC']]
     });
+    
     res.json(locations);
   } catch (error) {
     console.error('Get Locations Error:', error);

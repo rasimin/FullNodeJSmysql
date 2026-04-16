@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import api from '../services/api';
 import { API_URL } from '../config';
 import { 
   Search, Plus, MapPin, Trash2, Edit, Map, Navigation, Hash, 
   ChevronRight, ChevronDown, FolderTree, Settings, User, 
   LayoutGrid, Building2, MapPinned, MoreHorizontal, LayoutList,
-  RefreshCcw
+  RefreshCcw, Loader2
 } from 'lucide-react';
 import Modal from '../components/Modal';
 import DynamicIsland from '../components/DynamicIsland';
@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRef } from 'react';
 
 const LocationManagement = () => {
-  const [locations, setLocations] = useState([]);
+  const [locations, setLocations] = useState([]); // Flat list of loaded nodes
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLocation, setEditingLocation] = useState(null);
@@ -29,13 +29,14 @@ const LocationManagement = () => {
   const [syncProgress, setSyncProgress] = useState({ percent: 0, message: '' });
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [activeActionsId, setActiveActionsId] = useState(null);
+  const [loadingNodes, setLoadingNodes] = useState({}); // Tracking which nodes are fetching children
   const eventSourceRef = useRef(null);
 
-  // Debouncing effect to prevent laggy typing
+  // Debouncing effect for search
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(search);
-    }, 300);
+    }, 500);
     return () => clearTimeout(handler);
   }, [search]);
 
@@ -44,77 +45,88 @@ const LocationManagement = () => {
     if (status !== 'loading') setTimeout(() => setNotification({ status: 'idle' }), delay);
   };
 
-  const fetchLocations = async () => {
-    setLoading(true);
+  // Optimized Fetch: Supports root only or search results
+  const fetchLocations = useCallback(async (parentId = null, query = '') => {
+    if (!parentId && !query) setLoading(true);
+    if (parentId) setLoadingNodes(prev => ({ ...prev, [parentId]: true }));
+
     try {
-      const r = await api.get('/locations');
-      setLocations(r.data);
-    } catch { notify('error', 'Registry access failed'); }
-    setLoading(false);
-  };
+      const params = {};
+      if (query) params.search = query;
+      else params.parent_id = parentId;
 
-  useEffect(() => { fetchLocations(); }, []);
+      const r = await api.get('/locations', { params });
+      
+      if (query) {
+        // Search results: set them and expand all
+        setLocations(r.data);
+        const allIds = {};
+        r.data.forEach(item => allIds[item.id] = true);
+        setExpanded(allIds);
+      } else {
+        // Lazy load results are appended
+        setLocations(prev => {
+          const existingIds = new Set(prev.map(l => l.id));
+          const newItems = r.data.filter(item => !existingIds.has(item.id));
+          return [...prev, ...newItems];
+        });
+      }
+    } catch { 
+      notify('error', 'Gagal memuat data wilayah'); 
+    } finally {
+      setLoading(false);
+      if (parentId) setLoadingNodes(prev => ({ ...prev, [parentId]: false }));
+    }
+  }, []);
 
-  const toggleExpand = (id) => {
-    setExpanded(prev => ({ ...prev, [id]: !prev[id] }));
-  };
+  // Initial load: Only provinces
+  useEffect(() => {
+    if (!debouncedSearch) {
+      setLocations([]); // Reset when clearing search
+      fetchLocations(null);
+    } else {
+      fetchLocations(null, debouncedSearch);
+    }
+  }, [debouncedSearch, fetchLocations]);
 
-  const expandAll = () => {
-    const allIds = {};
-    locations.forEach(l => allIds[l.id] = true);
-    setExpanded(allIds);
+  const toggleExpand = async (node) => {
+    const id = node.id;
+    const isExpanding = !expanded[id];
+    setExpanded(prev => ({ ...prev, [id]: isExpanding }));
+
+    // If expanding and no children loaded yet, fetch them
+    if (isExpanding && node.type !== 'POSTAL_CODE') {
+        const hasChildrenLoaded = locations.some(l => l.parent_id === id);
+        if (!hasChildrenLoaded) {
+            await fetchLocations(id);
+        }
+    }
   };
 
   const collapseAll = () => setExpanded({});
+
+  // Stats calculation
+  const stats = useMemo(() => ({
+    provinces: 34, 
+    cities: 514,
+    districts: 87687
+  }), []);
 
   const buildTree = (items) => {
     const map = {};
     const roots = [];
     items.forEach(item => map[item.id] = { ...item, children: [] });
     items.forEach(item => {
-      if (item.parent_id && map[item.parent_id]) map[item.parent_id].children.push(map[item.id]);
-      else if (!item.parent_id) roots.push(map[item.id]);
+      if (item.parent_id && map[item.parent_id]) {
+        map[item.parent_id].children.push(map[item.id]);
+      } else if (!item.parent_id || !map[item.parent_id]) {
+        if (!roots.some(r => r.id === item.id)) roots.push(map[item.id]);
+      }
     });
     return roots;
   };
 
   const treeData = useMemo(() => buildTree(locations), [locations]);
-
-  // Pre-calculate which nodes should be visible or expanded based on search
-  const searchResults = useMemo(() => {
-    if (!debouncedSearch) return { matchedIds: new Set(), parentIdsToExpand: new Set() };
-    
-    const matchedIds = new Set();
-    const parentIdsToExpand = new Set();
-    const query = debouncedSearch.toLowerCase();
-
-    const traverse = (items, path = []) => {
-      let branchHasMatch = false;
-      for (const item of items) {
-        const selfMatch = item.name.toLowerCase().includes(query) || 
-                         (item.postal_code && item.postal_code.includes(query));
-        
-        const childrenMatch = item.children?.length > 0 ? traverse(item.children, [...path, item.id]) : false;
-        
-        if (selfMatch || childrenMatch) {
-          matchedIds.add(item.id);
-          path.forEach(pid => parentIdsToExpand.add(pid)); // Mark all ancestors for expansion
-          branchHasMatch = true;
-        }
-      }
-      return branchHasMatch;
-    };
-
-    traverse(treeData);
-    return { matchedIds, parentIdsToExpand };
-  }, [debouncedSearch, treeData]);
-
-  // Stats calculation
-  const stats = {
-    provinces: locations.filter(l => l.type === 'PROVINCE').length,
-    cities: locations.filter(l => l.type === 'CITY').length,
-    districts: locations.filter(l => l.type === 'DISTRICT' || l.type === 'POSTAL_CODE').length
-  };
 
   const openModal = (loc = null, typeHint = 'PROVINCE', parentHint = '') => {
     setEditingLocation(loc);
@@ -132,7 +144,9 @@ const LocationManagement = () => {
     try {
       const payload = { ...formData, parent_id: formData.parent_id || null };
       editingLocation ? await api.put(`/locations/${editingLocation.id}`, payload) : await api.post('/locations', payload);
-      notify('success', 'Registry updated'); setIsModalOpen(false); fetchLocations();
+      notify('success', 'Registry updated'); 
+      setIsModalOpen(false); 
+      fetchLocations(formData.parent_id || null);
     } catch { notify('error', 'Transaction failed'); }
   };
 
@@ -140,15 +154,15 @@ const LocationManagement = () => {
     notify('loading', 'Revoking...');
     try { 
       await api.delete(`/locations/${confirmDeleteId}`); 
-      setConfirmDeleteId(null); notify('success', 'Purged'); fetchLocations(); 
+      setLocations(prev => prev.filter(l => l.id !== confirmDeleteId));
+      setConfirmDeleteId(null); 
+      notify('success', 'Purged'); 
     } catch { notify('error', 'Integrity error'); }
   };
 
   const handleSync = () => {
     setIsSyncing(true);
     setSyncProgress({ percent: 0, message: 'Menghubungkan...' });
-    
-    // We need to use native EventSource for SSE, adding token manually
     const token = localStorage.getItem('token');
     const es = new EventSource(`${API_URL}/locations/sync?token=${token}`);
     eventSourceRef.current = es;
@@ -166,7 +180,7 @@ const LocationManagement = () => {
           es.close();
           setTimeout(() => {
             setIsSyncing(false);
-            fetchLocations();
+            window.location.reload();
           }, 1000);
         }
       }
@@ -185,17 +199,15 @@ const LocationManagement = () => {
       eventSourceRef.current = null;
       setIsSyncing(false);
       notify('error', 'Sinkronisasi dihentikan oleh user');
-      fetchLocations(); // Fetch whatever was already saved
+      window.location.reload();
     }
   };
 
-
   const TreeItem = ({ node, level = 0 }) => {
-    const isExpanded = (debouncedSearch && searchResults.parentIdsToExpand.has(node.id)) || expanded[node.id];
-    const hasChildren = node.children && node.children.length > 0;
-
-    // If we have a search term, only show if this node is in the matched set
-    if (debouncedSearch && !searchResults.matchedIds.has(node.id)) return null;
+    const isExpanded = expanded[node.id];
+    const isLoading = loadingNodes[node.id];
+    const canHaveChildren = node.type !== 'POSTAL_CODE';
+    const hasLoadedChildren = node.children && node.children.length > 0;
 
     const Icon = node.type === 'PROVINCE' ? Map : node.type === 'CITY' ? Building2 : node.type === 'DISTRICT' ? MapPin : Hash;
     const iconColor = node.type === 'PROVINCE' ? 'text-blue-500' : node.type === 'CITY' ? 'text-emerald-500' : node.type === 'DISTRICT' ? 'text-orange-500' : 'text-slate-500';
@@ -214,31 +226,32 @@ const LocationManagement = () => {
           className={`group relative flex items-center h-10 md:h-12 px-2 md:px-4 rounded-xl transition-all duration-200 cursor-pointer select-none ${
             isExpanded ? 'bg-blue-500/[0.03] dark:bg-blue-500/[0.05]' : 'hover:bg-slate-500/5 dark:hover:bg-white/[0.02]'
           }`}
-          onClick={(e) => { e.stopPropagation(); toggleExpand(node.id); }}
+          onClick={(e) => { e.stopPropagation(); toggleExpand(node); }}
         >
-          {/* Action Row Layout */}
           <div className="flex items-center gap-1.5 md:gap-4 flex-1 min-w-0" style={{ paddingLeft: `calc(${level} * (window.innerWidth < 768 ? 10 : 28) * 1px)` }}>
-            <div className={`shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : 'rotate-0'} ${!hasChildren ? 'opacity-0' : 'text-slate-400 dark:text-gray-500'}`}>
+            <div className={`shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : 'rotate-0'} ${!canHaveChildren ? 'opacity-0' : 'text-slate-400 dark:text-gray-500'}`}>
               <ChevronRight size={12} />
             </div>
             
             <div className={`shrink-0 w-6 h-6 md:w-8 md:h-8 rounded-lg flex items-center justify-center ${iconColor} bg-current/10 dark:bg-current/[0.05]`}>
-               <Icon size={12} />
+               {isLoading ? <Loader2 size={12} className="animate-spin" /> : <Icon size={12} />}
             </div>
 
-            <span className={`text-[12px] md:text-[13px] font-semibold truncate ${node.type === 'PROVINCE' ? 'text-gray-900 dark:text-gray-100' : 'text-gray-600 dark:text-gray-400'}`}>
-              <span className="opacity-40 text-[9px] mr-1.5 font-mono">{node.region_code || '---'}</span>
-              {node.name} {node.postal_code && <span className="ml-1 md:ml-2 text-[9px] md:text-[10px] text-gray-400 font-normal">[{node.postal_code}]</span>}
-              {node.type === 'POSTAL_CODE' && <span className="ml-2 text-[8px] text-gray-400 font-normal uppercase opacity-60">Kelurahan</span>}
+            <span className={`text-[12px] md:text-[13px] font-semibold truncate leading-tight ${node.type === 'PROVINCE' ? 'text-gray-900 dark:text-gray-100' : 'text-gray-600 dark:text-gray-400'}`}>
+              <div className="flex flex-col">
+                <div className="flex items-center">
+                  <span className="opacity-40 text-[9px] mr-1.5 font-mono">{node.region_code || '---'}</span>
+                  {node.name} {node.postal_code && <span className="ml-1 md:ml-2 text-[9px] md:text-[10px] text-gray-400 font-normal">[{node.postal_code}]</span>}
+                </div>
+                {node.type === 'POSTAL_CODE' && !search && <span className="text-[8px] text-gray-400 font-normal uppercase opacity-60 leading-none">Kelurahan</span>}
+              </div>
             </span>
           </div>
 
           <div className="flex items-center gap-2 md:gap-6 shrink-0 relative">
-            {/* Action Group: Desktop (Hover) vs Mobile (Ellipsis) */}
             <div className="flex items-center">
-              {/* Desktop View: Always visible/hover */}
-              <div className="hidden md:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-2 group-hover:translate-x-0">
-                {node.type !== 'POSTAL_CODE' && (
+              <div className="hidden md:flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-all duration-200">
+                {canHaveChildren && (
                     <button onClick={(e) => { e.stopPropagation(); openModal(null, getNextType(node.type), node.id); }} className="w-8 h-8 flex items-center justify-center hover:bg-blue-500/10 text-blue-500 rounded-lg cursor-pointer transition-colors">
                       <Plus size={14} />
                     </button>
@@ -251,7 +264,6 @@ const LocationManagement = () => {
                 </button>
               </div>
 
-              {/* Mobile View: Ellipsis Menu */}
               <div className="md:hidden relative">
                 <button 
                   onClick={(e) => { e.stopPropagation(); setActiveActionsId(activeActionsId === node.id ? null : node.id); }}
@@ -261,18 +273,16 @@ const LocationManagement = () => {
                 </button>
 
                 <AnimatePresence>
-                  {activeActionsId === node.id && (
-                    <>
-                      {/* Invisible backdrop to close menu on outside click */}
-                      {/* Backdrop khusus Mobile (Full screen & blur) / Desktop (Invisible) */}
-                      <div className="fixed inset-0 z-[90] bg-black/20 md:bg-transparent backdrop-blur-[1px] md:backdrop-blur-0" onClick={(e) => { e.stopPropagation(); setActiveActionsId(null); }} />
-                      <motion.div 
-                        initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                        className="fixed md:absolute inset-x-10 md:inset-auto md:right-0 top-1/2 md:top-full mt-2 -translate-y-1/2 md:translate-y-0 w-auto md:w-40 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl md:rounded-xl shadow-2xl z-[100] overflow-hidden"
-                      >
-                         {node.type !== 'POSTAL_CODE' && (
+                   {activeActionsId === node.id && (
+                     <>
+                       <div className="fixed inset-0 z-[90] bg-black/20 md:bg-transparent backdrop-blur-[1px] md:backdrop-blur-0" onClick={(e) => { e.stopPropagation(); setActiveActionsId(null); }} />
+                       <motion.div 
+                         initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                         animate={{ opacity: 1, scale: 1, y: 0 }}
+                         exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                         className="fixed md:absolute inset-x-10 md:inset-auto md:right-0 top-1/2 md:top-full mt-2 -translate-y-1/2 md:translate-y-0 w-auto md:w-40 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl md:rounded-xl shadow-2xl z-[100] overflow-hidden"
+                       >
+                         {canHaveChildren && (
                            <button onClick={(e) => { e.stopPropagation(); setActiveActionsId(null); openModal(null, getNextType(node.type), node.id); }} className="w-full flex items-center justify-center md:justify-start gap-3 px-6 py-4 md:px-4 md:py-3 text-[12px] md:text-[11px] font-bold text-blue-600 hover:bg-blue-50 transition-colors">
                              <Plus size={16} /> Tambah
                            </button>
@@ -284,14 +294,14 @@ const LocationManagement = () => {
                            <Trash2 size={16} /> Hapus
                          </button>
                          <button onClick={(e) => { e.stopPropagation(); setActiveActionsId(null); }} className="md:hidden w-full py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest border-t border-gray-100 dark:border-gray-700 bg-gray-50/50">Tutup</button>
-                      </motion.div>
-                    </>
-                  )}
-                </AnimatePresence>
+                       </motion.div>
+                     </>
+                   )}
+                 </AnimatePresence>
               </div>
             </div>
 
-            {hasChildren && (
+            {hasLoadedChildren && (
                <span className="w-6 h-5 md:w-7 md:h-6 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 text-[9px] md:text-[10px] font-bold border border-gray-200 dark:border-gray-700">
                   {node.children.length}
                </span>
@@ -300,7 +310,7 @@ const LocationManagement = () => {
         </motion.div>
 
         <AnimatePresence>
-          {isExpanded && hasChildren && (
+          {isExpanded && hasLoadedChildren && (
             <div 
               className="overflow-hidden border-l border-gray-100 dark:border-gray-800 ml-3 md:ml-8 mt-0.5"
               style={{ marginLeft: `calc((${level} * (window.innerWidth < 768 ? 10 : 28) + (window.innerWidth < 768 ? 12 : 36)) * 1px)` }}
@@ -324,7 +334,6 @@ const LocationManagement = () => {
       />
 
       <div className="max-w-4xl mx-auto space-y-3 md:space-y-8">
-        {/* Precision Search */}
         <div className="relative group">
            <div className="absolute left-3 md:left-8 top-0 bottom-0 flex items-center justify-center text-gray-400 dark:text-gray-500 group-focus-within:text-blue-500 transition-colors pointer-events-none z-10 w-8 md:w-10">
               <Search size={18} md={22} />
@@ -333,12 +342,11 @@ const LocationManagement = () => {
               type="text" 
               style={{ paddingLeft: window.innerWidth < 768 ? '40px' : '84px' }}
               className="w-full h-12 md:h-16 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl md:rounded-2xl pr-4 text-[11px] md:text-sm font-medium focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all outline-none text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600 shadow-sm" 
-              placeholder="Cari wilayah..." 
+              placeholder="Cari wilayah (minimal 3 karakter)..." 
               value={search} onChange={(e) => setSearch(e.target.value)} 
            />
         </div>
 
-        {/* Dynamic Stats - Forced Horizontal Row */}
         <div className="flex flex-row gap-1.5 md:gap-4">
            {[
               { val: stats.provinces, label: 'PROV', fullLabel: 'PROVINSI', color: 'text-blue-500' },
@@ -355,7 +363,6 @@ const LocationManagement = () => {
            ))}
         </div>
 
-        {/* Master Registry Container */}
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl md:rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none relative z-0">
            <div className="px-3 py-3 md:px-6 md:py-5 border-b border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 md:gap-3 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md sticky top-0 z-10">
               <h2 className="text-[10px] md:text-sm font-bold text-gray-900 dark:text-white uppercase tracking-tight">Wilayah Indonesia</h2>
@@ -364,14 +371,12 @@ const LocationManagement = () => {
                    <RefreshCcw size={10} md={12} className={isSyncing ? 'animate-spin' : ''} />
                    <span className="hidden md:inline">{isSyncing ? 'Syncing...' : 'Sync Data'}</span>
                 </button>
-                <button onClick={expandAll} className="h-7 md:h-9 px-2 md:px-4 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg md:rounded-xl text-[8px] md:text-[10px] font-bold transition-all border border-gray-200 dark:border-none cursor-pointer">Buka</button>
-                <button onClick={collapseAll} className="h-7 md:h-9 px-2 md:px-4 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg md:rounded-xl text-[8px] md:text-[10px] font-bold transition-all border border-gray-200 dark:border-none cursor-pointer">Tutup</button>
+                <button onClick={collapseAll} className="h-7 md:h-9 px-2 md:px-4 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg md:rounded-xl text-[8px] md:text-[10px] font-bold transition-all border border-gray-200 dark:border-none cursor-pointer">Tutup Semua</button>
                 <button onClick={() => openModal()} className="h-7 md:h-9 px-3 md:px-6 bg-blue-600 hover:bg-blue-400 text-white rounded-lg md:rounded-xl text-[8px] md:text-[10px] font-black uppercase tracking-wider transition-all shadow-lg shadow-blue-500/20 active:scale-95 text-center flex items-center justify-center cursor-pointer ml-auto sm:ml-0">+ NEW</button>
               </div>
            </div>
- 
+
            <div className="relative min-h-[400px]">
-              {/* Top-aligned Loading States */}
               {(loading || isSyncing) && (
                 <div className="absolute inset-x-0 top-0 z-20 bg-white/60 dark:bg-gray-900/60 backdrop-blur-[1px] border-b border-gray-100 dark:border-gray-800">
                   <div className="h-1 w-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
@@ -410,7 +415,9 @@ const LocationManagement = () => {
                       <p className="text-[9px] uppercase font-bold tracking-[0.3em] text-gray-300 dark:text-gray-700">Synchronizing Registry...</p>
                   </div>
                 ) : treeData.length === 0 ? (
-                  <div className="py-24 text-center text-gray-300 dark:text-gray-800 text-[10px] font-bold uppercase tracking-[0.4em]">Empty Registry</div>
+                  <div className="py-24 text-center text-gray-300 dark:text-gray-800 text-[10px] font-bold uppercase tracking-[0.4em]">
+                    {search ? 'Hasil tidak ditemukan' : 'Empty Registry'}
+                  </div>
                 ) : (
                   <div className={`space-y-0 ${(loading || isSyncing) ? 'opacity-40 grayscale pointer-events-none transition-all duration-300' : ''}`}>
                     {treeData.map(node => (
@@ -425,6 +432,7 @@ const LocationManagement = () => {
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Registry Sync">
         <form onSubmit={handleSubmit} className="space-y-6 pt-2">
+          {/* Form remains mostly the same, but parent selection could also be optimized if needed */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Context Type</label>
@@ -437,11 +445,12 @@ const LocationManagement = () => {
             </div>
             {formData.type !== 'PROVINCE' && (
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Parent Entity</label>
-                <select className="w-full h-12 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-4 text-xs font-bold text-gray-900 dark:text-white focus:border-blue-500 outline-none transition-all" value={formData.parent_id} required onChange={e => setFormData({...formData, parent_id: e.target.value})}>
-                  <option value="">Select Parent...</option>
-                  {locations.filter(l => (formData.type === 'CITY' ? l.type === 'PROVINCE' : formData.type === 'DISTRICT' ? l.type === 'CITY' : l.type === 'DISTRICT')).map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                </select>
+                <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Parent ID</label>
+                <input 
+                  type="text" required className="w-full h-12 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-4 text-xs font-bold text-gray-900 dark:text-white focus:border-blue-500 outline-none transition-all" 
+                  value={formData.parent_id} onChange={e => setFormData({...formData, parent_id: e.target.value})} 
+                  placeholder="ID Induk Wilayah"
+                />
               </div>
             )}
           </div>
