@@ -33,6 +33,7 @@ const Catalog = () => {
   const navigate = useNavigate();
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [moreLoading, setMoreLoading] = useState(false);
   const [localSearch, setLocalSearch] = useState('');
   const searchTerm = useDebounce(localSearch, 350);
   const [filterType, setFilterType] = useState('');
@@ -87,18 +88,34 @@ const Catalog = () => {
     return () => clearTimeout(t);
   }, []);
 
+  // Intersection Observer for Infinite Scroll
+  const observer = useRef();
+  const lastElementRef = useCallback(node => {
+    if (loading || moreLoading) return;
+    if (observer.current) observer.current.disconnect();
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && page < totalPages) {
+        setPage(prev => prev + 1);
+      }
+    }, { rootMargin: '100px' });
+    if (node) observer.current.observe(node);
+  }, [loading, moreLoading, page, totalPages]);
+
   useEffect(() => {
     fetchVehicles();
   }, [page, searchTerm, filterType, filters]);
 
   const fetchVehicles = async () => {
-    setLoading(true);
+    const isFirstPage = page === 1;
+    if (isFirstPage) setLoading(true);
+    else setMoreLoading(true);
+
     try {
       const res = await api.get('/vehicles', {
         params: { 
           status: 'Available', 
           page, 
-          size: 12,
+          size: 15, // Slightly larger page size for infinite scroll
           search: searchTerm,
           type: filterType,
           brand: filters.brand,
@@ -107,13 +124,25 @@ const Catalog = () => {
           maxPrice: filters.maxPrice
         }
       });
-      setVehicles(res.data.items);
+      
+      if (isFirstPage) {
+        setVehicles(res.data.items);
+      } else {
+        // Only append if it's not the first page
+        setVehicles(prev => {
+          // Prevent duplicates by checking IDs
+          const existingIds = new Set(prev.map(v => v.id));
+          const newItems = res.data.items.filter(v => !existingIds.has(v.id));
+          return [...prev, ...newItems];
+        });
+      }
       setTotalPages(res.data.totalPages);
       setTotalItems(res.data.totalItems);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+      setMoreLoading(false);
     }
   };
 
@@ -563,30 +592,22 @@ const Catalog = () => {
           </AnimatePresence>
         </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-4 mt-12">
-            <button 
-              disabled={page === 1}
-              onClick={() => { setPage(p => p - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              className="w-12 h-12 rounded-full border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-400 hover:bg-gray-900 dark:hover:bg-white hover:text-white dark:hover:text-gray-900 transition-all disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-gray-400"
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest px-4 py-2 bg-gray-100 dark:bg-white/5 rounded-full">
-                Page {page} of {totalPages}
-              </span>
+        {/* Infinite Scroll Sentinel & Loading Indicator */}
+        <div ref={lastElementRef} className="py-20 flex flex-col items-center justify-center">
+          {moreLoading && (
+            <div className="flex flex-col items-center gap-4">
+               <div className="w-10 h-10 border-4 border-gray-200 dark:border-white/10 border-t-gray-900 dark:border-t-white rounded-full animate-spin" />
+               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest animate-pulse">Loading more units...</p>
             </div>
-            <button 
-              disabled={page === totalPages}
-              onClick={() => { setPage(p => p + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              className="w-12 h-12 rounded-full border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-400 hover:bg-gray-900 dark:hover:bg-white hover:text-white dark:hover:text-gray-900 transition-all disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-gray-400"
-            >
-              <ChevronRight size={20} />
-            </button>
-          </div>
-        )}
+          )}
+          
+          {!moreLoading && page >= totalPages && vehicles.length > 0 && (
+            <div className="flex flex-col items-center gap-2 opacity-50">
+               <div className="h-px w-24 bg-gradient-to-r from-transparent via-gray-300 dark:via-white/20 to-transparent mb-4" />
+               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">You've reached the end</p>
+            </div>
+          )}
+        </div>
 
         <div className="h-20" />
       </div>

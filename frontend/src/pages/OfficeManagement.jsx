@@ -7,6 +7,7 @@ import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IMAGE_BASE_URL } from '../config';
+import { formatOfficeHierarchy } from '../utils/hierarchy';
 
 const OfficeManagement = () => {
   const [offices, setOffices] = useState([]); // Hierarchy grouped
@@ -251,7 +252,7 @@ const OfficeManagement = () => {
           <Input label="Address" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} placeholder="Jl. Raya No. 123..." />
 
           {formData.type === 'BRANCH_OFFICE' && (
-            <Select label="Parent" value={formData.parent_id} onChange={e => setFormData({...formData, parent_id: e.target.value})} options={offices.map(o => ({ value: o.id, label: o.name }))} />
+            <Select label="Parent" value={formData.parent_id} onChange={e => setFormData({...formData, parent_id: e.target.value})} options={rawOffices.filter(o => !o.parent_id).map(o => ({ value: o.id, label: o.name }))} />
           )}
           
           <div className="space-y-2">

@@ -6,6 +6,7 @@ import DynamicIsland from '../components/DynamicIsland';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { motion, AnimatePresence } from 'framer-motion';
+import { formatOfficeHierarchy } from '../utils/hierarchy';
 import { IMAGE_BASE_URL } from '../config';
 
 const UserManagement = () => {
@@ -53,7 +54,7 @@ const UserManagement = () => {
 
   useEffect(() => {
     api.get('/roles').then(r => setRoles(r.data)).catch(console.error);
-    api.get('/offices').then(r => setOffices(r.data)).catch(console.error);
+    api.get('/offices').then(r => setOffices(formatOfficeHierarchy(r.data))).catch(console.error);
   }, []);
 
   useEffect(() => { fetchUsers(); }, [page, search]);
@@ -297,7 +298,7 @@ const UserManagement = () => {
               options={roles.filter(r => isSuperAdmin || r.name !== 'Super Admin').map(r => ({ value: r.id, label: r.name }))} />
             <Select label="Office" icon={Building2} value={formData.office_id}
               onChange={e => setFormData({...formData, office_id: e.target.value})}
-              options={offices.map(o => ({ value: o.id, label: o.name }))} />
+              options={offices.map(o => ({ value: o.id, label: o.displayName }))} />
           </div>
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={formData.is_active}

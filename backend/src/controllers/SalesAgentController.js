@@ -188,7 +188,7 @@ const getActiveSalesAgents = async (req, res) => {
 
     const agents = await SalesAgent.findAll({
       where: condition,
-      attributes: ['id', 'name', 'office_id'],
+      attributes: ['id', 'name', 'office_id', 'sales_code'],
       include: [{ model: Office, attributes: ['parent_id'] }],
       order: [['name', 'ASC']]
     });

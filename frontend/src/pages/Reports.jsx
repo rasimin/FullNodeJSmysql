@@ -9,6 +9,7 @@ import {
   Calendar, Filter, FileText, Download, ChevronRight, BarChart2, PieChart as PieIcon, Users
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { formatOfficeHierarchy } from '../utils/hierarchy';
 
 const Reports = () => {
   const [stats, setStats] = useState(null);
@@ -42,7 +43,7 @@ const Reports = () => {
     if (isHeadOffice) {
       try {
         const res = await api.get('/offices');
-        setOffices(res.data);
+        setOffices(formatOfficeHierarchy(res.data));
       } catch (err) { console.error(err); }
     }
   };
@@ -77,7 +78,7 @@ const Reports = () => {
               onChange={(e) => setSelectedOffice(e.target.value)}
             >
               <option value="">All Branches</option>
-              {offices.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+              {offices.map(o => <option key={o.id} value={o.id}>{o.displayName}</option>)}
             </select>
           )}
           <button className="btn-white text-xs gap-2">
@@ -297,7 +298,7 @@ const Reports = () => {
                 <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-purple-50 dark:bg-purple-900/20 text-purple-600 flex items-center justify-center text-[10px] md:text-xs font-bold">
                   #{idx + 1}
                 </div>
-                <span className="font-bold text-gray-900 dark:text-white uppercase text-[9px] md:text-xs tracking-wider truncate">{agent.name}</span>
+                <span className="font-bold text-gray-900 dark:text-white uppercase text-[9px] md:text-xs tracking-wider truncate">{agent.name} {agent.sales_code ? `(${agent.sales_code})` : ''}</span>
               </div>
               <div className="space-y-3">
                 <div className="flex justify-between items-end">

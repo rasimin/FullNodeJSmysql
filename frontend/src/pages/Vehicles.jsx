@@ -12,6 +12,7 @@ import DynamicIsland from '../components/DynamicIsland';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { motion, AnimatePresence } from 'framer-motion';
+import { formatOfficeHierarchy } from '../utils/hierarchy';
 import { IMAGE_BASE_URL } from '../config';
 
 const Vehicles = () => {
@@ -81,7 +82,7 @@ const Vehicles = () => {
       setBrands(b.data);
       setModelHistory(h.data);
       setTypeHistory(t.data);
-      if (isHeadOffice) setOffices(o.data);
+      if (isHeadOffice) setOffices(formatOfficeHierarchy(o.data));
       setSalesAgents(s.data);
     } catch (e) { console.error(e); }
   };
@@ -390,7 +391,7 @@ const Vehicles = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
         <div className="relative md:col-span-8"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} /><input type="text" className="input pl-10 h-12" placeholder="Search..." value={search} onChange={handleSearch} /></div>
-        <div className="md:col-span-4">{isHeadOffice && (<select className="input h-12" value={selectedBranch} onChange={(e) => { setSelectedBranch(e.target.value); setCurrentPage(1); }}><option value="">All Branches</option>{offices.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</select>)}</div>
+        <div className="md:col-span-4">{isHeadOffice && (<select className="input h-12" value={selectedBranch} onChange={(e) => { setSelectedBranch(e.target.value); setCurrentPage(1); }}><option value="">All Branches</option>{offices.map(o => <option key={o.id} value={o.id}>{o.displayName}</option>)}</select>)}</div>
       </div>
 
       {viewMode === 'table' ? (
@@ -445,28 +446,24 @@ const Vehicles = () => {
                 <div className="flex justify-between items-center mb-1.5" onClick={e => e.stopPropagation()}>
                   <span className={`text-[8px] md:text-[9px] font-black px-2 py-1 rounded uppercase tracking-tighter ${v.status === 'Available' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : v.status === 'Sold' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'}`}>{v.status}</span>
                   <div className="relative">
-                    {!isViewOnly && (
-                      <>
-                        <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === v.id ? null : v.id); }} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-400">
-                          <TrendingUp size={14} className="rotate-90 hidden" /> {/* Hidden trigger for reference if needed */}
-                          <div className="flex flex-col gap-0.5 px-1 py-0.5">
-                            <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                            <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                            <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                          </div>
-                        </button>
+                    <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === v.id ? null : v.id); }} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-400">
+                      <TrendingUp size={14} className="rotate-90 hidden" /> {/* Hidden trigger for reference if needed */}
+                      <div className="flex flex-col gap-0.5 px-1 py-0.5">
+                        <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                        <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                        <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                      </div>
+                    </button>
 
-                        {openMenuId === v.id && (
-                          <div className="absolute right-0 top-full mt-1 w-24 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg shadow-xl z-20 overflow-hidden animate-in fade-in zoom-in duration-200">
-                            <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); openModal(v); }} className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 transition-colors">
-                              <Edit size={12} /> Edit
-                            </button>
-                            <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); setConfirmDeleteId(v.id); }} className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors">
-                              <Trash2 size={12} /> Delete
-                            </button>
-                          </div>
-                        )}
-                      </>
+                    {openMenuId === v.id && (
+                      <div className="absolute right-0 top-full mt-1 w-24 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg shadow-xl z-20 overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); openModal(v); }} className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 transition-colors">
+                          <Edit size={12} /> Edit
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); setConfirmDeleteId(v.id); }} className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors">
+                          <Trash2 size={12} /> Delete
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -535,7 +532,7 @@ const Vehicles = () => {
       )}
 
       {/* MASTER VEHICLE FORM MODAL */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Master Vehicle Overview" maxWidth="max-w-5xl">
+      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setIsViewOnly(false); }} title="Master Vehicle Overview" maxWidth="max-w-5xl">
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-8">
@@ -548,8 +545,7 @@ const Vehicles = () => {
                     onChange={e => setFormData({ ...formData, type: e.target.value })}
                     options={[
                       { value: 'Mobil', label: 'Mobil' },
-                      { value: 'Motor', label: 'Motor' },
-                      ...typeHistory.filter(t => t !== 'Mobil' && t !== 'Motor').map(t => ({ value: t, label: t }))
+                      { value: 'Motor', label: 'Motor' }
                     ]}
                     disabled={isViewOnly}
                   />
@@ -580,7 +576,7 @@ const Vehicles = () => {
                       onChange={e => setFormData({ ...formData, office_id: e.target.value })}
                       options={[
                         { value: '', label: '-- Pilih Cabang --' },
-                        ...offices.map(o => ({ value: o.id, label: o.name }))
+                        ...offices.map(o => ({ value: o.id, label: o.displayName }))
                       ]}
                       required
                       disabled={isViewOnly}
@@ -634,7 +630,7 @@ const Vehicles = () => {
                             <span className="text-[9px] text-gray-400 font-bold">{new Date(bh.booking_date).toLocaleDateString('id-ID')}</span>
                           </div>
                           <p className="font-black truncate text-gray-900 dark:text-gray-100 text-sm">{bh.customer_name}</p>
-                          <p className="text-[10px] text-gray-400 font-bold uppercase">Agent: {bh.salesAgent?.name || 'Unknown'}</p>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase">Agent: {bh.salesAgent?.name || 'Unknown'} ({bh.salesAgent?.sales_code || 'N/A'})</p>
                         </div>
                         <div className="flex flex-col items-end gap-3 shrink-0">
                           <p className="font-black text-blue-600 text-xs">{formatPrice(bh.down_payment)}</p>
@@ -665,7 +661,7 @@ const Vehicles = () => {
           <div className="space-y-3">
             {actionType === 'sold' && (
               <>
-                <Select label="Sales Executive" value={bookingData.sales_agent_id} onChange={e => setBookingData({ ...bookingData, sales_agent_id: e.target.value })} options={salesAgents.map(a => ({ value: a.id, label: a.name }))} required />
+                <Select label="Sales Executive" value={bookingData.sales_agent_id} onChange={e => setBookingData({ ...bookingData, sales_agent_id: e.target.value })} options={salesAgents.map(a => ({ value: a.id, label: `${a.name} (${a.sales_code})` }))} required />
                 <button onClick={handleConfirmSale} className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-lg shadow-green-500/20 transition-all active:scale-95 uppercase text-xs tracking-widest">CLOSE DEAL NOW</button>
               </>
             )}
@@ -686,7 +682,7 @@ const Vehicles = () => {
             onChange={e => setBookingData({ ...bookingData, sales_agent_id: e.target.value })}
             options={[
               { value: '', label: '-- Select Agent (Optional) --' },
-              ...salesAgents.map(a => ({ value: a.id, label: a.name }))
+              ...salesAgents.map(a => ({ value: a.id, label: `${a.name} (${a.sales_code})` }))
             ]}
           />
           <button type="submit" className="btn-primary w-full py-4 bg-orange-600 border-none uppercase text-xs font-black tracking-widest">SAVE RESERVATION</button>

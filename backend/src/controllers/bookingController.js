@@ -156,8 +156,8 @@ exports.getVehicleBookingHistory = async (req, res) => {
       include: [
         { model: User, attributes: ['name'] },
         { model: Office, attributes: ['name'] },
-        { model: SalesAgent, as: 'salesAgent', attributes: ['name'] },
-        { model: SalesAgent, as: 'bookedByAgent', attributes: ['name'] }
+        { model: SalesAgent, as: 'salesAgent', attributes: ['name', 'sales_code'] },
+        { model: SalesAgent, as: 'bookedByAgent', attributes: ['name', 'sales_code'] }
       ],
       order: [['created_at', 'DESC']]
     });

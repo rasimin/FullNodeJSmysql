@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Modal from '../components/Modal';
+import { formatOfficeHierarchy } from '../utils/hierarchy';
 
 const SalesAgents = () => {
   const [agents, setAgents] = useState([]);
@@ -51,7 +52,7 @@ const SalesAgents = () => {
   const fetchOffices = async () => {
     try {
       const res = await api.get('/offices');
-      setOffices(Array.isArray(res.data) ? res.data : []);
+      setOffices(Array.isArray(res.data) ? formatOfficeHierarchy(res.data) : []);
     } catch (err) {
       console.error(err);
     }
@@ -160,7 +161,7 @@ const SalesAgents = () => {
             onChange={(e) => setSelectedOffice(e.target.value)}
           >
             <option value="">All Offices</option>
-            {offices.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+            {offices.map(o => <option key={o.id} value={o.id}>{o.displayName}</option>)}
           </select>
         </div>
       </div>
@@ -308,7 +309,7 @@ const SalesAgents = () => {
                 value={formData.office_id} onChange={(e) => setFormData({...formData, office_id: e.target.value})}
               >
                 <option value="">Select Office</option>
-                {offices.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+                {offices.map(o => <option key={o.id} value={o.id}>{o.displayName}</option>)}
               </select>
             </div>
             <div className="space-y-1">
