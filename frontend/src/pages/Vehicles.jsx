@@ -500,6 +500,40 @@ const Vehicles = () => {
         </div>
       )}
 
+      {/* Pagination Controls */}
+      {!loading && totalItems > 0 && (
+        <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-6 py-4 gap-4 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Results:</span>
+            <span className="text-xs font-black text-blue-600">{totalItems} Units</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button 
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${currentPage === 1 ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
+            >
+              <ChevronLeft size={16} />
+            </button>
+            
+            <div className="flex items-center gap-1 px-4 h-9 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800">
+              <span className="text-xs font-black text-gray-900 dark:text-white uppercase">Page {currentPage}</span>
+              <span className="text-[10px] text-gray-400 font-bold uppercase mx-1">of</span>
+              <span className="text-xs font-black text-gray-400 uppercase">{totalPages}</span>
+            </div>
+
+            <button 
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${currentPage === totalPages ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* MASTER VEHICLE FORM MODAL */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Master Vehicle Overview" maxWidth="max-w-5xl">
         <form onSubmit={handleSubmit} className="space-y-8">

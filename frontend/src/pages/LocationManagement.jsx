@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import api from '../services/api';
 import { API_URL } from '../config';
 import { 
@@ -26,6 +26,15 @@ const LocationManagement = () => {
   const [expanded, setExpanded] = useState({});
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState({ percent: 0, message: '' });
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  // Debouncing effect to prevent laggy typing
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [search]);
 
   const notify = (status, message, delay = 2000) => {
     setNotification({ status, message });
@@ -66,7 +75,36 @@ const LocationManagement = () => {
     return roots;
   };
 
-  const treeData = buildTree(locations);
+  const treeData = useMemo(() => buildTree(locations), [locations]);
+
+  // Pre-calculate which nodes should be visible or expanded based on search
+  const searchResults = useMemo(() => {
+    if (!debouncedSearch) return { matchedIds: new Set(), parentIdsToExpand: new Set() };
+    
+    const matchedIds = new Set();
+    const parentIdsToExpand = new Set();
+    const query = debouncedSearch.toLowerCase();
+
+    const traverse = (items, path = []) => {
+      let branchHasMatch = false;
+      for (const item of items) {
+        const selfMatch = item.name.toLowerCase().includes(query) || 
+                         (item.postal_code && item.postal_code.includes(query));
+        
+        const childrenMatch = item.children?.length > 0 ? traverse(item.children, [...path, item.id]) : false;
+        
+        if (selfMatch || childrenMatch) {
+          matchedIds.add(item.id);
+          path.forEach(pid => parentIdsToExpand.add(pid)); // Mark all ancestors for expansion
+          branchHasMatch = true;
+        }
+      }
+      return branchHasMatch;
+    };
+
+    traverse(treeData);
+    return { matchedIds, parentIdsToExpand };
+  }, [debouncedSearch, treeData]);
 
   // Stats calculation
   const stats = {
@@ -139,24 +177,11 @@ const LocationManagement = () => {
 
 
   const TreeItem = ({ node, level = 0 }) => {
-    const checkHasMatch = (n) => {
-      const selfMatch = n.name.toLowerCase().includes(search.toLowerCase()) || 
-                       (n.postal_code && n.postal_code.includes(search));
-      if (selfMatch) return true;
-      if (n.children && n.children.length > 0) {
-        return n.children.some(child => checkHasMatch(child));
-      }
-      return false;
-    };
-
-    const isExpanded = (search && checkHasMatch(node)) || expanded[node.id];
+    const isExpanded = (debouncedSearch && searchResults.parentIdsToExpand.has(node.id)) || expanded[node.id];
     const hasChildren = node.children && node.children.length > 0;
 
-    const matchesSearch = node.name.toLowerCase().includes(search.toLowerCase()) || 
-                        (node.postal_code && node.postal_code.includes(search));
-    
-    // If we have a search term, only show if this node or any of its descendants match
-    if (search && !checkHasMatch(node)) return null;
+    // If we have a search term, only show if this node is in the matched set
+    if (debouncedSearch && !searchResults.matchedIds.has(node.id)) return null;
 
     const Icon = node.type === 'PROVINCE' ? Map : node.type === 'CITY' ? Building2 : node.type === 'DISTRICT' ? MapPin : Hash;
     const iconColor = node.type === 'PROVINCE' ? 'text-blue-500' : node.type === 'CITY' ? 'text-emerald-500' : node.type === 'DISTRICT' ? 'text-orange-500' : 'text-slate-500';
