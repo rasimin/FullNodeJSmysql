@@ -1,6 +1,9 @@
 const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
 const bcrypt = require('bcryptjs');
+const sharp = require('sharp');
+const path = require('path');
+const fs = require('fs');
 const { User, Role, Office, ActivityLog, UserSession, SystemSetting } = require('../models');
 const { getSettings } = require('../utils/settings');
 
@@ -247,7 +250,37 @@ const updateProfile = async (req, res) => {
     }
 
     if (req.file) {
-      updateData.avatar = `/uploads/${req.file.filename}`;
+      console.log(`[Update Profile] Processing new avatar for user: ${userId}`);
+      
+      try {
+        const fileName = `avatar-${userId}-${Date.now()}.webp`;
+        const outputPath = path.join(__dirname, '../../uploads', fileName);
+        
+        // Kompres dengan sharp
+        await sharp(req.file.path)
+          .resize(300, 300, { fit: 'cover' })
+          .webp({ quality: 80 })
+          .toFile(outputPath);
+
+        // Hapus file asli (raw)
+        if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        
+        // Hapus avatar lama jika ada
+        if (user.avatar) {
+          const oldRelativePath = user.avatar.startsWith('/') ? user.avatar.slice(1) : user.avatar;
+          const oldAvatarPath = path.join(__dirname, '../../', oldRelativePath);
+          if (fs.existsSync(oldAvatarPath)) {
+            fs.unlinkSync(oldAvatarPath);
+            console.log(`[Update Profile] Old avatar deleted: ${oldAvatarPath}`);
+          }
+        }
+
+        updateData.avatar = `/uploads/${fileName}`;
+      } catch (sharpError) {
+        console.error('[Update Profile] Sharp Processing Error:', sharpError);
+        // Fallback jika gagal proses tetap gunakan file asli
+        updateData.avatar = `/uploads/${req.file.filename}`;
+      }
     }
 
     // Gunakan instance update agar lebih akurat

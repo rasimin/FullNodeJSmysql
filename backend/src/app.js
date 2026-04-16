@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const multer = require('multer');
 const helmet = require('helmet');
 const morgan = require('morgan');
 require('dotenv').config();
@@ -47,6 +48,25 @@ app.use('/api/locations', locationRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Admin Dashboard API' });
+});
+
+// Multer & General Error Handler
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ message: 'File terlalu besar! Maksimal 50MB per file. Gambar akan dikompres otomatis oleh sistem.' });
+    }
+    return res.status(400).json({ message: `Gagal upload: ${err.message}` });
+  }
+  
+  const status = err.status || 500;
+  const message = err.message || 'Server Error';
+  
+  if (process.env.NODE_ENV === 'development') {
+    console.error('Error detail:', err);
+  }
+  
+  res.status(status).json({ message });
 });
 
 module.exports = app;
