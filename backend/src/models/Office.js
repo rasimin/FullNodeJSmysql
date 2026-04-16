@@ -31,6 +31,14 @@ const Office = sequelize.define('Office', {
     type: DataTypes.STRING(20),
     allowNull: true,
   },
+  region_code: {
+    type: DataTypes.STRING(20),
+    allowNull: true,
+  },
+  postal_code: {
+    type: DataTypes.STRING(10),
+    allowNull: true,
+  },
 }, {
   tableName: 'offices',
   timestamps: true,

@@ -10,6 +10,7 @@ import { IMAGE_BASE_URL } from '../config';
 import { formatOfficeHierarchy } from '../utils/hierarchy';
 
 const OfficeManagement = () => {
+  const skipCascade = React.useRef(false);
   const [offices, setOffices] = useState([]); // Hierarchy grouped
   const [flatOffices, setFlatOffices] = useState([]); // Sorted list for table
   const [rawOffices, setRawOffices] = useState([]); // Raw flat data
@@ -22,6 +23,13 @@ const OfficeManagement = () => {
   const [notification, setNotification] = useState({ status: 'idle', message: '' });
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [viewMode, setViewMode] = useState(window.innerWidth < 768 ? 'grid' : 'table');
+  
+  // Regional Hierarchy State
+  const [provinces, setProvinces] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [districts, setDistricts] = useState([]);
+  const [wards, setWards] = useState([]);
+  const [selectedLoc, setSelectedLoc] = useState({ province: '', city: '', district: '', ward: '' });
 
   const notify = (status, message) => {
     setNotification({ status, message });
@@ -54,14 +62,101 @@ const OfficeManagement = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchOffices(); }, []);
+  const fetchLocations = async (parent_id = null, type = 'PROVINCE') => {
+    try {
+      const res = await api.get('/locations', { params: { parent_id } });
+      return res.data;
+    } catch (e) {
+      console.error('Fetch locations error:', e);
+      return [];
+    }
+  };
 
-  const openModal = (office = null) => {
+  useEffect(() => { 
+    fetchOffices();
+    fetchLocations().then(setProvinces);
+  }, []);
+
+  // Cascading Logic
+  useEffect(() => {
+    if (skipCascade.current) return;
+    if (selectedLoc.province) {
+      fetchLocations(selectedLoc.province).then(setCities);
+      setDistricts([]); setWards([]);
+      setSelectedLoc(prev => ({ ...prev, city: '', district: '', ward: '' }));
+    } else {
+      setCities([]); setDistricts([]); setWards([]);
+    }
+  }, [selectedLoc.province]);
+
+  useEffect(() => {
+    if (skipCascade.current) return;
+    if (selectedLoc.city) {
+      fetchLocations(selectedLoc.city).then(setDistricts);
+      setWards([]);
+      setSelectedLoc(prev => ({ ...prev, district: '', ward: '' }));
+    } else {
+      setDistricts([]); setWards([]);
+    }
+  }, [selectedLoc.city]);
+
+  useEffect(() => {
+    if (skipCascade.current) return;
+    if (selectedLoc.district) {
+      fetchLocations(selectedLoc.district).then(setWards);
+      setSelectedLoc(prev => ({ ...prev, ward: '' }));
+    } else {
+      setWards([]);
+    }
+  }, [selectedLoc.district]);
+
+  const openModal = async (office = null) => {
+    skipCascade.current = true;
     setEditingOffice(office);
     setFormData(office
-      ? { name: office.name, type: office.type, address: office.address || '', parent_id: office.parent_id || '', phone: office.phone || '' }
-      : { name: '', type: 'BRANCH_OFFICE', address: '', parent_id: '', phone: '' }
+      ? { name: office.name, type: office.type, address: office.address || '', parent_id: office.parent_id || '', phone: office.phone || '', region_code: office.region_code || '', postal_code: office.postal_code || '' }
+      : { name: '', type: 'BRANCH_OFFICE', address: '', parent_id: '', phone: '', region_code: '', postal_code: '' }
     );
+
+    if (office && office.region_code) {
+      try {
+        const res = await api.get('/locations', { params: { search: office.region_code } });
+        const nodes = res.data;
+        const p = nodes.find(n => n.type === 'PROVINCE');
+        const c = nodes.find(n => n.type === 'CITY');
+        const d = nodes.find(n => n.type === 'DISTRICT');
+        const w = nodes.find(n => n.type === 'POSTAL_CODE'); // Kelurahan
+
+        // Pre-fetch all sibling lists in parallel to avoid selection clearing
+        const [citiesList, districtsList, wardsList] = await Promise.all([
+          p ? fetchLocations(p.id) : Promise.resolve([]),
+          c ? fetchLocations(c.id) : Promise.resolve([]),
+          d ? fetchLocations(d.id) : Promise.resolve([])
+        ]);
+
+        setCities(citiesList);
+        setDistricts(districtsList);
+        setWards(wardsList);
+
+        setSelectedLoc({
+          province: p?.id || '',
+          city: c?.id || '',
+          district: d?.id || '',
+          ward: w?.id || ''
+        });
+        
+        // Allow cascading after a short delay so the initial states are settled
+        setTimeout(() => { skipCascade.current = false; }, 500);
+      } catch (e) { 
+        console.error('Error reconstructing hierarchy:', e); 
+        skipCascade.current = false;
+      }
+    } else {
+      setCities([]); setDistricts([]); setWards([]);
+      setSelectedLoc({ province: '', city: '', district: '', ward: '' });
+      setTimeout(() => { skipCascade.current = false; }, 500);
+    }
+
     setLogoFile(null);
     setLogoPreview(office?.logo ? `${IMAGE_BASE_URL}${office.logo}` : null);
     setIsModalOpen(true);
@@ -73,9 +168,13 @@ const OfficeManagement = () => {
     notify('loading', editingOffice ? 'Updating...' : 'Creating...');
     try {
       const fd = new FormData();
-      Object.keys(formData).forEach(key => {
-        if (formData[key] !== null && formData[key] !== '') {
-          fd.append(key, formData[key]);
+      // Ensure region_code is the one from the ward node
+      const activeWard = wards.find(w => w.id === parseInt(selectedLoc.ward));
+      const payload = { ...formData, region_code: activeWard?.region_code || '' };
+
+      Object.keys(payload).forEach(key => {
+        if (payload[key] !== null && payload[key] !== '') {
+          fd.append(key, payload[key]);
         }
       });
       if (logoFile) fd.append('logo', logoFile);
@@ -254,8 +353,19 @@ const OfficeManagement = () => {
           {formData.type === 'BRANCH_OFFICE' && (
             <Select label="Parent" value={formData.parent_id} onChange={e => setFormData({...formData, parent_id: e.target.value})} options={rawOffices.filter(o => !o.parent_id).map(o => ({ value: o.id, label: o.name }))} />
           )}
+
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center gap-2"><div className="w-1 h-3 bg-blue-500 rounded-full" /><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Regional Hierarchy (Wajib Kelurahan)</label></div>
+            <div className="grid grid-cols-2 gap-4">
+               <Select label="Province" value={selectedLoc.province} onChange={e => setSelectedLoc({...selectedLoc, province: e.target.value})} options={provinces.map(p => ({ value: p.id, label: p.name }))} />
+               <Select label="City/Regency" value={selectedLoc.city} onChange={e => setSelectedLoc({...selectedLoc, city: e.target.value})} options={cities.map(c => ({ value: c.id, label: c.name }))} disabled={!selectedLoc.province} />
+               <Select label="District" value={selectedLoc.district} onChange={e => setSelectedLoc({...selectedLoc, district: e.target.value})} options={districts.map(d => ({ value: d.id, label: d.name }))} disabled={!selectedLoc.city} />
+               <Select label="Ward/Kelurahan" value={selectedLoc.ward} onChange={e => setSelectedLoc({...selectedLoc, ward: e.target.value})} options={wards.map(w => ({ value: w.id, label: w.name }))} disabled={!selectedLoc.district} />
+            </div>
+            <Input label="Manual Postal Code" value={formData.postal_code} onChange={e => setFormData({...formData, postal_code: e.target.value})} placeholder="e.g. 12345" />
+          </div>
           
-          <div className="space-y-2">
+          <div className="space-y-2 pt-2">
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Office Logo / Branding</label>
             <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-white/5 border-2 border-dashed border-gray-100 dark:border-white/10 rounded-[20px] transition-all hover:bg-white dark:hover:bg-gray-800">
                <div className="w-16 h-16 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-white/5 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
@@ -278,7 +388,7 @@ const OfficeManagement = () => {
             </div>
           </div>
 
-          <button type="submit" className="btn-primary w-full py-4 text-xs font-black uppercase tracking-widest shadow-xl shadow-blue-500/20">Save Office Unit</button>
+          <button type="submit" disabled={!selectedLoc.ward} className={`btn-primary w-full py-4 text-xs font-black uppercase tracking-widest shadow-xl shadow-blue-500/20 ${!selectedLoc.ward ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}>Save Office Unit</button>
         </form>
       </Modal>
     </div>

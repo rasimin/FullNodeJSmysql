@@ -72,6 +72,24 @@ const syncDb = async () => {
       });
       console.log('Added sales_code column to sales_agents');
     }
+    
+    // Check offices table
+    const officesInfo = await queryInterface.describeTable('offices');
+    if (!officesInfo.region_code) {
+      await queryInterface.addColumn('offices', 'region_code', {
+        type: DataTypes.STRING(20),
+        allowNull: true
+      });
+      console.log('Added region_code column to offices');
+    }
+
+    if (!officesInfo.postal_code) {
+      await queryInterface.addColumn('offices', 'postal_code', {
+        type: DataTypes.STRING(10),
+        allowNull: true
+      });
+      console.log('Added postal_code column to offices');
+    }
 
     // Backfill existing agents with empty sales_code
     console.log('Backfilling empty sales codes...');
