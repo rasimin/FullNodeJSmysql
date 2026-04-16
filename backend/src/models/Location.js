@@ -26,6 +26,11 @@ const Location = sequelize.define('Location', {
   postal_code: {
     type: DataTypes.STRING(10),
     allowNull: true
+  },
+  region_code: {
+    type: DataTypes.STRING(20),
+    allowNull: true,
+    unique: true
   }
 }, {
   tableName: 'locations',

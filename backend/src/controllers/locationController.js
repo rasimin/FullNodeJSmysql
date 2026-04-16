@@ -34,13 +34,14 @@ const getAllLocations = async (req, res) => {
 
 const createLocation = async (req, res) => {
   try {
-    const { name, type, parent_id, postal_code } = req.body;
+    const { name, type, parent_id, postal_code, region_code } = req.body;
     
     const location = await Location.create({
       name,
       type,
       parent_id: parent_id || null,
-      postal_code
+      postal_code,
+      region_code
     }, { userId: req.user.id });
 
     await ActivityLog.create({
@@ -61,7 +62,7 @@ const createLocation = async (req, res) => {
 const updateLocation = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, type, parent_id, postal_code } = req.body;
+    const { name, type, parent_id, postal_code, region_code } = req.body;
     
     const location = await Location.findByPk(id);
     if (!location) return res.status(404).json({ message: 'Location not found' });
@@ -70,7 +71,8 @@ const updateLocation = async (req, res) => {
       name,
       type,
       parent_id: parent_id || null,
-      postal_code
+      postal_code,
+      region_code
     }, { userId: req.user.id });
 
     await ActivityLog.create({
@@ -117,66 +119,103 @@ const syncLocations = async (req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
 
+  let isAborted = false;
+  req.on('close', () => {
+    isAborted = true;
+    console.log('[Sync] Client disconnected. Aborting process...');
+  });
+
   const sendProgress = (message, percent = 0) => {
-    res.write(`data: ${JSON.stringify({ message, percent })}\n\n`);
+    if (!isAborted) {
+      res.write(`data: ${JSON.stringify({ message, percent })}\n\n`);
+    }
   };
 
   try {
-    sendProgress('Memulai sinkronisasi...', 5);
+    sendProgress('Memulai sinkronisasi cerdas (Upsert)...', 2);
     
-    // Clear existing data
-    await Location.destroy({ where: {}, truncate: false, cascade: true });
-    sendProgress('Data lama telah dikosongkan', 10);
+    // Cache untuk memetakan region_code -> database_id (untuk relasi parent_id)
+    const codeToIdMap = {};
+    const existingLocations = await Location.findAll({ attributes: ['id', 'region_code'] });
+    existingLocations.forEach(l => { if (l.region_code) codeToIdMap[l.region_code] = l.id; });
 
-    // 1. Provinces
-    sendProgress('Mengambil data Provinsi...', 15);
+    // 1. PROVINCES
+    sendProgress('Sinkronisasi Provinsi...', 5);
     const apiProvinces = await fetchJson(`${BASE_URL}/provinces.json`);
     
-    const provinceMap = {};
     for (const p of apiProvinces) {
-      const created = await Location.create({ name: p.name, type: 'PROVINCE' });
-      provinceMap[p.id] = created.id;
+      if (isAborted) break;
+      const [loc] = await Location.upsert({
+        region_code: p.id,
+        name: p.name,
+        type: 'PROVINCE',
+        parent_id: null
+      });
+      // Ambil ID yang baru dibuat/diupdate untuk digunakan oleh level bawahnya
+      const updatedLoc = await Location.findOne({ where: { region_code: p.id }, attributes: ['id'] });
+      codeToIdMap[p.id] = updatedLoc.id;
     }
-    sendProgress(`Berhasil sinkronisasi ${apiProvinces.length} Provinsi`, 30);
 
-    // 2. Cities (Limited to first few for speed in this demo, or all if you want)
-    // To make it faster, we only process Cities & Districts, skipping Villages
-    let count = 0;
-    const total = apiProvinces.length;
+    // 2. CITIES, DISTRICTS, VILLAGES
+    let processedProv = 0;
+    const totalProv = apiProvinces.length;
 
-    for (const [apiId, dbId] of Object.entries(provinceMap)) {
-      count++;
-      const provinceName = apiProvinces.find(p => p.id === apiId).name;
-      const progress = 30 + Math.floor((count / total) * 60);
-      
-      sendProgress(`Memproses Kota di ${provinceName}...`, progress);
-      
-      const cities = await fetchJson(`${BASE_URL}/regencies/${apiId}.json`);
-      const cityEntries = cities.map(c => ({
-        name: c.name,
-        type: 'CITY',
-        parent_id: dbId
-      }));
-      
-      const createdCities = await Location.bulkCreate(cityEntries);
+    for (const p of apiProvinces) {
+      if (isAborted) break;
+      processedProv++;
+      const currentPercent = 10 + Math.floor((processedProv / totalProv) * 85);
+      sendProgress(`Memproses wilayah ${p.name}...`, currentPercent);
 
-      // Fetch Districts for each city
-      for (let i = 0; i < cities.length; i++) {
-        const districts = await fetchJson(`${BASE_URL}/districts/${cities[i].id}.json`);
-        const districtEntries = districts.map(d => ({
-          name: d.name,
-          type: 'DISTRICT',
-          parent_id: createdCities[i].id
-        }));
-        await Location.bulkCreate(districtEntries);
+      // Get Cities for this Province
+      const apiCities = await fetchJson(`${BASE_URL}/regencies/${p.id}.json`);
+      for (const c of apiCities) {
+        if (isAborted) break;
+        const [cityLoc] = await Location.upsert({
+          region_code: c.id,
+          name: c.name,
+          type: 'CITY',
+          parent_id: codeToIdMap[p.id]
+        });
+        const updatedCity = await Location.findOne({ where: { region_code: c.id }, attributes: ['id'] });
+        codeToIdMap[c.id] = updatedCity.id;
+
+        // Get Districts for this City
+        const apiDistricts = await fetchJson(`${BASE_URL}/districts/${c.id}.json`);
+        for (const d of apiDistricts) {
+          if (isAborted) break;
+          const [distLoc] = await Location.upsert({
+            region_code: d.id,
+            name: d.name,
+            type: 'DISTRICT',
+            parent_id: codeToIdMap[c.id]
+          });
+          const updatedDist = await Location.findOne({ where: { region_code: d.id }, attributes: ['id'] });
+          codeToIdMap[d.id] = updatedDist.id;
+
+          // Get Villages (Kelurahan) for this District
+          const apiVillages = await fetchJson(`${BASE_URL}/villages/${d.id}.json`);
+          if (apiVillages.length > 0) {
+            const villageEntries = apiVillages.map(v => ({
+              region_code: v.id,
+              name: v.name,
+              type: 'POSTAL_CODE',
+              parent_id: codeToIdMap[d.id]
+            }));
+
+            // Menggunakan bulkCreate dengan updateOnDuplicate untuk performa maksimal pada data kelurahan yang banyak
+            await Location.bulkCreate(villageEntries, {
+              updateOnDuplicate: ['name', 'parent_id', 'type']
+            });
+          }
+        }
       }
     }
 
-    sendProgress('Sinkronisasi selesai!', 100);
+    sendProgress('Sinkronisasi selesai! Seluruh data wilayah Indonesia telah diperbarui.', 100);
     res.end();
   } catch (error) {
     console.error('Sync Error:', error);
-    res.write(`data: ${JSON.stringify({ error: 'Gagal sinkronisasi data' })}\n\n`);
+    res.write(`data: ${JSON.stringify({ error: 'Terjadi kesalahan sistem: ' + error.message })}\n\n`);
     res.end();
   }
 };
