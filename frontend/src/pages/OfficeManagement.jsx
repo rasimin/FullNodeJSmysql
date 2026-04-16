@@ -344,7 +344,14 @@ const OfficeManagement = () => {
           <Input label="Office Name" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Pusat Jakarta" />
           
           <div className="grid grid-cols-2 gap-4">
-            <Select label="Type" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} options={[{ value: 'HEAD_OFFICE', label: 'Head Office' }, { value: 'BRANCH_OFFICE', label: 'Branch Office' }]} />
+            <Select label="Type" value={formData.type} onChange={e => {
+              const newType = e.target.value;
+              setFormData({
+                ...formData, 
+                type: newType,
+                parent_id: newType === 'HEAD_OFFICE' ? '' : formData.parent_id
+              });
+            }} options={[{ value: 'HEAD_OFFICE', label: 'Head Office' }, { value: 'BRANCH_OFFICE', label: 'Branch Office' }]} />
             <Input label="Phone Number" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="+62..." />
           </div>
 

@@ -15,8 +15,10 @@ const createOffice = async (req, res) => {
 
     const officeData = { name, type, address, parent_id, phone, region_code, postal_code };
     
-    // Normalize parent_id
-    if (!officeData.parent_id || officeData.parent_id === 'null' || officeData.parent_id === '') {
+    // Normalize parent_id based on office type
+    if (officeData.type === 'HEAD_OFFICE') {
+      officeData.parent_id = null;
+    } else if (!officeData.parent_id || officeData.parent_id === 'null' || officeData.parent_id === '') {
       officeData.parent_id = null;
     }
 
@@ -112,8 +114,10 @@ const updateOffice = async (req, res) => {
     const { name, type, address, parent_id, phone, region_code, postal_code } = req.body;
     const updateData = { name, type, address, parent_id, phone, region_code, postal_code };
     
-    // Convert empty parent_id to null
-    if (updateData.parent_id === '' || updateData.parent_id === 'null' || !updateData.parent_id) {
+    // Normalize parent_id based on office type
+    if (updateData.type === 'HEAD_OFFICE') {
+      updateData.parent_id = null;
+    } else if (updateData.parent_id === '' || updateData.parent_id === 'null' || !updateData.parent_id) {
       updateData.parent_id = null;
     }
 

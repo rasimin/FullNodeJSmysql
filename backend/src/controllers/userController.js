@@ -70,31 +70,27 @@ const getUsers = async (req, res) => {
     const { limit, offset } = getPagination(page, size);
     const currentUser = req.user;
     const isSuperAdmin = currentUser.Role?.name === 'Super Admin';
-    const currentOffice = await Office.findByPk(currentUser.office_id);
+    
+    // Only fetch current office if NOT Super Admin (to determined hierarchy visibility)
+    let currentOffice = null;
+    if (!isSuperAdmin) {
+      currentOffice = await Office.findByPk(currentUser.office_id);
+    }
 
-    // Build query conditions
+    console.log(`[getUsers] Fetching for: ${currentUser.username}${isSuperAdmin ? ' (SuperAdmin)' : ''}`);
+
     const condition = {};
 
-    // Logic Hierarki Kantor untuk List User
     if (!isSuperAdmin) {
-      if (currentOffice.parent_id) {
-        // Cabang: Hanya lihat user di kantornya sendiri
+      if (currentOffice && currentOffice.parent_id) {
         condition.office_id = currentUser.office_id;
       } else {
-        // Pusat: Lihat dirinya + cabang di bawahnya
         const allowedOffices = await Office.findAll({
-          where: {
-            [Op.or]: [
-              { id: currentUser.office_id },
-              { parent_id: currentUser.office_id }
-            ]
-          },
+          where: { [Op.or]: [{ id: currentUser.office_id }, { parent_id: currentUser.office_id }] },
           attributes: ['id']
         });
         const allowedIds = allowedOffices.map(o => o.id);
-        
         if (office_id) {
-           // Jika filter frontend minta spesifik, cek apakah masuk mapping
            condition.office_id = allowedIds.includes(parseInt(office_id)) ? office_id : { [Op.in]: allowedIds };
         } else {
            condition.office_id = { [Op.in]: allowedIds };
@@ -112,13 +108,7 @@ const getUsers = async (req, res) => {
       ];
     }
     
-    if (role_id) {
-      condition.role_id = role_id;
-    }
-
-    if (office_id) {
-      condition.office_id = office_id;
-    }
+    if (role_id) condition.role_id = role_id;
 
     const { count, rows } = await User.findAndCountAll({
       where: condition,
@@ -129,12 +119,12 @@ const getUsers = async (req, res) => {
         { model: Role, attributes: ['id', 'name'] },
         { model: Office, attributes: ['id', 'name', 'type'] }
       ],
-      order: [['created_at', 'DESC']]
+      order: [['createdAt', 'DESC']]
     });
 
-    const response = getPagingData({ count, rows }, page, limit);
-    res.json(response);
+    res.json(getPagingData({ count, rows }, page, limit));
   } catch (error) {
+    console.error('[getUsers] Error:', error);
     res.status(500).json({ message: error.message });
   }
 };

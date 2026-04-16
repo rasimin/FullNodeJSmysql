@@ -77,7 +77,7 @@ const Vehicles = () => {
         api.get('/vehicles/model-history'),
         api.get('/vehicles/type-history'),
         isHeadOffice ? api.get('/offices') : Promise.resolve({ data: [] }),
-        api.get('/sales-agents/active')
+        api.get('/sales-agents/active', { params: { officeId: user?.office_id } })
       ]);
       setBrands(b.data);
       setModelHistory(h.data);
@@ -661,7 +661,7 @@ const Vehicles = () => {
           <div className="space-y-3">
             {actionType === 'sold' && (
               <>
-                <Select label="Sales Executive" value={bookingData.sales_agent_id} onChange={e => setBookingData({ ...bookingData, sales_agent_id: e.target.value })} options={salesAgents.map(a => ({ value: a.id, label: `${a.name} (${a.sales_code})` }))} required />
+                <Select label="Sales Executive" value={bookingData.sales_agent_id} onChange={e => setBookingData({ ...bookingData, sales_agent_id: e.target.value })} options={salesAgents.map(a => ({ value: a.id, label: `${a.name} [${a.sales_code}] - ${a.Office?.name || 'Unknown'}` }))} required />
                 <button onClick={handleConfirmSale} className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-lg shadow-green-500/20 transition-all active:scale-95 uppercase text-xs tracking-widest">CLOSE DEAL NOW</button>
               </>
             )}
@@ -680,10 +680,7 @@ const Vehicles = () => {
             label="Sales Agent (Optional)"
             value={bookingData.sales_agent_id}
             onChange={e => setBookingData({ ...bookingData, sales_agent_id: e.target.value })}
-            options={[
-              { value: '', label: '-- Select Agent (Optional) --' },
-              ...salesAgents.map(a => ({ value: a.id, label: `${a.name} (${a.sales_code})` }))
-            ]}
+            options={[{ value: '', label: '-- Pilih Sales (Opsional) --' }, ...salesAgents.map(a => ({ value: a.id, label: `${a.name} [${a.sales_code}] - ${a.Office?.name || 'Unknown'}` }))]}
           />
           <button type="submit" className="btn-primary w-full py-4 bg-orange-600 border-none uppercase text-xs font-black tracking-widest">SAVE RESERVATION</button>
         </form>

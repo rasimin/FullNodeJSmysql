@@ -1,4 +1,5 @@
 const { Vehicle, Office, User, VehicleBrand, SalesAgent, VehicleImage, sequelize } = require('../models');
+const Location = require('../models/Location');
 const { Op } = require('sequelize');
 const sharp = require('sharp');
 const path = require('path');
@@ -11,7 +12,26 @@ const getVehicleById = async (req, res) => {
     const { id } = req.params;
     const vehicle = await Vehicle.findByPk(id, {
       include: [
-        { model: Office, attributes: ['id', 'name', 'parent_id'] },
+        { 
+          model: Office, 
+          attributes: ['id', 'name', 'parent_id', 'address', 'region_code'],
+          include: [
+            {
+              model: Location, as: 'location',
+              include: [
+                {
+                  model: Location, as: 'parent',
+                  include: [
+                    {
+                      model: Location, as: 'parent',
+                      include: [{ model: Location, as: 'parent' }]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
         { model: User, attributes: ['name'] },
         { model: SalesAgent, as: 'salesAgent', attributes: ['name', 'sales_code'] },
         { model: VehicleImage, as: 'images', attributes: ['id', 'image_url', 'is_primary'] }
@@ -20,6 +40,7 @@ const getVehicleById = async (req, res) => {
     if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
     res.json(vehicle);
   } catch (error) {
+    console.error('Error in getVehicleById:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -32,6 +53,11 @@ const getVehicles = async (req, res) => {
     const isSuperAdmin = user.Role?.name === 'Super Admin';
     const currentOffice = await Office.findByPk(user.office_id);
     let officeIds = [];
+
+    // Safety check for currentOffice
+    if (!isSuperAdmin && !currentOffice) {
+      return res.status(403).json({ message: 'User office not found' });
+    }
 
     // Logic Hierarki Kantor: Filter sesuai mapping
     if (isSuperAdmin) {
@@ -96,9 +122,28 @@ const getVehicles = async (req, res) => {
       where: condition,
       limit,
       offset,
-      distinct: true,
+      subQuery: false,
       include: [
-        { model: Office, attributes: ['id', 'name', 'parent_id'] },
+        { 
+          model: Office, 
+          attributes: ['id', 'name', 'parent_id', 'address', 'region_code'],
+          include: [
+            {
+              model: Location, as: 'location',
+              include: [
+                {
+                  model: Location, as: 'parent',
+                  include: [
+                    {
+                      model: Location, as: 'parent',
+                      include: [{ model: Location, as: 'parent' }]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
         { model: User, attributes: ['name'] },
         { model: SalesAgent, as: 'salesAgent', attributes: ['name', 'sales_code'] },
         { model: VehicleImage, as: 'images', attributes: ['id', 'image_url', 'is_primary'] }
@@ -108,6 +153,7 @@ const getVehicles = async (req, res) => {
 
     res.json(getPagingData({ count, rows: vehicles }, page, limit));
   } catch (error) {
+    console.error('Error in getVehicles:', error);
     res.status(500).json({ message: error.message });
   }
 };

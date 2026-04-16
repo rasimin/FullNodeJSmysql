@@ -1,4 +1,6 @@
 const { DataTypes } = require('sequelize');
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const sequelize = require('./src/config/database');
 const { Vehicle } = require('./src/models');
 

@@ -184,12 +184,32 @@ const getActiveSalesAgents = async (req, res) => {
   try {
     const { officeId } = req.query;
     const condition = { status: 'Active' };
-    if (officeId) condition.office_id = officeId;
+    
+    if (officeId) {
+      let headOfficeId = null;
+      let current = await Office.findByPk(officeId);
+      
+      // Find the root (Head Office) of this branch's hierarchy
+      while (current && current.parent_id) {
+        current = await Office.findByPk(current.parent_id);
+      }
+      
+      if (current && current.type === 'HEAD_OFFICE') {
+        headOfficeId = current.id;
+      }
+
+      const officeIds = [parseInt(officeId)];
+      if (headOfficeId && headOfficeId !== parseInt(officeId)) {
+        officeIds.push(headOfficeId);
+      }
+      
+      condition.office_id = { [Op.in]: officeIds };
+    }
 
     const agents = await SalesAgent.findAll({
       where: condition,
-      attributes: ['id', 'name', 'office_id', 'sales_code'],
-      include: [{ model: Office, attributes: ['parent_id'] }],
+      attributes: ['id', 'name', 'office_id', 'sales_code', 'phone', 'avatar_url'],
+      include: [{ model: Office, attributes: ['name', 'parent_id'] }],
       order: [['name', 'ASC']]
     });
     res.json(agents);

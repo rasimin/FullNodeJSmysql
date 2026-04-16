@@ -31,6 +31,7 @@ Office.hasMany(SalesAgent, { foreignKey: 'office_id', as: 'salesAgents' });
 // Office Hierarchy
 Office.belongsTo(Office, { as: 'parent', foreignKey: 'parent_id' });
 Office.hasMany(Office, { as: 'branches', foreignKey: 'parent_id' });
+Office.belongsTo(Location, { foreignKey: 'region_code', targetKey: 'region_code', as: 'location' });
 
 // Activity Log Relationship
 ActivityLog.belongsTo(User, { foreignKey: 'user_id', onDelete: 'SET NULL' });
@@ -64,6 +65,9 @@ SalesAgent.hasMany(Booking, { foreignKey: 'sales_agent_id', as: 'bookings' });
 
 // Location Hierarchy
 Location.belongsTo(Location, { as: 'parent', foreignKey: 'parent_id' });
+Location.belongsTo(Location, { as: 'district', foreignKey: 'parent_id' });
+Location.belongsTo(Location, { as: 'city', foreignKey: 'parent_id' });
+Location.belongsTo(Location, { as: 'province', foreignKey: 'parent_id' });
 Location.hasMany(Location, { as: 'children', foreignKey: 'parent_id' });
 
 // Audit Trail Relationship
@@ -77,12 +81,15 @@ const createAuditLog = async (options) => {
   if (!userId) return; 
 
   try {
+    const oldValues = action === 'UPDATE' ? instance._previousDataValues : null;
+    const newValues = action === 'DELETE' ? null : instance.get({ plain: true });
+
     await AuditTrail.create({
       table_name: model.tableName,
       record_id: instance.id,
       action: action,
-      old_values: action === 'UPDATE' ? instance._previousDataValues : null,
-      new_values: action === 'DELETE' ? null : instance.dataValues,
+      old_values: oldValues,
+      new_values: newValues,
       user_id: userId,
       ip_address: queryOptions.ipAddress || null,
     });
@@ -93,17 +100,17 @@ const createAuditLog = async (options) => {
 
 const setupHooks = (model) => {
   model.afterCreate(async (instance, options) => {
-    await createAuditLog({ model, action: 'INSERT', instance, options });
+    createAuditLog({ model, action: 'INSERT', instance, options }).catch(err => console.error('Audit Hook Create:', err));
   });
 
   model.afterUpdate(async (instance, options) => {
     if (instance.changed()) {
-      await createAuditLog({ model, action: 'UPDATE', instance, options });
+      createAuditLog({ model, action: 'UPDATE', instance, options }).catch(err => console.error('Audit Hook Update:', err));
     }
   });
 
   model.afterDestroy(async (instance, options) => {
-    await createAuditLog({ model, action: 'DELETE', instance, options });
+    createAuditLog({ model, action: 'DELETE', instance, options }).catch(err => console.error('Audit Hook Destroy:', err));
   });
 };
 

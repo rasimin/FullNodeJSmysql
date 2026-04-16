@@ -46,10 +46,14 @@ const UserManagement = () => {
     setLoading(true);
     try {
       const r = await api.get(`/users?page=${page}&search=${search}`);
-      setUsers(r.data.items);
-      setTotalPages(r.data.total_pages);
-    } catch (e) { console.error(e); }
-    setLoading(false);
+      setUsers(Array.isArray(r.data.items) ? r.data.items : []);
+      setTotalPages(r.data.total_pages || 1);
+    } catch (e) { 
+      console.error('Fetch users error:', e);
+      notify('error', 'Failed to load users');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -186,23 +190,43 @@ const UserManagement = () => {
                   ))}
                 </tr>
               </thead>
-              <tbody>
-                <AnimatePresence mode="wait">
+              <tbody className="relative">
+                <AnimatePresence mode="popLayout" initial={false}>
                   {loading ? (
-                    [...Array(5)].map((_, i) => (
-                      <tr key={i} className="table-row">
-                        {headers.map(h => (
-                          <td key={h} className="px-5 py-3.5"><div className="h-4 bg-gray-100 dark:bg-gray-800 rounded animate-pulse w-24" /></td>
-                        ))}
-                      </tr>
-                    ))
+                    <motion.tr
+                      key="skeleton-loader"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                    >
+                      <td colSpan={7} className="p-0">
+                        <div className="flex flex-col">
+                          {[...Array(5)].map((_, i) => (
+                            <div key={i} className="flex border-b border-gray-50 dark:border-gray-800/50">
+                              {headers.map(h => (
+                                <div key={h} className="px-5 py-4 flex-1">
+                                  <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded animate-pulse w-24" />
+                                </div>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                    </motion.tr>
                   ) : users.length === 0 ? (
-                    <tr><td colSpan={7} className="text-center py-10 text-sm text-gray-400">No users found</td></tr>
+                    <motion.tr key="no-data" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                      <td colSpan={7} className="text-center py-10 text-sm text-gray-400 font-medium">No users found</td>
+                    </motion.tr>
                   ) : (
                     users.map((u, i) => (
-                      <motion.tr key={u.id}
-                        initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                        className="table-row"
+                      <motion.tr 
+                        key={u.id}
+                        layout
+                        initial={{ opacity: 0, y: 10 }} 
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.2, delay: i * 0.03 }}
+                        className="table-row group"
                       >
                         <td className="px-5 py-3.5 font-bold text-gray-900 dark:text-white">{u.name}</td>
                         <td className="px-5 py-3.5 text-blue-600 dark:text-blue-400 font-mono text-xs">{u.username}</td>

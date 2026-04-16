@@ -3,7 +3,7 @@ import api from '../services/api';
 import { 
   Search, Filter, Car, Bike, X, Image as ImageIcon, 
   ChevronRight, ChevronLeft, Info, CheckCircle, ShoppingCart, Sparkles, TrendingUp,
-  Sun, Moon, UserCircle, LogOut
+  Sun, Moon, UserCircle, LogOut, MapPin, MessageCircle, Phone, ExternalLink
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
@@ -48,6 +48,9 @@ const Catalog = () => {
     minPrice: '',
     maxPrice: ''
   });
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [contactAgents, setContactAgents] = useState([]);
+  const [agentsLoading, setAgentsLoading] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -179,6 +182,26 @@ const Catalog = () => {
   };
 
   // Format number with dots for display in price textbox
+  const handleContactSales = async (officeId) => {
+    setShowContactModal(true);
+    setAgentsLoading(true);
+    try {
+      const res = await api.get('/sales-agents/active', { params: { officeId } });
+      setContactAgents(res.data);
+    } catch (err) {
+      console.error('Fetch agents error:', err);
+    } finally {
+      setAgentsLoading(false);
+    }
+  };
+
+  const openWhatsApp = (phone, name, model) => {
+    if (!phone) return alert('No phone number available for this agent');
+    const cleanPhone = phone.replace(/\D/g, '');
+    const message = encodeURIComponent(`Halo, saya tertarik dengan unit ${model}. Bisa dibantu informasinya?`);
+    window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank');
+  };
+
   const formatNumberDots = (val) => {
     if (!val && val !== 0) return '';
     return parseInt(val).toLocaleString('id-ID');
@@ -576,6 +599,18 @@ const Catalog = () => {
                         <span className="text-[9px] md:text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-2 md:px-3 py-0.5 md:py-1 rounded-full">{parseInt(v.odometer || 0).toLocaleString()} km</span>
                       </div>
 
+                      <div className="flex items-start gap-2 mb-4 md:mb-6">
+                        <MapPin size={12} className="text-gray-400 shrink-0 mt-0.5" />
+                        <div>
+                           <p className="text-[10px] md:text-xs font-bold text-gray-600 dark:text-gray-300">{v.Office?.name}</p>
+                           <p className="text-[8px] md:text-[10px] text-gray-400 line-clamp-1">
+                             {v.Office?.location?.parent?.name ? (
+                               `${v.Office.location.parent.name}, ${v.Office.location.parent.parent?.name || ''}`
+                             ) : v.Office?.address}
+                           </p>
+                        </div>
+                      </div>
+
                       <footer className="pt-5 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
                          <p className="text-sm md:text-lg font-extrabold text-gray-950 dark:text-white tracking-tight">
                            {formatPrice(v.price)}
@@ -659,46 +694,166 @@ const Catalog = () => {
                 </div>
               </div>
 
-              <div className="w-full lg:w-[35%] p-10 md:p-14 overflow-y-auto bg-white dark:bg-gray-900 flex flex-col">
-                <div className="hidden lg:flex justify-end mb-10">
-                  <button onClick={() => setSelectedVehicle(null)} className="w-14 h-14 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full flex items-center justify-center text-gray-400 transition-colors">
-                    <X size={24} />
+              <div className="w-full lg:w-[35%] p-6 md:p-8 overflow-y-hidden bg-white dark:bg-gray-900 flex flex-col">
+                <div className="hidden lg:flex justify-end mb-4">
+                  <button onClick={() => setSelectedVehicle(null)} className="w-10 h-10 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full flex items-center justify-center text-gray-400 transition-colors">
+                    <X size={20} />
                   </button>
                 </div>
 
-                <div className="mb-10">
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="px-4 py-1.5 bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white text-[11px] font-bold rounded-full uppercase tracking-widest">{selectedVehicle.type}</span>
-                    <span className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-50 text-emerald-600 text-[11px] font-bold rounded-full uppercase tracking-widest"><CheckCircle size={12} /> Ready Stock</span>
+                <div className="flex-1 space-y-3 min-h-0">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="px-2 py-0.5 bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white text-[8px] font-bold rounded-full uppercase tracking-widest">{selectedVehicle.type}</span>
+                      <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[8px] font-bold rounded-full uppercase tracking-widest">Ready Stock</span>
+                    </div>
+                    <p className="text-gray-400 text-[8px] font-light tracking-[0.3em] uppercase mb-0.5">{selectedVehicle.brand}</p>
+                    <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white leading-tight">{selectedVehicle.model}</h2>
+                    
+                    <div className="flex items-center gap-3 text-[8px] text-gray-400 font-bold uppercase tracking-widest mt-2 px-0.5">
+                        <span className="text-gray-900 dark:text-white">{selectedVehicle.transmission || 'Auto'}</span>
+                        <span className="w-1 h-1 bg-gray-300 rounded-full" />
+                        <span className="text-gray-900 dark:text-white">{selectedVehicle.fuel_type || 'Petrol'}</span>
+                    </div>
                   </div>
-                  <p className="text-gray-400 text-xs font-light tracking-[0.3em] uppercase mb-2">{selectedVehicle.brand}</p>
-                  <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white leading-none mb-6">{selectedVehicle.model}</h2>
-                  <div className="p-6 bg-gray-50 dark:bg-white/5 rounded-[24px] border border-gray-100 dark:border-white/5">
-                    <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">CASH PRICE</p>
-                    <p className="text-3xl font-extrabold text-gray-900 dark:text-white leading-none font-mono">{formatPrice(selectedVehicle.price)}</p>
+
+                  <div className="p-3 bg-gray-50 dark:bg-blue-950/30 border border-gray-100 dark:border-blue-500/20 rounded-[14px] flex items-center justify-between">
+                    <p className="text-gray-400 dark:text-blue-400 text-[8px] font-bold uppercase tracking-widest">Pricing</p>
+                    <p className="text-xl font-black text-gray-900 dark:text-white font-mono">{formatPrice(selectedVehicle.price)}</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-white/5 rounded-[12px]">
+                      <p className="text-[7px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">Production</p>
+                      <p className="text-sm font-bold text-gray-900 dark:text-white">{selectedVehicle.year}</p>
+                    </div>
+                    <div className="p-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-white/5 rounded-[12px]">
+                      <p className="text-[7px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">Odometer</p>
+                      <p className="text-sm font-bold text-gray-900 dark:text-white">{parseInt(selectedVehicle.odometer || 0).toLocaleString()} km</p>
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-white/5 rounded-[12px] flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-full bg-blue-500 text-white flex items-center justify-center shrink-0">
+                      <MapPin size={12} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-bold text-gray-900 dark:text-white truncate">{selectedVehicle.Office?.name}</p>
+                      <p className="text-[7px] text-gray-400 truncate uppercase mt-0.5">
+                        {selectedVehicle.Office?.location ? (
+                          [
+                            selectedVehicle.Office.location.parent?.name,
+                            selectedVehicle.Office.location.parent?.parent?.name,
+                            selectedVehicle.Office.location.parent?.parent?.parent?.name
+                          ].filter(Boolean).join(', ')
+                        ) : selectedVehicle.Office?.address}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mb-10">
-                  <div className="p-5 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-white/5 rounded-[20px]">
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Production</p>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">{selectedVehicle.year}</p>
-                  </div>
-                  <div className="p-5 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-white/5 rounded-[20px]">
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Odometer</p>
-                    <p className="text-xl font-bold text-gray-900 dark:text-white">{parseInt(selectedVehicle.odometer || 0).toLocaleString()} km</p>
-                  </div>
-                </div>
-
-                <div className="mt-auto pt-10 border-t border-gray-50 dark:border-white/5 space-y-4">
-                   <button className="w-full h-16 bg-gray-900 dark:bg-white text-white dark:text-gray-950 rounded-[20px] font-bold flex items-center justify-center gap-3 transition-all active:scale-95 shadow-xl shadow-black/10 dark:shadow-none">
-                     <ShoppingCart size={20} /> Contact Sales Agent
+                <div className="mt-auto pt-4 border-t border-gray-50 dark:border-white/5">
+                   <button 
+                     onClick={() => handleContactSales(selectedVehicle.office_id)}
+                     className="w-full h-12 bg-gray-900 dark:bg-white text-white dark:text-gray-950 rounded-[12px] font-bold flex items-center justify-center gap-2 transition-all active:scale-95 text-xs"
+                   >
+                     <MessageCircle size={16} /> Contact Sales Agent
                    </button>
-                   <p className="text-center text-[10px] text-gray-400 font-medium uppercase tracking-[0.2em]">Unit Location: {selectedVehicle.Office?.name}</p>
+                   <p className="text-center text-[8px] text-gray-400 font-bold uppercase tracking-[0.2em] mt-3">Verified Unit • Best Deals</p>
                 </div>
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* SALES AGENT CONTACT MODAL */}
+      <AnimatePresence>
+        {showContactModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowContactModal(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md bg-white dark:bg-gray-900 rounded-[32px] overflow-hidden shadow-2xl border border-gray-100 dark:border-gray-800"
+            >
+              <div className="p-8 pb-4 flex justify-between items-center">
+                <div>
+                  <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Pilih Sales Agent</h3>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Sesuai unit yang Anda pilih</p>
+                </div>
+                <button 
+                  onClick={() => setShowContactModal(false)}
+                  className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-400"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-4 max-h-[60vh] overflow-y-auto custom-scrollbar space-y-3">
+                {agentsLoading ? (
+                  <div className="py-20 flex flex-col items-center justify-center text-gray-400 gap-3">
+                    <div className="w-8 h-8 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin" />
+                    <p className="text-[10px] font-bold uppercase tracking-widest">Memuat Sales...</p>
+                  </div>
+                ) : contactAgents.length === 0 ? (
+                  <div className="py-20 text-center text-gray-400">
+                    <p className="text-sm font-bold uppercase tracking-widest mb-2">No active agents</p>
+                    <p className="text-[10px]">Silakan hubungi kantor pusat kami.</p>
+                  </div>
+                ) : (
+                  contactAgents.map(agent => (
+                    <div 
+                      key={agent.id}
+                      className="group p-5 bg-gray-50 dark:bg-gray-800/40 rounded-[24px] border border-gray-100 dark:border-gray-800 hover:bg-white dark:hover:bg-gray-800 hover:shadow-xl transition-all duration-300"
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-4 min-w-0">
+                          <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden flex-shrink-0 border border-gray-100 dark:border-gray-700">
+                            {agent.avatar_url ? (
+                              <img src={`${IMAGE_BASE_URL}${agent.avatar_url}`} className="w-full h-full object-cover" alt="" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold uppercase">{agent.name.charAt(0)}</div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-black text-gray-900 dark:text-white truncate uppercase tracking-tight">{agent.name}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[8px] font-black bg-gray-900 dark:bg-white text-white dark:text-gray-950 px-1.5 py-0.5 rounded uppercase">{agent.sales_code}</span>
+                              <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wide truncate">/ {agent.Office?.name}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                           <p className="text-[10px] font-bold text-gray-900 dark:text-white mb-0.5">{agent.phone || 'No Phone'}</p>
+                           <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest">WhatsApp</p>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-5 pt-5 border-t border-gray-100 dark:border-gray-700/50">
+                        <button 
+                          onClick={() => openWhatsApp(agent.phone, agent.name, selectedVehicle.model)}
+                          className="w-full h-12 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95"
+                        >
+                          <MessageCircle size={14} /> Hubungi via WhatsApp
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+              <div className="p-6 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800">
+                <p className="text-[9px] text-center text-gray-400 font-bold uppercase tracking-[0.2em]">Pilih agent untuk konsultasi ketersediaan unit</p>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>
