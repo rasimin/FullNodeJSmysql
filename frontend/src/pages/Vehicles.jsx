@@ -297,11 +297,12 @@ const Vehicles = () => {
         booking_date: existingBooking.booking_date?.split('T')[0] || '',
         id_number: existingBooking.id_number || '',
         notes: existingBooking.notes || '',
+        nik: existingBooking.nik || '',
         sales_agent_id: existingBooking.sales_agent_id || ''
       });
     } else {
       setBookingData({
-        vehicle_id: v.id, customer_name: '', customer_phone: '', id_number: '',
+        vehicle_id: v.id, customer_name: '', customer_phone: '', nik: '', id_number: '',
         booking_date: new Date().toISOString().split('T')[0], down_payment: '', notes: '', sales_agent_id: ''
       });
     }
@@ -808,13 +809,22 @@ const Vehicles = () => {
       <Modal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} title="Unit Reservation Form">
         <form onSubmit={handleBookingSubmit} className="space-y-4">
           <Input label="Customer Name" value={bookingData.customer_name} onChange={e => setBookingData({ ...bookingData, customer_name: e.target.value })} required />
-          <Input label="Phone Number" placeholder="+62..." value={bookingData.customer_phone} onChange={e => setBookingData({ ...bookingData, customer_phone: sanitizePhone(e.target.value) })} required />
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="NIK (ID Number)" placeholder="16-digit NIK" value={bookingData.nik} onChange={e => setBookingData({ ...bookingData, nik: e.target.value.replace(/\D/g, '').slice(0, 16) })} required />
+            <Input label="Phone Number" placeholder="+62..." value={bookingData.customer_phone} onChange={e => setBookingData({ ...bookingData, customer_phone: sanitizePhone(e.target.value) })} required />
+          </div>
           <Input label="Down Payment (DP)" value={displayCurrency(bookingData.down_payment)} onChange={e => handleCurrencyChange(setBookingData, bookingData, 'down_payment', e.target.value)} />
           <Select
             label="Sales Agent (Optional)"
             value={bookingData.sales_agent_id}
             onChange={e => setBookingData({ ...bookingData, sales_agent_id: e.target.value })}
             options={[{ value: '', label: '-- Select Sales (Optional) --' }, ...salesAgents.map(a => ({ value: a.id, label: `${a.name} [${a.sales_code}] - ${a.Office?.name || 'Unknown'}` }))]}
+          />
+          <textarea
+            className="input min-h-[80px] p-3 text-xs"
+            placeholder="Additional notes / information..."
+            value={bookingData.notes}
+            onChange={e => setBookingData({ ...bookingData, notes: e.target.value })}
           />
 
           <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">

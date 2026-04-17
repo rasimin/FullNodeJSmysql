@@ -207,7 +207,8 @@ const exportBookingPdf = async (req, res) => {
     doc.fontSize(11).font('Helvetica-Bold').text('PURCHASER INFORMATION', 50, startY);
     doc.font('Helvetica').fontSize(10);
     doc.text(`Full Name: ${booking.customer_name}`, 50, startY + 15);
-    doc.text(`Phone No: ${booking.customer_phone}`, 50, startY + 30);
+    doc.text(`NIK (ID): ${booking.nik || '-'}`, 50, startY + 30);
+    doc.text(`Phone No: ${booking.customer_phone}`, 50, startY + 45);
 
     doc.fontSize(11).font('Helvetica-Bold').text('VEHICLE SPECIFICATIONS', 320, startY);
     doc.font('Helvetica').fontSize(10);

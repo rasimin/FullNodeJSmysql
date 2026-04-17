@@ -137,6 +137,7 @@ const Transactions = () => {
       id: t.id,
       vehicle_id: t.vehicle_id,
       booking_date: t.booking_date?.split('T')[0] || '',
+      nik: t.nik || '',
       id_number: t.id_number || '',
       notes: t.notes || '',
       sales_agent_id: t.sales_agent_id || ''
@@ -511,13 +512,22 @@ const Transactions = () => {
       <Modal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} title="Update Reservation Details">
         <form onSubmit={handleBookingSubmit} className="space-y-4">
           <Input label="Customer Name" value={bookingData.customer_name} onChange={e => setBookingData({ ...bookingData, customer_name: e.target.value })} required />
-          <Input label="Phone Number" placeholder="+62..." value={bookingData.customer_phone} onChange={e => setBookingData({ ...bookingData, customer_phone: e.target.value })} required />
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="NIK (ID Number)" placeholder="16-digit NIK" value={bookingData.nik || ''} onChange={e => setBookingData({ ...bookingData, nik: e.target.value.replace(/\D/g, '').slice(0, 16) })} required />
+            <Input label="Phone Number" placeholder="+62..." value={bookingData.customer_phone} onChange={e => setBookingData({ ...bookingData, customer_phone: e.target.value })} required />
+          </div>
           <Input label="Down Payment (DP)" value={displayCurrency(bookingData.down_payment)} onChange={e => handleCurrencyChange(setBookingData, bookingData, 'down_payment', e.target.value)} />
           <Select
             label="Sales Agent (Optional)"
             value={bookingData.sales_agent_id}
             onChange={e => setBookingData({ ...bookingData, sales_agent_id: e.target.value })}
             options={[{ value: '', label: '-- Select Sales (Optional) --' }, ...salesAgents.map(a => ({ value: a.id, label: `${a.name} [${a.sales_code}] - ${a.Office?.name || 'Unknown'}` }))]}
+          />
+          <textarea
+            className="input min-h-[80px] p-3 text-xs"
+            placeholder="Additional notes / information..."
+            value={bookingData.notes || ''}
+            onChange={e => setBookingData({ ...bookingData, notes: e.target.value })}
           />
 
           <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">

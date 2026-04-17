@@ -4,8 +4,11 @@ const { getPagination, getPagingData } = require('../utils/pagination');
 
 exports.createBooking = async (req, res) => {
   try {
-    const { vehicle_id, customer_name, customer_phone, id_number, booking_date, expiry_date, down_payment, notes } = req.body;
+    const { vehicle_id, customer_name, customer_phone, nik, id_number, booking_date, expiry_date, down_payment, notes } = req.body;
     
+    // Application-level mandatory validation for NIK
+    if (!nik) return res.status(400).json({ message: 'NIK (National ID Number) is mandatory' });
+
     // Pastikan kendaraan ada dan tersedia
     const vehicle = await Vehicle.findByPk(vehicle_id);
     if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
@@ -16,6 +19,7 @@ exports.createBooking = async (req, res) => {
       vehicle_id,
       customer_name,
       customer_phone,
+      nik,
       id_number,
       booking_date,
       expiry_date,
@@ -215,9 +219,13 @@ exports.updateBooking = async (req, res) => {
       return res.status(400).json({ message: 'Only active bookings can be edited' });
     }
 
+    // Application-level mandatory validation for NIK
+    if (!req.body.nik) return res.status(400).json({ message: 'NIK (National ID Number) is mandatory' });
+
     await booking.update({
       customer_name: req.body.customer_name,
       customer_phone: req.body.customer_phone,
+      nik: req.body.nik,
       id_number: req.body.id_number,
       booking_date: req.body.booking_date,
       expiry_date: req.body.expiry_date,
