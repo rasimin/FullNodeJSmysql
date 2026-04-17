@@ -243,7 +243,12 @@ const exportBookingPdf = async (req, res) => {
       doc.fontSize(12).font('Helvetica-Bold').text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(booking.down_payment), 400, tableTop + 40, { align: 'right', width: 140 });
     }
 
-    doc.moveDown(8);
+    if (booking.notes) {
+      doc.moveDown(2);
+      doc.fontSize(9).font('Helvetica-Bold').fillColor('#1e293b').text('REMARKS / ADDITIONAL NOTES:', 50);
+      doc.fontSize(9).font('Helvetica').fillColor('#4b5563').text(booking.notes, 50, doc.y + 2, { width: 500 });
+    }
+    doc.moveDown(6);
     const note = isInvoice 
       ? 'Note: This invoice is for the final settlement of the vehicle purchase. Please ensure payment is made before the delivery date.'
       : 'Note: This document serves as a formal acknowledgement of the reservation payment. The unit is reserved for the client pending final settlement.';
