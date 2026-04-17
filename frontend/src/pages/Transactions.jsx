@@ -50,7 +50,7 @@ const Transactions = () => {
     setLoading(true);
     try {
       const r = await api.get('/bookings', {
-        params: { page, search, status: statusFilter }
+        params: { page, search, status: statusFilter, size: 8 }
       });
       const data = r.data.items || (Array.isArray(r.data) ? r.data : []);
       setTransactions(data);
@@ -210,6 +210,7 @@ const Transactions = () => {
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Financial History & Documents</p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
+          <ViewSwitcher viewMode={viewMode} setViewMode={setViewMode} />
           <button className="btn gap-2 text-xs h-11 px-6 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <FileSpreadsheet size={18} className="text-green-600" /> Export Excel
           </button>
@@ -217,7 +218,7 @@ const Transactions = () => {
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
@@ -236,7 +237,6 @@ const Transactions = () => {
           <option value="Sold">Sold / Deal</option>
           <option value="Cancelled">Cancelled</option>
         </select>
-        <ViewSwitcher viewMode={viewMode} setViewMode={setViewMode} />
       </div>
 
       {/* Content */}
@@ -434,19 +434,19 @@ const Transactions = () => {
                     </div>
 
                     {/* Footer: All Actions */}
-                    <div className="p-4 bg-gray-50 dark:bg-gray-800/20 border-t border-gray-50 dark:border-gray-800 flex justify-between items-center">
-                      <div className="flex gap-2">
-                        {s === 'active' && <button onClick={() => openBookingModal(t)} className="btn-edit !bg-white dark:!bg-gray-800 !p-2 shadow-sm" title="Edit"><Edit size={16} /></button>}
-                        <button onClick={() => { setSelectedTransaction(t); setIsDeleteModalOpen(true); }} className="btn-delete !bg-white dark:!bg-gray-800 !p-2 shadow-sm" title="Trash"><Trash2 size={16} /></button>
-                      </div>
+                    <div className="p-2.5 px-4 bg-gray-50 dark:bg-gray-800/20 border-t border-gray-50 dark:border-gray-800 flex justify-between items-center">
                       <div className="flex gap-1.5">
+                        {s === 'active' && <button onClick={() => openBookingModal(t)} className="btn-edit !bg-white dark:!bg-gray-800 !p-1.5 shadow-sm" title="Edit"><Edit size={14} /></button>}
+                        <button onClick={() => { setSelectedTransaction(t); setIsDeleteModalOpen(true); }} className="btn-delete !bg-white dark:!bg-gray-800 !p-1.5 shadow-sm" title="Trash"><Trash2 size={14} /></button>
+                      </div>
+                      <div className="flex gap-1">
                         {(s === 'active' || s === 'sold') && (
                           <>
-                            <button onClick={() => handlePrintDoc(t.id, 'receipt')} className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all shadow-sm" title="Receipt"><Printer size={16} /></button>
-                            <button onClick={() => handlePrintDoc(t.id, 'sale-invoice')} className="p-2 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-600 hover:text-white transition-all shadow-sm" title="Invoice"><FileSpreadsheet size={16} /></button>
+                            <button onClick={() => handlePrintDoc(t.id, 'receipt')} className="p-1.5 bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-lg hover:bg-indigo-600 dark:hover:bg-indigo-600 hover:text-white transition-all shadow-sm" title="Print Reservation Receipt"><Printer size={14} /></button>
+                            <button onClick={() => handlePrintDoc(t.id, 'sale-invoice')} className="p-1.5 bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 rounded-lg hover:bg-amber-600 dark:hover:bg-amber-600 hover:text-white transition-all shadow-sm" title="Print Final Invoice"><FileSpreadsheet size={14} /></button>
                           </>
                         )}
-                        {s === 'sold' && <button onClick={() => handlePrintDoc(t.id, 'deal-proof')} className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-all shadow-sm" title="Bill of Sale"><CheckCircle size={16} /></button>}
+                        {t.status === 'sold' && <button onClick={() => handlePrintDoc(t.id, 'deal-proof')} className="p-1.5 bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400 rounded-lg hover:bg-green-600 dark:hover:bg-green-600 hover:text-white transition-all shadow-sm" title="Print Bill of Sale"><CheckCircle2 size={14} /></button>}
                       </div>
                     </div>
                   </motion.div>
