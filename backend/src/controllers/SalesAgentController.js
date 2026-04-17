@@ -186,24 +186,16 @@ const getActiveSalesAgents = async (req, res) => {
     const condition = { status: 'Active' };
     
     if (officeId) {
-      let headOfficeId = null;
-      let current = await Office.findByPk(officeId);
-      
-      // Find the root (Head Office) of this branch's hierarchy
-      while (current && current.parent_id) {
-        current = await Office.findByPk(current.parent_id);
+      const current = await Office.findByPk(officeId);
+      if (current) {
+        const parentId = current.parent_id || current.id;
+        const clusterOffices = await Office.findAll({
+          where: { [Op.or]: [{ id: parentId }, { parent_id: parentId }] },
+          attributes: ['id']
+        });
+        const officeIds = clusterOffices.map(o => o.id);
+        condition.office_id = { [Op.in]: officeIds };
       }
-      
-      if (current && current.type === 'HEAD_OFFICE') {
-        headOfficeId = current.id;
-      }
-
-      const officeIds = [parseInt(officeId)];
-      if (headOfficeId && headOfficeId !== parseInt(officeId)) {
-        officeIds.push(headOfficeId);
-      }
-      
-      condition.office_id = { [Op.in]: officeIds };
     }
 
     const agents = await SalesAgent.findAll({

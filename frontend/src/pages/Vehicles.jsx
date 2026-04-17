@@ -72,6 +72,13 @@ const Vehicles = () => {
     if (status !== 'loading' && status !== 'confirm') setTimeout(() => setNotification({ status: 'idle' }), delay);
   };
 
+  const fetchAgentsByOffice = async (officeId) => {
+    try {
+      const r = await api.get('/sales-agents/active', { params: { officeId } });
+      setSalesAgents(r.data);
+    } catch (e) { console.error(e); }
+  };
+
   const fetchMetadata = async () => {
     try {
       const [b, h, t, o, s] = await Promise.all([
@@ -255,6 +262,7 @@ const Vehicles = () => {
         booking_date: new Date().toISOString().split('T')[0], down_payment: '', notes: '', sales_agent_id: ''
       });
     }
+    fetchAgentsByOffice(v.office_id);
     setIsBookingModalOpen(true);
   };
 
@@ -282,6 +290,7 @@ const Vehicles = () => {
 
   const preConfirmAction = (v, type) => {
     setEditingVehicle(v); setActionType(type);
+    fetchAgentsByOffice(v.office_id);
     api.get(`/bookings/vehicle/${v.id}`).then(r => {
       setActiveBooking(r.data);
       setBookingData({ ...bookingData, sales_agent_id: r.data?.sales_agent_id || '' });
