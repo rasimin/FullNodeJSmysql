@@ -5,9 +5,11 @@ import {
   Calendar, Info, Edit, Trash2, Filter, Eye,
   ChevronRight, ChevronLeft, ArrowUpDown, Bookmark, Smartphone, User as UserIcon,
   CreditCard, XCircle, CheckCircle, Clock, Camera, Image as ImageIcon, X, Maximize2, Users,
-  PlusCircle, TrendingUp, Download, FileSpreadsheet, Palette, Gauge, Wallet, Wrench, History
+  PlusCircle, TrendingUp, Download, FileSpreadsheet, Palette, Gauge, Wallet, Wrench, History,
+  ChevronsLeft, ChevronsRight
 } from 'lucide-react';
 import Modal from '../components/Modal';
+
 import DynamicIsland from '../components/DynamicIsland';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
@@ -90,7 +92,7 @@ const Vehicles = () => {
   const fetchVehicles = async (page = currentPage) => {
     setLoading(true);
     try {
-      const params = { page, size: 10, search, officeId: selectedBranch, status: filterStatus };
+      const params = { page, size: 8, search, officeId: selectedBranch, status: filterStatus };
       const [vRes, sRes] = await Promise.all([
         api.get('/vehicles', { params }),
         api.get('/vehicles/summary', { params: { officeId: selectedBranch } })
@@ -415,11 +417,11 @@ const Vehicles = () => {
                     <td className="px-6 py-4 font-black text-blue-600">{formatPrice(v.price)}</td>
                     <td className="px-6 py-4"><span className={`badge ${v.status === 'Available' ? 'badge-green' : v.status === 'Sold' ? 'badge-red' : 'badge-yellow'}`}>{v.status}</span></td>
                     <td className="px-6 py-4"><div className="flex justify-center gap-2">
-                      {v.status === 'Available' && <button onClick={() => openBookingModal(v)} className="flex items-center gap-1.5 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-black uppercase rounded-xl shadow-lg shadow-orange-500/20 transition-all active:scale-95"><Bookmark size={12} /> Book Now</button>}
+                      {v.status === 'Available' && <button onClick={() => openBookingModal(v)} className="flex items-center gap-1.5 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-black uppercase rounded-xl shadow-lg shadow-orange-500/20 transition-all active:scale-95 cursor-pointer"><Bookmark size={12} /> Book Now</button>}
                       {v.status === 'Booked' && (
                         <div className="flex gap-1">
-                          <button onClick={() => preConfirmAction(v, 'sold')} className="flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black uppercase rounded-xl shadow-lg shadow-green-500/20 transition-all active:scale-95"><CheckCircle size={12} /> Close Deal</button>
-                          <button onClick={() => preConfirmAction(v, 'cancel')} className="flex items-center gap-1.5 px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 text-[10px] font-black uppercase rounded-xl hover:bg-red-600 hover:text-white transition-all active:scale-95" title="Cancel Booking">Cancel</button>
+                          <button onClick={() => preConfirmAction(v, 'sold')} className="flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black uppercase rounded-xl shadow-lg shadow-green-500/20 transition-all active:scale-95 cursor-pointer"><CheckCircle size={12} /> Close Deal</button>
+                          <button onClick={() => preConfirmAction(v, 'cancel')} className="flex items-center gap-1.5 px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 text-[10px] font-black uppercase rounded-xl hover:bg-red-600 hover:text-white transition-all active:scale-95 cursor-pointer" title="Cancel Booking">Cancel</button>
                         </div>
                       )}
                       {v.status === 'Sold' && <div className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-400 text-[10px] font-black uppercase rounded-xl">Completed</div>}
@@ -482,11 +484,11 @@ const Vehicles = () => {
                   </div>
                 </div>
                 <div className="flex gap-1.5 pt-2 border-t border-gray-100 dark:border-gray-800" onClick={e => e.stopPropagation()}>
-                  {v.status === 'Available' ? <button onClick={() => openBookingModal(v)} className="flex-1 py-2 bg-orange-600 text-white rounded-lg text-[9px] font-black uppercase shadow-sm hover:shadow-md transition-all active:scale-95">Book Now</button> :
+                  {v.status === 'Available' ? <button onClick={() => openBookingModal(v)} className="flex-1 py-2 bg-orange-600 text-white rounded-lg text-[9px] font-black uppercase shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer">Book Now</button> :
                     v.status === 'Booked' ? (
                       <div className="flex flex-1 gap-1.5">
-                        <button onClick={() => preConfirmAction(v, 'sold')} className="flex-1 py-2 bg-green-600 text-white rounded-lg text-[9px] font-black uppercase shadow-sm hover:shadow-md transition-all active:scale-95">Close Deal</button>
-                        <button onClick={() => preConfirmAction(v, 'cancel')} className="flex-1 py-2 bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 rounded-lg text-[9px] font-black uppercase hover:bg-red-600 hover:text-white transition-all shadow-sm active:scale-95">Cancel</button>
+                        <button onClick={() => preConfirmAction(v, 'sold')} className="flex-1 py-2 bg-green-600 text-white rounded-lg text-[9px] font-black uppercase shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer">Close Deal</button>
+                        <button onClick={() => preConfirmAction(v, 'cancel')} className="flex-1 py-2 bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 rounded-lg text-[9px] font-black uppercase hover:bg-red-600 hover:text-white transition-all shadow-sm active:scale-95 cursor-pointer">Cancel</button>
                       </div>
                     ) :
                       <div className="flex-1 py-2 text-center text-white text-[9px] font-black uppercase bg-gray-400 dark:bg-gray-800 rounded-lg">Vehicle Sold</div>}
@@ -508,24 +510,52 @@ const Vehicles = () => {
           <div className="flex items-center gap-2">
             <button 
               disabled={currentPage === 1}
+              onClick={() => setCurrentPage(1)}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${currentPage === 1 ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
+              title="First Page"
+            >
+              <ChevronsLeft size={16} />
+            </button>
+
+            <button 
+              disabled={currentPage === 1}
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${currentPage === 1 ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
+              title="Previous Page"
             >
               <ChevronLeft size={16} />
             </button>
             
-            <div className="flex items-center gap-1 px-4 h-9 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800">
-              <span className="text-xs font-black text-gray-900 dark:text-white uppercase">Page {currentPage}</span>
-              <span className="text-[10px] text-gray-400 font-bold uppercase mx-1">of</span>
-              <span className="text-xs font-black text-gray-400 uppercase">{totalPages}</span>
+            <div className="flex items-center gap-2 px-3 h-10 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800">
+              <span className="text-[10px] text-gray-400 font-bold uppercase">Page</span>
+              <select 
+                value={currentPage}
+                onChange={(e) => setCurrentPage(Number(e.target.value))}
+                className="bg-transparent text-xs font-black text-blue-600 outline-none cursor-pointer"
+              >
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <option key={i + 1} value={i + 1}>{i + 1}</option>
+                ))}
+              </select>
+              <span className="text-[10px] text-gray-400 font-bold uppercase">of {totalPages}</span>
             </div>
 
             <button 
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${currentPage === totalPages ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
+              title="Next Page"
             >
               <ChevronRight size={16} />
+            </button>
+
+            <button 
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(totalPages)}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${currentPage === totalPages ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
+              title="Last Page"
+            >
+              <ChevronsRight size={16} />
             </button>
           </div>
         </div>

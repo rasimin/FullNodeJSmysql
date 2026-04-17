@@ -81,9 +81,6 @@ const Reports = () => {
               {offices.map(o => <option key={o.id} value={o.id}>{o.displayName}</option>)}
             </select>
           )}
-          <button className="btn-white text-xs gap-2">
-            <Download size={14} /> Export PDF
-          </button>
         </div>
       </div>
 

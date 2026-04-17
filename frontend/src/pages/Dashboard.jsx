@@ -46,27 +46,7 @@ const Dashboard = () => {
   const userRole = user?.role || user?.Role?.name;
   const userOffice = user?.office || user?.Office?.name;
 
-  const handleExportPdf = async () => {
-    try {
-      const alertDiv = document.createElement('div');
-      alertDiv.innerText = 'Downloading PDF...';
-      alertDiv.className = 'fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded shadow z-50';
-      document.body.appendChild(alertDiv);
-      setTimeout(() => alertDiv.remove(), 2000);
 
-      const res = await api.get('/export/dashboard/pdf', { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const a = document.createElement('a');
-      a.href = url;
-      a.setAttribute('download', 'dashboard_report.pdf');
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    } catch (e) {
-      console.error('Failed to export PDF', e);
-      alert('Failed to export PDF');
-    }
-  };
 
   const statCards = [
     { title: 'Total Users',   value: stats.totalUsers,   icon: Users,       iconClass: 'icon-box icon-blue'   },
@@ -103,12 +83,7 @@ const Dashboard = () => {
             </p>
           </div>
         </div>
-        <button 
-          onClick={handleExportPdf}
-          className="btn-primary gap-2 h-10 px-4 text-xs font-bold uppercase tracking-wide bg-red-600 hover:bg-red-700 border-none shrink-0"
-        >
-          <FileText size={16} /> Export PDF
-        </button>
+
       </motion.div>
 
       {/* Stat Cards */}

@@ -122,7 +122,7 @@ const getVehicles = async (req, res) => {
       where: condition,
       limit,
       offset,
-      subQuery: false,
+      distinct: true,
       include: [
         { 
           model: Office, 
