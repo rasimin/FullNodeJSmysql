@@ -32,7 +32,7 @@ const Booking = sequelize.define('Booking', {
     defaultValue: 0
   },
   status: {
-    type: DataTypes.ENUM('Active', 'Converted', 'Cancelled', 'Expired'),
+    type: DataTypes.ENUM('Active', 'Converted', 'Cancelled', 'Expired', 'Sold'),
     defaultValue: 'Active'
   },
   notes: {

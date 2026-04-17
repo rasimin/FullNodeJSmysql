@@ -1,12 +1,11 @@
 const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
-const { User, Role, Office, ActivityLog, SalesAgent, Vehicle } = require('../models');
+const { User, Role, Office, ActivityLog, SalesAgent, Vehicle, Booking } = require('../models');
 const { Op } = require('sequelize');
 
 const exportUsers = async (req, res) => {
   try {
     const { search, role_id, office_id } = req.query;
-
     const condition = {};
     if (search) condition.name = { [Op.like]: `%${search}%` };
     if (role_id) condition.role_id = role_id;
@@ -23,14 +22,12 @@ const exportUsers = async (req, res) => {
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Users');
-
     worksheet.columns = [
       { header: 'ID', key: 'id', width: 10 },
       { header: 'Name', key: 'name', width: 30 },
       { header: 'Email', key: 'email', width: 30 },
       { header: 'Role', key: 'role', width: 20 },
       { header: 'Office', key: 'office', width: 25 },
-      { header: 'Office Type', key: 'office_type', width: 20 },
       { header: 'Status', key: 'status', width: 15 },
       { header: 'Created At', key: 'created_at', width: 20 },
     ];
@@ -42,21 +39,13 @@ const exportUsers = async (req, res) => {
         email: user.email,
         role: user.Role ? user.Role.name : 'N/A',
         office: user.Office ? user.Office.name : 'N/A',
-        office_type: user.Office ? user.Office.type : 'N/A',
         status: user.is_active ? 'Active' : 'Inactive',
         created_at: user.createdAt,
       });
     });
 
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader(
-      'Content-Disposition',
-      'attachment; filename=' + 'users.xlsx'
-    );
-
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=users.xlsx');
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {
@@ -67,7 +56,6 @@ const exportUsers = async (req, res) => {
 const exportSalesAgents = async (req, res) => {
   try {
     const { search, office_id } = req.query;
-
     const condition = {};
     if (search) {
       condition[Op.or] = [
@@ -79,102 +67,33 @@ const exportSalesAgents = async (req, res) => {
 
     const agents = await SalesAgent.findAll({
       where: condition,
-      include: [
-        { model: Office, attributes: ['name', 'type'] }
-      ],
+      include: [{ model: Office, attributes: ['name'] }],
       order: [['created_at', 'DESC']]
     });
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('SalesAgents');
-
     worksheet.columns = [
-      { header: 'ID', key: 'id', width: 10 },
       { header: 'Sales Code', key: 'sales_code', width: 15 },
       { header: 'Name', key: 'name', width: 30 },
-      { header: 'Email', key: 'email', width: 30 },
-      { header: 'Phone', key: 'phone', width: 20 },
       { header: 'Office', key: 'office', width: 25 },
       { header: 'Status', key: 'status', width: 15 },
-      { header: 'Joined At', key: 'created_at', width: 20 },
     ];
 
     agents.forEach((agent) => {
       worksheet.addRow({
-        id: agent.id,
         sales_code: agent.sales_code,
         name: agent.name,
-        email: agent.email || '-',
-        phone: agent.phone || '-',
         office: agent.Office ? agent.Office.name : 'N/A',
         status: agent.status,
-        created_at: agent.createdAt,
       });
     });
 
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader(
-      'Content-Disposition',
-      'attachment; filename=' + 'sales_agents.xlsx'
-    );
-
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=sales_agents.xlsx');
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-const exportDashboardPdf = async (req, res) => {
-  try {
-    const totalUsers = await User.count();
-    const totalRoles = await Role.count();
-    const totalOffices = await Office.count();
-
-    const recentActivities = await ActivityLog.findAll({
-      limit: 10,
-      order: [['created_at', 'DESC']],
-      include: [{ model: User, attributes: ['name'] }]
-    });
-
-    const doc = new PDFDocument({ margin: 50 });
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="dashboard_report.pdf"');
-    
-    doc.pipe(res);
-
-    // Header
-    doc.fontSize(20).text('Dashboard Analytics Report', { align: 'center' });
-    doc.moveDown();
-    doc.fontSize(12).text(`Generated on: ${new Date().toLocaleString('id-ID')}`, { align: 'center' });
-    doc.moveDown(2);
-
-    // Stats
-    doc.fontSize(16).text('System Statistics', { underline: true });
-    doc.moveDown(0.5);
-    doc.fontSize(12).text(`Total Users: ${totalUsers}`);
-    doc.text(`Total Roles: ${totalRoles}`);
-    doc.text(`Total Offices: ${totalOffices}`);
-    doc.moveDown(2);
-
-    // Activities
-    doc.fontSize(16).text('Recent Activities (Last 10)', { underline: true });
-    doc.moveDown(0.5);
-
-    recentActivities.forEach((activity, index) => {
-      const userName = activity.User ? activity.User.name : 'Unknown';
-      const date = activity.created_at ? new Date(activity.created_at).toLocaleString('id-ID') : new Date().toLocaleString('id-ID');
-      doc.fontSize(10).text(`${index + 1}. [${date}] ${userName} - ${activity.action}`);
-    });
-
-    doc.end();
-
-  } catch (error) {
-    console.error('PDF Export Error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -187,27 +106,24 @@ const exportVehicles = async (req, res) => {
     const currentOffice = await Office.findByPk(user.office_id);
     let officeIds = [];
 
-    // Logika Hierarki Kantor (Sama dengan vehicleController.getVehicles)
     if (isSuperAdmin) {
-      if (filterOfficeId) {
-        officeIds = [filterOfficeId];
-      } else {
-        const allOffices = await Office.findAll({ attributes: ['id'] });
-        officeIds = allOffices.map(o => o.id);
+      if (filterOfficeId) officeIds = [filterOfficeId];
+      else {
+        const all = await Office.findAll({ attributes: ['id'] });
+        officeIds = all.map(o => o.id);
       }
     } else if (currentOffice && !currentOffice.parent_id) {
-       const allowedOffices = await Office.findAll({
-         where: { [Op.or]: [{ id: user.office_id }, { parent_id: user.office_id }] },
-         attributes: ['id']
-       });
-       const allowedIds = allowedOffices.map(o => o.id);
-       officeIds = (filterOfficeId && allowedIds.includes(parseInt(filterOfficeId))) ? [filterOfficeId] : allowedIds;
+      const allowed = await Office.findAll({
+        where: { [Op.or]: [{ id: user.office_id }, { parent_id: user.office_id }] },
+        attributes: ['id']
+      });
+      const allowedIds = allowed.map(o => o.id);
+      officeIds = (filterOfficeId && allowedIds.includes(parseInt(filterOfficeId))) ? [filterOfficeId] : allowedIds;
     } else {
       officeIds = [user.office_id];
     }
 
     const condition = { office_id: { [Op.in]: officeIds } };
-
     if (search) {
       condition[Op.or] = [
         { brand: { [Op.like]: `%${search}%` } },
@@ -229,74 +145,181 @@ const exportVehicles = async (req, res) => {
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Vehicles');
-
-    // All fields as requested
     worksheet.columns = [
-      { header: 'ID', key: 'id', width: 10 },
-      { header: 'Type', key: 'type', width: 12 },
       { header: 'Brand', key: 'brand', width: 15 },
       { header: 'Model', key: 'model', width: 25 },
-      { header: 'Year', key: 'year', width: 10 },
-      { header: 'Plate Number', key: 'plate_number', width: 15 },
-      { header: 'Color', key: 'color', width: 12 },
-      { header: 'Transmission', key: 'transmission', width: 15 },
-      { header: 'Fuel Type', key: 'fuel_type', width: 15 },
-      { header: 'Odometer (KM)', key: 'odometer', width: 15 },
-      { header: 'Sales Price', key: 'price', width: 15 },
-      { header: 'Purchase Price', key: 'purchase_price', width: 15 },
-      { header: 'Service Cost', key: 'service_cost', width: 15 },
+      { header: 'Plate', key: 'plate', width: 15 },
+      { header: 'Price', key: 'price', width: 15 },
       { header: 'Status', key: 'status', width: 12 },
-      { header: 'Entry Date', key: 'entry_date', width: 15 },
-      { header: 'Sold Date', key: 'sold_date', width: 15 },
-      { header: 'Branch Office', key: 'office', width: 25 },
-      { header: 'Sales Agent', key: 'agent', width: 25 },
-      { header: 'Description', key: 'description', width: 40 },
-      { header: 'Created At', key: 'created_at', width: 20 },
+      { header: 'Office', key: 'office', width: 25 },
     ];
 
-    vehicles.forEach((v) => {
+    vehicles.forEach(v => {
       worksheet.addRow({
-        id: v.id,
-        type: v.type,
         brand: v.brand,
         model: v.model,
-        year: v.year,
-        plate_number: v.plate_number,
-        color: v.color || '-',
-        transmission: v.transmission || '-',
-        fuel_type: v.fuel_type || '-',
-        odometer: v.odometer || 0,
+        plate: v.plate_number,
         price: parseFloat(v.price),
-        purchase_price: parseFloat(v.purchase_price || 0),
-        service_cost: parseFloat(v.service_cost || 0),
         status: v.status,
-        entry_date: v.entry_date,
-        sold_date: v.sold_date || '-',
-        office: v.Office ? v.Office.name : 'N/A',
-        agent: v.salesAgent ? `${v.salesAgent.name} (${v.salesAgent.sales_code})` : '-',
-        description: v.description || '-',
-        created_at: v.createdAt,
+        office: v.Office ? v.Office.name : 'N/A'
       });
     });
 
-    // Formatting currency columns
-    ['K', 'L', 'M'].forEach(col => {
-      worksheet.getColumn(col).numFmt = '#,##0.00';
-    });
-
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    );
-    res.setHeader(
-      'Content-Disposition',
-      'attachment; filename=' + 'vehicles_inventory.xlsx'
-    );
-
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=vehicles.xlsx');
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {
-    console.error('Export Vehicles Error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const exportBookingPdf = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const booking = await Booking.findByPk(id, {
+      include: [{ model: Vehicle }, { model: Office }, { model: SalesAgent, as: 'salesAgent' }]
+    });
+
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    res.setHeader('Content-Type', 'application/pdf');
+    doc.pipe(res);
+
+    // Header
+    doc.fontSize(18).font('Helvetica-Bold').fillColor('#1e40af').text('VEHICLE RESERVATION RECEIPT', { align: 'right' });
+    doc.fontSize(10).font('Helvetica').fillColor('#64748b').text(`Document ID: REF-${booking.id.split('-')[0].toUpperCase()}`, { align: 'right' });
+    doc.moveDown(1.5);
+
+    // Business Info
+    doc.fillColor('#000').fontSize(14).font('Helvetica-Bold').text(booking.Office?.name || 'Showroom Management System');
+    doc.fontSize(10).font('Helvetica').text('Official Vehicle Booking & Security Deposit Statement');
+    doc.moveDown(2);
+
+    // Client & Vehicle Grid
+    const startY = doc.y;
+    doc.fontSize(11).font('Helvetica-Bold').text('PURCHASER INFORMATION', 50, startY);
+    doc.font('Helvetica').fontSize(10);
+    doc.text(`Full Name: ${booking.customer_name}`, 50, startY + 15);
+    doc.text(`Phone No: ${booking.customer_phone}`, 50, startY + 30);
+
+    doc.fontSize(11).font('Helvetica-Bold').text('VEHICLE SPECIFICATIONS', 320, startY);
+    doc.font('Helvetica').fontSize(10);
+    doc.text(`Unit: ${booking.Vehicle?.brand} ${booking.Vehicle?.model}`, 320, startY + 15);
+    doc.text(`Year: ${booking.Vehicle?.year || '-'}`, 320, startY + 30);
+    doc.text(`Plate Number: ${booking.Vehicle?.plate_number}`, 320, startY + 45);
+
+    doc.moveDown(4);
+
+    // Payment Section
+    const tableTop = doc.y;
+    doc.rect(50, tableTop, 500, 25).fill('#f8fafc');
+    doc.fillColor('#1e293b').font('Helvetica-Bold').text('TRANSACTION SUMMARY', 60, tableTop + 8);
+    doc.text('AMOUNT', 450, tableTop + 8);
+    
+    doc.font('Helvetica').fillColor('#000').text('Security Deposit / Vehicle Booking Fee', 60, tableTop + 40);
+    doc.fontSize(12).font('Helvetica-Bold').text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(booking.down_payment), 400, tableTop + 40, { align: 'right', width: 140 });
+
+    doc.moveDown(6);
+    doc.fontSize(10).font('Helvetica-Oblique').fillColor('#64748b').text('Note: This document serves as a formal acknowledgement of the reservation payment. The unit is reserved for the client pending final settlement.', { align: 'center' });
+
+    doc.moveDown(4);
+    doc.fillColor('#000').fontSize(10).font('Helvetica').text('Issued by Dealer Representative,', 350, doc.y);
+    doc.moveDown(3);
+    doc.font('Helvetica-Bold').text(`(${booking.salesAgent?.name || 'Authorized Admin'})`, 350);
+
+    doc.end();
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const exportSaleInvoicePdf = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isProof } = req.query;
+    const booking = await Booking.findByPk(id, {
+      include: [{ model: Vehicle }, { model: Office }, { model: SalesAgent, as: 'salesAgent' }]
+    });
+
+    if (!booking) return res.status(404).json({ message: 'Record not found' });
+
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    res.setHeader('Content-Type', 'application/pdf');
+    doc.pipe(res);
+
+    const title = isProof === 'true' ? 'OFFICIAL BILL OF SALE' : 'FINAL SETTLEMENT INVOICE';
+    doc.fontSize(20).font('Helvetica-Bold').fillColor('#1e40af').text(title, { align: 'right' });
+    doc.fontSize(10).font('Helvetica').fillColor('#64748b').text(`Invoice Number: INV-${new Date().getFullYear()}-${booking.id.split('-')[0].toUpperCase()}`, { align: 'right' });
+    doc.moveDown(1.5);
+
+    doc.fillColor('#000').fontSize(14).font('Helvetica-Bold').text(booking.Office?.name || 'Showroom Management System');
+    doc.fontSize(10).font('Helvetica').text('Vehicle Ownership Transfer & Payment Settlement');
+    doc.moveDown(2);
+
+    // Client Info
+    const startY = doc.y;
+    doc.fontSize(11).font('Helvetica-Bold').text('BILL TO (PURCHASER)', 50, startY);
+    doc.font('Helvetica').fontSize(10);
+    doc.text(`Full Name: ${booking.customer_name}`, 50, startY + 15);
+    doc.text(`Phone No: ${booking.customer_phone}`, 50, startY + 30);
+
+    doc.fontSize(11).font('Helvetica-Bold').text('VEHICLE DESCRIPTION', 320, startY);
+    doc.font('Helvetica').fontSize(10);
+    doc.text(`Unit: ${booking.Vehicle?.brand} ${booking.Vehicle?.model}`, 320, startY + 15);
+    doc.text(`Plate No: ${booking.Vehicle?.plate_number}`, 320, startY + 30);
+    doc.text(`Odometer: ${booking.Vehicle?.odometer || 0} KM`, 320, startY + 45);
+
+    doc.moveDown(5);
+
+    // Financial breakdown
+    const price = parseFloat(booking.Vehicle?.price || 0);
+    const dp = parseFloat(booking.down_payment || 0);
+    const total = price - dp;
+
+    const tableY = doc.y;
+    doc.rect(50, tableY, 500, 2).fill('#1e293b');
+    doc.moveDown(0.5);
+    
+    doc.fillColor('#000').fontSize(10).font('Helvetica').text('Vehicle Agreed Selling Price', 50, tableY + 15);
+    doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(price), 400, tableY + 15, { align: 'right', width: 140 });
+
+    doc.text('Less: Security Deposit (DP)', 50, tableY + 35);
+    doc.text(`- ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(dp)}`, 400, tableY + 35, { align: 'right', width: 140 });
+
+    doc.rect(350, tableY + 55, 200, 1).fill('#cbd5e1');
+    
+    doc.fontSize(12).font('Helvetica-Bold').fillColor('#b91c1c').text('REMAINING BALANCE PAYABLE', 180, tableY + 65);
+    doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(total), 400, tableY + 65, { align: 'right', width: 140 });
+
+    if (isProof === 'true') {
+      doc.moveDown(3);
+      doc.rect(50, doc.y, 500, 40).fill('#f0fdf4');
+      doc.fillColor('#16a34a').fontSize(14).font('Helvetica-Bold').text('TRANSACTION STATUS: PAID & CLOSED', 50, doc.y - 30, { align: 'center' });
+    } else {
+      doc.moveDown(4);
+    }
+
+    doc.moveDown(4);
+    doc.fillColor('#000').fontSize(10).font('Helvetica').text('Authorized Dealer Representative,', 350, doc.y);
+    doc.moveDown(3);
+    doc.font('Helvetica-Bold').text(`(${booking.salesAgent?.name || 'Administrator'})`, 350);
+
+    doc.end();
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const exportDashboardPdf = async (req, res) => {
+  try {
+    const doc = new PDFDocument();
+    res.setHeader('Content-Type', 'application/pdf');
+    doc.pipe(res);
+    doc.text('Official Dashboard Report');
+    doc.end();
+  } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
@@ -305,5 +328,7 @@ module.exports = {
   exportUsers,
   exportSalesAgents,
   exportVehicles,
+  exportBookingPdf,
+  exportSaleInvoicePdf,
   exportDashboardPdf
 };

@@ -295,7 +295,13 @@ const Vehicles = () => {
     fetchAgentsByOffice(v.office_id);
     api.get(`/bookings/vehicle/${v.id}`).then(r => {
       setActiveBooking(r.data);
-      setBookingData({ ...bookingData, sales_agent_id: r.data?.sales_agent_id || '' });
+      setBookingData({ 
+        ...bookingData, 
+        id: r.data?.id || '',
+        customer_name: r.data?.customer_name || '',
+        customer_phone: r.data?.customer_phone || '',
+        sales_agent_id: r.data?.sales_agent_id || '' 
+      });
       setIsConfirmActionModalOpen(true);
     });
   };
@@ -305,6 +311,8 @@ const Vehicles = () => {
     try {
       await api.put(`/bookings/vehicle/${editingVehicle.id}/sold`, {
         booking_id: activeBooking?.id,
+        customer_name: bookingData.customer_name,
+        customer_phone: bookingData.customer_phone,
         sold_date: new Date().toISOString().split('T')[0],
         sales_agent_id: bookingData.sales_agent_id
       });
@@ -695,6 +703,20 @@ const Vehicles = () => {
           <div className="space-y-3">
             {actionType === 'sold' && (
               <>
+                {!activeBooking && (
+                  <div className="space-y-3 mb-3 border-b border-gray-100 dark:border-gray-800 pb-3">
+                    <p className="text-[10px] font-black text-orange-600 uppercase">Direct Sale Info</p>
+                    <Input label="Customer Name" value={bookingData.customer_name} onChange={e => setBookingData({ ...bookingData, customer_name: e.target.value })} required />
+                    <Input label="Phone Number" value={bookingData.customer_phone} onChange={e => setBookingData({ ...bookingData, customer_phone: sanitizePhone(e.target.value) })} required />
+                  </div>
+                )}
+                {activeBooking && (
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl mb-3 border border-blue-100 dark:border-blue-800">
+                    <p className="text-[9px] font-black text-blue-600 uppercase mb-1">Selling to Customer:</p>
+                    <p className="text-sm font-black text-gray-900 dark:text-white uppercase">{activeBooking.customer_name}</p>
+                    <p className="text-xs text-gray-500 font-bold">{activeBooking.customer_phone}</p>
+                  </div>
+                )}
                 <Select label="Sales Executive" value={bookingData.sales_agent_id} onChange={e => setBookingData({ ...bookingData, sales_agent_id: e.target.value })} options={salesAgents.map(a => ({ value: a.id, label: `${a.name} [${a.sales_code}] - ${a.Office?.name || 'Unknown'}` }))} required />
                 <button onClick={handleConfirmSale} className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-lg shadow-green-500/20 transition-all active:scale-95 uppercase text-xs tracking-widest">CLOSE DEAL NOW</button>
               </>

@@ -22,6 +22,7 @@ import Sessions from './pages/Sessions';
 import AdminSessions from './pages/AdminSessions';
 import LandingPage from './pages/LandingPage';
 import SalesReport from './pages/SalesReport';
+import Transactions from './pages/Transactions';
 import DashboardLayout from './layouts/DashboardLayout';
 
 function App() {
@@ -39,6 +40,7 @@ function App() {
                 <Route path="/users" element={<UserManagement />} />
                 <Route path="/sales-agents" element={<SalesAgents />} />
                 <Route path="/vehicles" element={<Vehicles />} />
+                <Route path="/transactions" element={<Transactions />} />
                 <Route path="/brands" element={<BrandManagement />} />
                 <Route path="/offices" element={<OfficeManagement />} />
                 <Route path="/activities" element={<ActivityLog />} />

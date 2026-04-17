@@ -65,6 +65,7 @@ const DashboardLayout = () => {
         items: [
           { to: '/brands', icon: Tags, label: 'Brand Management' },
           { to: '/vehicles', icon: Car, label: 'Vehicles' },
+          { to: '/transactions', icon: FileText, label: 'Transactions' },
           { to: '/offices', icon: Building2, label: 'Office Management' },
           { to: '/sales-agents', icon: Users, label: 'Sales Agent' },
           { to: '/locations', icon: MapPin, label: 'Regional Data' },

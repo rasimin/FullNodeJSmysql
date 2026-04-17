@@ -12,6 +12,7 @@ const SalesAgent = require('./SalesAgent');
 const SystemSetting = require('./SystemSetting');
 const UserSession = require('./UserSession');
 const Location = require('./Location');
+const BookingArchive = require('./BookingArchive');
 
 // User Relationships
 User.belongsTo(Role, { foreignKey: 'role_id' });
@@ -62,6 +63,7 @@ User.hasMany(Booking, { foreignKey: 'user_id' });
 Booking.belongsTo(SalesAgent, { foreignKey: 'sales_agent_id', as: 'salesAgent' });
 Booking.belongsTo(SalesAgent, { foreignKey: 'booked_by_agent_id', as: 'bookedByAgent' });
 SalesAgent.hasMany(Booking, { foreignKey: 'sales_agent_id', as: 'bookings' });
+BookingArchive.belongsTo(User, { foreignKey: 'deleted_by_user_id', as: 'deletedBy' });
 
 // Location Hierarchy
 Location.belongsTo(Location, { as: 'parent', foreignKey: 'parent_id' });
@@ -140,5 +142,6 @@ module.exports = {
   SalesAgent,
   SystemSetting,
   UserSession,
-  Location
+  Location,
+  BookingArchive
 };
