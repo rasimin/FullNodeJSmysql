@@ -606,22 +606,23 @@ const Catalog = () => {
                       </div>
                     </div>
 
-                    <div className="p-3 md:p-7 pt-2">
-                      <header>
-                        <p className="text-[8px] md:text-[10px] text-gray-400 font-light tracking-[0.2em] uppercase mb-1">{v.brand}</p>
-                        <h3 className="text-sm md:text-xl font-bold text-gray-900 dark:text-white leading-tight mb-2 uppercase tracking-tight line-clamp-1">{v.model}</h3>
+                    <div className="p-4 md:p-5 pt-1">
+                      <header className="mb-2">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <p className="text-[8px] md:text-[9px] text-gray-400 font-bold tracking-[0.2em] uppercase truncate">{v.brand}</p>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="text-[8px] md:text-[9px] font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded-md">{v.year}</span>
+                            <span className="text-[8px] md:text-[9px] font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded-md">{parseInt(v.odometer || 0).toLocaleString()} km</span>
+                          </div>
+                        </div>
+                        <h3 className="text-sm md:text-lg font-black text-gray-900 dark:text-white leading-tight uppercase tracking-tight line-clamp-1">{v.model}</h3>
                       </header>
 
-                      <div className="flex flex-wrap items-center gap-1.5 md:gap-3 mb-4 md:mb-6">
-                        <span className="text-[9px] md:text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-2 md:px-3 py-0.5 md:py-1 rounded-full">{v.year}</span>
-                        <span className="text-[9px] md:text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-2 md:px-3 py-0.5 md:py-1 rounded-full">{parseInt(v.odometer || 0).toLocaleString()} km</span>
-                      </div>
-
-                      <div className="flex items-start gap-2 mb-4 md:mb-6">
-                        <MapPin size={12} className="text-gray-400 shrink-0 mt-0.5" />
-                        <div>
-                           <p className="text-[10px] md:text-xs font-bold text-gray-600 dark:text-gray-300">{v.Office?.name}</p>
-                           <p className="text-[8px] md:text-[10px] text-gray-400 line-clamp-1">
+                      <div className="flex items-start gap-2 mb-3 md:mb-4">
+                        <MapPin size={11} className="text-gray-400 shrink-0 mt-0.5" />
+                        <div className="min-w-0">
+                           <p className="text-[9px] md:text-[11px] font-bold text-gray-600 dark:text-gray-300 truncate">{v.Office?.name}</p>
+                           <p className="text-[8px] md:text-[9px] text-gray-400 line-clamp-1 uppercase tracking-wider mt-0.5 font-medium">
                              {v.Office?.location?.parent?.name ? (
                                `${v.Office.location.parent.name}, ${v.Office.location.parent.parent?.name || ''}`
                              ) : v.Office?.address}
@@ -629,12 +630,12 @@ const Catalog = () => {
                         </div>
                       </div>
 
-                      <footer className="pt-5 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                         <p className="text-sm md:text-lg font-extrabold text-gray-950 dark:text-white tracking-tight">
+                      <footer className="pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                         <p className="text-sm md:text-base font-black text-gray-950 dark:text-white tracking-tight">
                            {formatPrice(v.price)}
                          </p>
-                         <div className="w-8 h-8 md:w-10 md:h-10 rounded-full border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-400 group-hover:bg-gray-900 dark:group-hover:bg-white group-hover:text-white dark:group-hover:text-gray-900 transition-all duration-300">
-                           <ChevronRight size={16} />
+                         <div className="w-8 h-8 md:w-9 md:h-9 rounded-full border border-gray-200 dark:border-gray-800 flex items-center justify-center text-gray-400 group-hover:bg-gray-900 dark:group-hover:bg-white group-hover:text-white dark:group-hover:text-gray-900 transition-all duration-300 shadow-sm">
+                           <ChevronRight size={14} />
                          </div>
                       </footer>
                     </div>
