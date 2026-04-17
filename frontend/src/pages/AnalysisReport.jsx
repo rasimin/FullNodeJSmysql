@@ -245,6 +245,40 @@ const AnalysisReport = () => {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 gap-6">
+        {/* Unit Performance Chart - Full Width Highlight */}
+        <div className="card p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
+              <ShoppingCart size={16} className="text-blue-500" /> Unit Volume Performance (6 Months)
+            </h3>
+          </div>
+          <div className="flex justify-center w-full overflow-hidden">
+            {data?.trends?.units?.length > 0 ? (
+              <BarChart 
+                width={1000} 
+                height={350} 
+                data={data.trends.units} 
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
+                <XAxis dataKey="month" stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
+                <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }} />
+                <Bar name="Units Sold" dataKey="sold" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={40} isAnimationActive={false}>
+                  <LabelList dataKey="sold" position="top" fill="#3b82f6" fontSize={10} fontWeight="bold" />
+                </Bar>
+                <Bar name="Units Purchased" dataKey="bought" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={40} isAnimationActive={false}>
+                  <LabelList dataKey="bought" position="top" fill="#f59e0b" fontSize={10} fontWeight="bold" />
+                </Bar>
+              </BarChart>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-xs text-gray-400 font-bold uppercase">No data available</div>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Units Sold Trend */}
         <div className="card p-6">

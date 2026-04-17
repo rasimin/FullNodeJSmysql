@@ -515,6 +515,16 @@ exports.getBusinessAnalysisReport = async (req, res) => {
         };
     });
 
+    const unitTrend = allMonths.map(month => {
+        const sale = soldTrendRaw.find(s => s.month === month) || {};
+        const purchase = purchaseTrendRaw.find(p => p.month === month) || {};
+        return {
+            month,
+            sold: Number(sale.units_sold || 0),
+            bought: Number(purchase.units_purchased || 0)
+        };
+    });
+
     res.json({
       currentStock: {
         totalUnits: liveStockCount,
@@ -534,7 +544,8 @@ exports.getBusinessAnalysisReport = async (req, res) => {
             units: Number(p.units_purchased || 0),
             cost: Number(p.purchase_cost || 0)
         })),
-        cashFlow: cashFlowTrend
+        cashFlow: cashFlowTrend,
+        units: unitTrend
       },
       overall: {
         sales: {
