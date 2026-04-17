@@ -185,84 +185,152 @@ const exportBookingPdf = async (req, res) => {
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
 
     const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    
+    // Error handling for the PDF stream to prevent server crash
+    doc.on('error', err => {
+      console.error('PDF Stream Error:', err);
+      if (!res.headersSent) res.status(500).send('Error generating PDF');
+    });
+
     res.setHeader('Content-Type', 'application/pdf');
     doc.pipe(res);
 
     const isInvoice = type === 'dp-invoice';
     const title = isInvoice ? 'FINAL SETTLEMENT INVOICE' : 'VEHICLE DOWN PAYMENT RECEIPT';
     const subTitle = isInvoice ? 'Payment Request for Remaining Vehicle Balance' : 'Official Vehicle Down Payment & Security Deposit Statement';
+    const shortId = booking.id ? String(booking.id).split('-')[0].toUpperCase() : 'N/A';
 
-    // Header
-    doc.fontSize(18).font('Helvetica-Bold').fillColor('#1e40af').text(title, { align: 'right' });
-    doc.fontSize(10).font('Helvetica').fillColor('#64748b').text(`Document ID: REF-${booking.id.split('-')[0].toUpperCase()}`, { align: 'right' });
-    doc.moveDown(1.5);
+    // Header: Modern Centered Design
+    doc.fontSize(20).font('Helvetica-Bold').fillColor('#1e40af').text(title, { align: 'center' });
+    doc.fontSize(9).font('Helvetica').fillColor('#64748b').text(`Document ID: REF-${shortId}`, { align: 'center' });
+    doc.moveDown(0.5);
+    
+    // Header Divider
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#e2e8f0').lineWidth(1).stroke();
+    doc.moveDown(1);
 
-    // Business Info
-    doc.fillColor('#000').fontSize(14).font('Helvetica-Bold').text(booking.Office?.name || 'Showroom Management System');
-    doc.fontSize(10).font('Helvetica').text(subTitle);
+    // Business & Document Subtitle
+    doc.fillColor('#000').fontSize(14).font('Helvetica-Bold').text(booking.Office?.name || 'Showroom Management System', { align: 'left' });
+    if (booking.Office?.address) {
+      doc.fontSize(8).font('Helvetica').fillColor('#4b5563').text(booking.Office.address, { align: 'left', width: 250 });
+    }
+    if (booking.Office?.phone) {
+      doc.fontSize(8).font('Helvetica').fillColor('#4b5563').text(`Phone: ${booking.Office.phone}`, { align: 'left' });
+    }
+    doc.moveDown(1);
+    doc.fontSize(10).font('Helvetica').fillColor('#4b5563').text(subTitle, { align: 'left' });
     doc.moveDown(2);
 
-    // Client & Vehicle Grid
+    // Info Grid (Purchaser & Vehicle)
     const startY = doc.y;
-    doc.fontSize(11).font('Helvetica-Bold').text('PURCHASER INFORMATION', 50, startY);
-    doc.font('Helvetica').fontSize(10);
-    doc.text(`Full Name: ${booking.customer_name}`, 50, startY + 15);
-    doc.text(`NIK (ID): ${booking.nik || '-'}`, 50, startY + 30);
-    doc.text(`Phone No: ${booking.customer_phone}`, 50, startY + 45);
-
-    doc.fontSize(11).font('Helvetica-Bold').text('VEHICLE SPECIFICATIONS', 320, startY);
-    doc.font('Helvetica').fontSize(10);
-    doc.text(`Unit: ${booking.Vehicle?.brand} ${booking.Vehicle?.model}`, 320, startY + 15);
-    doc.text(`Year: ${booking.Vehicle?.year || '-'}`, 320, startY + 30);
-    doc.text(`Plate Number: ${booking.Vehicle?.plate_number}`, 320, startY + 45);
-
-    doc.moveDown(4);
-
-    // Payment Section
-    const tableTop = doc.y;
-    doc.rect(50, tableTop, 500, 25).fill('#f8fafc');
-    doc.fillColor('#1e293b').font('Helvetica-Bold').text('TRANSACTION SUMMARY', 60, tableTop + 8);
-    doc.text('AMOUNT', 450, tableTop + 8);
     
+    // Left Column: Purchaser
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#1e40af').text('PURCHASER INFORMATION', 50, startY);
+    doc.rect(50, startY + 12, 40, 2).fill('#1e40af'); // Underline accent
+    doc.font('Helvetica').fontSize(10).fillColor('#000');
+    
+    const labelX = 50;
+    const valueX = 125;
+    
+    doc.text(`Name`, labelX, startY + 25);
+    doc.text(`:`, valueX - 10, startY + 25);
+    doc.font('Helvetica-Bold').text(booking.customer_name || '-', valueX, startY + 25);
+    
+    doc.font('Helvetica').text(`NIK (ID)`, labelX, startY + 40);
+    doc.text(`:`, valueX - 10, startY + 40);
+    doc.text(booking.nik || '-', valueX, startY + 40);
+    
+    doc.font('Helvetica').text(`Phone`, labelX, startY + 55);
+    doc.text(`:`, valueX - 10, startY + 55);
+    doc.text(booking.customer_phone || '-', valueX, startY + 55);
+    
+    doc.font('Helvetica').text(`Booking`, labelX, startY + 70);
+    doc.text(`:`, valueX - 10, startY + 70);
+    doc.text(new Date(booking.booking_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }), valueX, startY + 70);
+
+    // Right Column: Vehicle
+    const rightLabelX = 320;
+    const rightValueX = 390;
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#1e40af').text('VEHICLE SPECIFICATIONS', rightLabelX, startY);
+    doc.rect(320, startY + 12, 40, 2).fill('#1e40af'); // Underline accent
+    doc.font('Helvetica').fontSize(10).fillColor('#000');
+    
+    doc.text(`Unit`, rightLabelX, startY + 25);
+    doc.text(`:`, rightValueX - 10, startY + 25);
+    doc.font('Helvetica-Bold').text(`${booking.Vehicle?.brand || ''} ${booking.Vehicle?.model || ''}`, rightValueX, startY + 25);
+    
+    doc.text(`Year`, rightLabelX, startY + 40);
+    doc.text(`:`, rightValueX - 10, startY + 40);
+    doc.text(booking.Vehicle?.year || '-', rightValueX, startY + 40);
+    
+    doc.text(`Plate`, rightLabelX, startY + 55);
+    doc.text(`:`, rightValueX - 10, startY + 55);
+    doc.text(booking.Vehicle?.plate_number || '-', rightValueX, startY + 55);
+
+    doc.moveDown(5);
+
+    // Transaction Table Section
+    const tableTop = doc.y;
+    doc.rect(50, tableTop, 500, 22).fill('#1e40af');
+    doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(10).text('TRANSACTION DESCRIPTION', 65, tableTop + 7);
+    doc.text('AMOUNT (IDR)', 430, tableTop + 7);
+    
+    doc.fillColor('#000').font('Helvetica').fontSize(10);
     if (isInvoice) {
       const price = parseFloat(booking.Vehicle?.price || 0);
       const dp = parseFloat(booking.down_payment || 0);
       const total = price - dp;
 
-      doc.font('Helvetica').fillColor('#000').text('Vehicle Agreed Selling Price', 60, tableTop + 40);
-      doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(price), 400, tableTop + 40, { align: 'right', width: 140 });
+      doc.text('Vehicle Agreed Selling Price', 65, tableTop + 35);
+      doc.font('Helvetica-Bold').text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(price), 350, tableTop + 35, { align: 'right', width: 190 });
 
-      doc.text('Less: Down Payment (Paid)', 60, tableTop + 60);
-      doc.text(`- ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(dp)}`, 400, tableTop + 60, { align: 'right', width: 140 });
+      doc.font('Helvetica').text('Less: Down Payment (Already Paid)', 65, tableTop + 55);
+      doc.text(`- ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(dp)}`, 350, tableTop + 55, { align: 'right', width: 190 });
 
-      doc.rect(350, tableTop + 80, 200, 1).fill('#cbd5e1');
-      doc.fontSize(12).font('Helvetica-Bold').fillColor('#b91c1c').text('REMAINING BALANCE PAYABLE', 180, tableTop + 90);
-      doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(total), 400, tableTop + 90, { align: 'right', width: 140 });
+      doc.moveTo(350, tableTop + 75).lineTo(540, tableTop + 75).strokeColor('#cbd5e1').stroke();
+      
+      doc.fontSize(11).font('Helvetica-Bold').fillColor('#b91c1c').text('REMAINING BALANCE PAYABLE', 65, tableTop + 85);
+      doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(total), 350, tableTop + 85, { align: 'right', width: 190 });
     } else {
-      doc.font('Helvetica').fillColor('#000').text('Security Deposit / Vehicle Down Payment', 60, tableTop + 40);
-      doc.fontSize(12).font('Helvetica-Bold').text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(booking.down_payment), 400, tableTop + 40, { align: 'right', width: 140 });
+      doc.text('Vehicle Down Payment / Booking Fee Reservation', 65, tableTop + 35);
+      doc.fontSize(12).font('Helvetica-Bold').text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(booking.down_payment || 0), 350, tableTop + 35, { align: 'right', width: 190 });
     }
 
+    doc.moveDown(7);
+
+    // Remarks Section (If exists)
     if (booking.notes) {
-      doc.moveDown(2);
-      doc.fontSize(9).font('Helvetica-Bold').fillColor('#1e293b').text('REMARKS / ADDITIONAL NOTES:', 50);
-      doc.fontSize(9).font('Helvetica').fillColor('#4b5563').text(booking.notes, 50, doc.y + 2, { width: 500 });
+      const currentY = doc.y;
+      doc.rect(50, currentY, 500, 40).dash(5, { space: 2 }).strokeColor('#e2e8f0').stroke();
+      doc.undash();
+      doc.fontSize(8).font('Helvetica-Bold').fillColor('#64748b').text('REMARKS / ADDITIONAL NOTES:', 60, currentY + 10);
+      doc.fontSize(9).font('Helvetica').fillColor('#1e293b').text(booking.notes, 60, currentY + 22, { width: 480 });
+      doc.moveDown(4);
     }
-    doc.moveDown(6);
-    const note = isInvoice 
-      ? 'Note: This invoice is for the final settlement of the vehicle purchase. Please ensure payment is made before the delivery date.'
-      : 'Note: This document serves as a formal acknowledgement of the reservation payment. The unit is reserved for the client pending final settlement.';
-    
-    doc.fontSize(10).font('Helvetica-Oblique').fillColor('#64748b').text(note, 50, doc.y, { align: 'center', width: 500 });
 
+    // Disclaimer Note
+    const disclaimer = isInvoice 
+      ? 'This invoice is for the final settlement of the vehicle purchase. Please ensure payment is made before the delivery date.'
+      : 'This document serves as a formal acknowledgement of the reservation payment. The unit is reserved for the client pending final settlement.';
+    
+    doc.fontSize(8).font('Helvetica-Oblique').fillColor('#94a3b8').text(disclaimer, 50, doc.y, { align: 'center', width: 500 });
+
+    // Footer Signature
     doc.moveDown(4);
-    doc.fillColor('#000').fontSize(10).font('Helvetica').text('Issued by Dealer Representative,', 350, doc.y);
-    doc.moveDown(3);
-    doc.font('Helvetica-Bold').text(`(${booking.salesAgent?.name || 'Authorized Admin'})`, 350);
+    const footerY = doc.y;
+    
+    // Standard Date and Sign area
+    doc.fillColor('#4b5563').fontSize(10).font('Helvetica').text(`Issued Date: ${new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}`, 50, footerY);
+    
+    doc.fillColor('#000').font('Helvetica-Bold').text('Authorized Signature,', 380, footerY);
+    doc.moveDown(4);
+    doc.text(`( ${booking.salesAgent?.name || 'Authorized Representative'} )`, 380);
+    doc.fontSize(8).font('Helvetica').text('Dealer Sales Representative', 380);
 
     doc.end();
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Export PDF Error:', error);
+    if (!res.headersSent) res.status(500).json({ message: error.message });
   }
 };
 
@@ -277,69 +345,158 @@ const exportSaleInvoicePdf = async (req, res) => {
     if (!booking) return res.status(404).json({ message: 'Record not found' });
 
     const doc = new PDFDocument({ size: 'A4', margin: 50 });
+
+    doc.on('error', err => {
+      console.error('Sale PDF Stream Error:', err);
+      if (!res.headersSent) res.status(500).send('Error generating PDF');
+    });
+
     res.setHeader('Content-Type', 'application/pdf');
     doc.pipe(res);
 
     const title = isProof === 'true' ? 'OFFICIAL BILL OF SALE' : 'FINAL SETTLEMENT INVOICE';
-    doc.fontSize(20).font('Helvetica-Bold').fillColor('#1e40af').text(title, { align: 'right' });
-    doc.fontSize(10).font('Helvetica').fillColor('#64748b').text(`Invoice Number: INV-${new Date().getFullYear()}-${booking.id.split('-')[0].toUpperCase()}`, { align: 'right' });
-    doc.moveDown(1.5);
+    const shortId = booking.id ? String(booking.id).split('-')[0].toUpperCase() : 'N/A';
 
-    doc.fillColor('#000').fontSize(14).font('Helvetica-Bold').text(booking.Office?.name || 'Showroom Management System');
-    doc.fontSize(10).font('Helvetica').text('Vehicle Ownership Transfer & Payment Settlement');
+    // Header: Modern Centered Design
+    doc.fontSize(20).font('Helvetica-Bold').fillColor('#1e40af').text(title, { align: 'center' });
+    doc.fontSize(9).font('Helvetica').fillColor('#64748b').text(`Invoice Number: INV-${new Date().getFullYear()}-${shortId}`, { align: 'center' });
+    doc.moveDown(0.5);
+    
+    // Header Divider
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#e2e8f0').lineWidth(1).stroke();
+    doc.moveDown(1);
+
+    // Business & Document Subtitle
+    doc.fillColor('#000').fontSize(14).font('Helvetica-Bold').text(booking.Office?.name || 'Showroom Management System', { align: 'left' });
+    if (booking.Office?.address) {
+      doc.fontSize(8).font('Helvetica').fillColor('#4b5563').text(booking.Office.address, { align: 'left', width: 250 });
+    }
+    if (booking.Office?.phone) {
+      doc.fontSize(8).font('Helvetica').fillColor('#4b5563').text(`Phone: ${booking.Office.phone}`, { align: 'left' });
+    }
+    doc.moveDown(1);
+    doc.fontSize(10).font('Helvetica').fillColor('#4b5563').text('Vehicle Ownership Transfer & Payment Settlement', { align: 'left' });
     doc.moveDown(2);
 
-    // Client Info
+    // Info Grid (Purchaser & Vehicle)
     const startY = doc.y;
-    doc.fontSize(11).font('Helvetica-Bold').text('BILL TO (PURCHASER)', 50, startY);
-    doc.font('Helvetica').fontSize(10);
-    doc.text(`Full Name: ${booking.customer_name}`, 50, startY + 15);
-    doc.text(`Phone No: ${booking.customer_phone}`, 50, startY + 30);
+    
+    // Left Column: Bill To
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#1e40af').text('BILL TO (PURCHASER)', 50, startY);
+    doc.rect(50, startY + 12, 40, 2).fill('#1e40af'); // Underline accent
+    doc.font('Helvetica').fontSize(10).fillColor('#000');
+    
+    const labelX = 50;
+    const valueX = 125;
+    
+    doc.text(`Name`, labelX, startY + 25);
+    doc.text(`:`, valueX - 10, startY + 25);
+    doc.font('Helvetica-Bold').text(booking.customer_name || '-', valueX, startY + 25);
+    
+    doc.font('Helvetica').text(`NIK (ID)`, labelX, startY + 40);
+    doc.text(`:`, valueX - 10, startY + 40);
+    doc.text(booking.nik || '-', valueX, startY + 40);
+    
+    doc.font('Helvetica').text(`Phone`, labelX, startY + 55);
+    doc.text(`:`, valueX - 10, startY + 55);
+    doc.text(booking.customer_phone || '-', valueX, startY + 55);
+    
+    doc.font('Helvetica').text(`Booking`, labelX, startY + 70);
+    doc.text(`:`, valueX - 10, startY + 70);
+    doc.text(new Date(booking.booking_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }), valueX, startY + 70);
 
-    doc.fontSize(11).font('Helvetica-Bold').text('VEHICLE DESCRIPTION', 320, startY);
-    doc.font('Helvetica').fontSize(10);
-    doc.text(`Unit: ${booking.Vehicle?.brand} ${booking.Vehicle?.model}`, 320, startY + 15);
-    doc.text(`Plate No: ${booking.Vehicle?.plate_number}`, 320, startY + 30);
-    doc.text(`Odometer: ${booking.Vehicle?.odometer || 0} KM`, 320, startY + 45);
+    // Right Column: Vehicle Description
+    const rightLabelX = 320;
+    const rightValueX = 390;
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#1e40af').text('VEHICLE DESCRIPTION', rightLabelX, startY);
+    doc.rect(320, startY + 12, 40, 2).fill('#1e40af'); // Underline accent
+    doc.font('Helvetica').fontSize(10).fillColor('#000');
+    
+    doc.text(`Unit`, rightLabelX, startY + 25);
+    doc.text(`:`, rightValueX - 10, startY + 25);
+    doc.font('Helvetica-Bold').text(`${booking.Vehicle?.brand || ''} ${booking.Vehicle?.model || ''}`, rightValueX, startY + 25);
+    
+    doc.text(`Plate`, rightLabelX, startY + 40);
+    doc.text(`:`, rightValueX - 10, startY + 40);
+    doc.text(booking.Vehicle?.plate_number || '-', rightValueX, startY + 40);
+    
+    doc.text(`Odo`, rightLabelX, startY + 55);
+    doc.text(`:`, rightValueX - 10, startY + 55);
+    doc.text(`${booking.Vehicle?.odometer || 0} KM`, rightValueX, startY + 55);
+    
+    if (isProof === 'true' && booking.Vehicle?.sold_date) {
+      doc.font('Helvetica-Bold').fillColor('#b91c1c').text(`Sold Date`, rightLabelX, startY + 70);
+      doc.font('Helvetica').text(`:`, rightValueX - 10, startY + 70);
+      doc.font('Helvetica-Bold').text(new Date(booking.Vehicle.sold_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }), rightValueX, startY + 70);
+    }
 
     doc.moveDown(5);
 
-    // Financial breakdown
+    // Financial Breakdown
     const price = parseFloat(booking.Vehicle?.price || 0);
     const dp = parseFloat(booking.down_payment || 0);
     const total = price - dp;
 
-    const tableY = doc.y;
-    doc.rect(50, tableY, 500, 2).fill('#1e293b');
-    doc.moveDown(0.5);
+    const tableTop = doc.y;
+    doc.rect(50, tableTop, 500, 22).fill('#1e40af');
+    doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(10).text('PAYMENT BREAKDOWN', 65, tableTop + 7);
+    doc.text('AMOUNT (IDR)', 430, tableTop + 7);
     
-    doc.fillColor('#000').fontSize(10).font('Helvetica').text('Vehicle Agreed Selling Price', 50, tableY + 15);
-    doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(price), 400, tableY + 15, { align: 'right', width: 140 });
+    doc.fillColor('#000').font('Helvetica').fontSize(10);
+    doc.text('Vehicle Agreed Selling Price', 65, tableTop + 35);
+    doc.font('Helvetica-Bold').text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(price), 350, tableTop + 35, { align: 'right', width: 190 });
 
-    doc.text('Less: Down Payment', 50, tableY + 35);
-    doc.text(`- ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(dp)}`, 400, tableY + 35, { align: 'right', width: 140 });
+    doc.font('Helvetica').text('Less: Down Payment / Reservation Fee', 65, tableTop + 55);
+    doc.text(`- ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(dp)}`, 350, tableTop + 55, { align: 'right', width: 190 });
 
-    doc.rect(350, tableY + 55, 200, 1).fill('#cbd5e1');
+    doc.moveTo(350, tableTop + 75).lineTo(540, tableTop + 75).strokeColor('#cbd5e1').stroke();
     
-    doc.fontSize(12).font('Helvetica-Bold').fillColor('#b91c1c').text('REMAINING BALANCE PAYABLE', 180, tableY + 65);
-    doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(total), 400, tableY + 65, { align: 'right', width: 140 });
-
-    if (isProof === 'true') {
-      doc.moveDown(3);
-      doc.rect(50, doc.y, 500, 40).fill('#f0fdf4');
-      doc.fillColor('#16a34a').fontSize(14).font('Helvetica-Bold').text('TRANSACTION STATUS: PAID & CLOSED', 50, doc.y - 30, { align: 'center' });
-    } else {
-      doc.moveDown(4);
-    }
+    doc.fontSize(11).font('Helvetica-Bold').fillColor('#b91c1c').text('TOTAL SETTLEMENT AMOUNT', 65, tableTop + 85);
+    doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(total), 350, tableTop + 85, { align: 'right', width: 190 });
 
     doc.moveDown(4);
-    doc.fillColor('#000').fontSize(10).font('Helvetica').text('Authorized Dealer Representative,', 350, doc.y);
-    doc.moveDown(3);
-    doc.font('Helvetica-Bold').text(`(${booking.salesAgent?.name || 'Administrator'})`, 350);
+
+    if (isProof === 'true') {
+      doc.save(); // Save state for rotation
+      const stampX = 300;
+      const stampY = doc.y + 40;
+      doc.rotate(-10, { origin: [stampX, stampY] });
+      
+      doc.rect(stampX - 100, stampY - 20, 200, 40).lineWidth(2).strokeColor('#10b981').stroke();
+      doc.fontSize(14).font('Helvetica-Bold').fillColor('#10b981').text('PAID & CLOSED', stampX - 100, stampY - 8, { width: 200, align: 'center' });
+      
+      doc.restore(); // Restore state (stop rotation)
+      doc.moveDown(6);
+      
+      doc.rect(50, doc.y, 500, 25).fill('#f0fdf4');
+      doc.fillColor('#166534').fontSize(9).font('Helvetica-Bold').text('OFFICIAL PROOF OF VEHICLE OWNERSHIP TRANSFER', 50, doc.y + 8, { align: 'center', width: 500 });
+      doc.moveDown(3);
+    } else {
+      doc.moveDown(5);
+    }
+
+    // Disclaimer
+    const disclaimer = isProof === 'true' 
+      ? 'This document serves as the final proof of transaction and vehicle ownership transfer. All payments have been verified.'
+      : 'Please ensure the remaining balance is settled before the agreed delivery date to avoid reservation cancellation.';
+    
+    doc.fontSize(8).font('Helvetica-Oblique').fillColor('#94a3b8').text(disclaimer, 50, doc.y, { align: 'center', width: 500 });
+
+    // Footer Signature
+    doc.moveDown(4);
+    const footerY = doc.y;
+    
+    doc.fillColor('#4b5563').fontSize(10).font('Helvetica').text(`Issued Date: ${new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}`, 50, footerY);
+    
+    doc.fillColor('#000').font('Helvetica-Bold').text('Authorized Dealer Representative,', 340, footerY);
+    doc.moveDown(4);
+    doc.text(`( ${booking.salesAgent?.name || 'Authorized Representative'} )`, 340);
+    doc.fontSize(8).font('Helvetica').text('Dealer Sales Manager / Representative', 340);
 
     doc.end();
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Export Sale PDF Error:', error);
+    if (!res.headersSent) res.status(500).json({ message: error.message });
   }
 };
 
