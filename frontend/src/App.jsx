@@ -22,6 +22,7 @@ import Sessions from './pages/Sessions';
 import AdminSessions from './pages/AdminSessions';
 import LandingPage from './pages/LandingPage';
 import SalesReport from './pages/SalesReport';
+import AnalysisReport from './pages/AnalysisReport';
 import Transactions from './pages/Transactions';
 import AnalysisReport from './pages/AnalysisReport';
 import DashboardLayout from './layouts/DashboardLayout';

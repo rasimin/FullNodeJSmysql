@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { 
   LayoutDashboard, Users, Building2, ShieldCheck, LogOut, Shield,
-  Menu, X, History, FileText, Sun, Moon, ChevronLeft, ChevronRight, UserCircle, Car, Tags, BarChart2, BarChart3, Search, Rocket, MapPin
+  Menu, X, History, FileText, Sun, Moon, ChevronLeft, ChevronRight, UserCircle, Car, Tags, BarChart2, BarChart3, Search, Rocket, MapPin, Activity
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IMAGE_BASE_URL } from '../config';
@@ -57,6 +57,7 @@ const DashboardLayout = () => {
         title: 'DATA INSIGHTS',
         items: [
           { to: '/', icon: BarChart2, label: 'Reports & Analytics' },
+          { to: '/analysis-report', icon: Activity, label: 'Business Analysis' },
           { to: '/sales-report', icon: BarChart3, label: 'Sales Performance' },
           { to: '/analysis-report', icon: Zap, label: 'Business Analysis' },
         ]

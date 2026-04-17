@@ -379,7 +379,7 @@ exports.getAdvancedAnalytics = async (req, res) => {
   }
 };
 
-exports.getAnalysisReport = async (req, res) => {
+exports.getBusinessAnalysisReport = async (req, res) => {
   try {
     const { officeId } = req.query;
     const user = req.user;
@@ -388,8 +388,9 @@ exports.getAnalysisReport = async (req, res) => {
     const isSuperAdmin = user.Role?.name === 'Super Admin';
     let officeIds = [];
     if (isSuperAdmin) {
-      if (officeId) officeIds = [officeId];
-      else {
+      if (officeId) {
+        officeIds = [officeId];
+      } else {
         const all = await Office.findAll({ attributes: ['id'] });
         officeIds = all.map(o => o.id);
       }
@@ -406,105 +407,154 @@ exports.getAnalysisReport = async (req, res) => {
       }
     }
 
-    const baseWhere = { office_id: { [Op.in]: officeIds } };
+    const where = { office_id: { [Op.in]: officeIds } };
 
-    // 1. Current Live Stock Analytics (Available & Booked)
-    const liveStockWhere = { ...baseWhere, status: { [Op.in]: ['Available', 'Booked'] } };
-    const liveStockUnits = await Vehicle.findAll({
-      where: liveStockWhere,
-      attributes: ['brand', 'price', 'purchase_price', 'service_cost']
+    // 1. Current Live Stock Summary
+    const availableVehicles = await Vehicle.findAll({
+      where: { ...where, status: 'Available' },
+      attributes: ['brand', 'price', 'purchase_price', 'service_cost'],
+      raw: true
     });
 
-    const liveStockCount = liveStockUnits.length;
-    let potentialCashIn = 0;
-    let potentialNetMargin = 0;
+    const liveStockCount = availableVehicles.length;
+    const potentialRevenue = availableVehicles.reduce((sum, v) => sum + Number(v.price || 0), 0);
+    const potentialNetMargin = availableVehicles.reduce((sum, v) => {
+      const price = Number(v.price || 0);
+      const purchase = Number(v.purchase_price || 0);
+      const service = Number(v.service_cost || 0);
+      return sum + (price - (purchase + service));
+    }, 0);
+
+    // 2. Units per Brand (Current Stock)
     const brandDistribution = {};
-
-    liveStockUnits.forEach(v => {
-      potentialCashIn += Number(v.price);
-      potentialNetMargin += (Number(v.price) - (Number(v.purchase_price) + Number(v.service_cost)));
-      
-      brandDistribution[v.brand] = (brandDistribution[v.brand] || 0) + 1;
+    availableVehicles.forEach(v => {
+      const brandName = v.brand || 'Unknown';
+      brandDistribution[brandName] = (brandDistribution[brandName] || 0) + 1;
     });
-
-    const brandChartData = Object.keys(brandDistribution).map(brand => ({
+    const unitsPerBrand = Object.keys(brandDistribution).map(brand => ({
       brand,
       count: brandDistribution[brand]
-    })).sort((a, b) => b.count - a.count);
+    })).sort((a, b) => b.count - a.count).slice(0, 10); // Limit to top 10 for better visualization
 
-    // 2. All-Time Historical Performance (Sold Units)
-    const soldWhere = { ...baseWhere, status: 'Sold' };
-    const allTimeSold = await Vehicle.findAll({
-      where: soldWhere,
-      attributes: ['price', 'purchase_price', 'service_cost']
-    });
+    // 3. Monthly Trends (Last 6 Months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5); // Go back 5 months + current month = 6 months
+    sixMonthsAgo.setDate(1);
+    sixMonthsAgo.setHours(0, 0, 0, 0);
 
-    const totalUnitsSoldAllTime = allTimeSold.length;
-    const totalRevenueAllTime = allTimeSold.reduce((sum, v) => sum + Number(v.price), 0);
-    const totalMarginAllTime = allTimeSold.reduce((sum, v) => sum + (Number(v.price) - (Number(v.purchase_price) + Number(v.service_cost))), 0);
-
-    // 3. Comparison Logic (This Month vs Last 3 Months)
-    const now = new Date();
-    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfThreeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-
-    // This Month Stats
-    const thisMonthSold = await Vehicle.findAll({
+    // Sales Trend
+    const soldTrendRaw = await Vehicle.findAll({
       where: { 
-        ...soldWhere, 
-        sold_date: { [Op.gte]: startOfThisMonth } 
+        ...where, 
+        status: 'Sold',
+        sold_date: { [Op.gte]: sixMonthsAgo } 
       },
-      attributes: ['price', 'purchase_price', 'service_cost']
+      attributes: [
+        [sequelize.fn('DATE_FORMAT', sequelize.col('sold_date'), '%Y-%m'), 'month'],
+        [sequelize.fn('COUNT', sequelize.col('id')), 'units_sold'],
+        [sequelize.fn('SUM', sequelize.col('price')), 'revenue'],
+        [sequelize.literal('SUM(price - (purchase_price + service_cost))'), 'margin']
+      ],
+      group: [sequelize.fn('DATE_FORMAT', sequelize.col('sold_date'), '%Y-%m')],
+      order: [[sequelize.fn('DATE_FORMAT', sequelize.col('sold_date'), '%Y-%m'), 'ASC']],
+      raw: true
     });
 
-    const thisMonthUnits = thisMonthSold.length;
-    const thisMonthMargin = thisMonthSold.reduce((sum, v) => sum + (Number(v.price) - (Number(v.purchase_price) + Number(v.service_cost))), 0);
-
-    // Last 3 Months Stats (Average)
-    const lastThreeMonthsSold = await Vehicle.findAll({
+    // Purchase Trend (including service cost)
+    const purchaseTrendRaw = await Vehicle.findAll({
       where: { 
-        ...soldWhere, 
-        sold_date: { 
-          [Op.gte]: startOfThreeMonthsAgo,
-          [Op.lt]: startOfThisMonth
-        } 
+        ...where, 
+        entry_date: { [Op.gte]: sixMonthsAgo } 
       },
-      attributes: ['price', 'purchase_price', 'service_cost']
+      attributes: [
+        [sequelize.fn('DATE_FORMAT', sequelize.col('entry_date'), '%Y-%m'), 'month'],
+        [sequelize.fn('COUNT', sequelize.col('id')), 'units_purchased'],
+        [sequelize.fn('SUM', sequelize.col('purchase_price')), 'purchase_cost'],
+        [sequelize.fn('SUM', sequelize.col('service_cost')), 'service_cost']
+      ],
+      group: [sequelize.fn('DATE_FORMAT', sequelize.col('entry_date'), '%Y-%m')],
+      order: [[sequelize.fn('DATE_FORMAT', sequelize.col('entry_date'), '%Y-%m'), 'ASC']],
+      raw: true
     });
 
-    const totalLast3MonthsUnits = lastThreeMonthsSold.length;
-    const totalLast3MonthsMargin = lastThreeMonthsSold.reduce((sum, v) => sum + (Number(v.price) - (Number(v.purchase_price) + Number(v.service_cost))), 0);
-    
-    const avgLast3MonthsUnits = totalLast3MonthsUnits / 3;
-    const avgLast3MonthsMargin = totalLast3MonthsMargin / 3;
+    // 4. Cumulative Metrics
+    const cumulativeSales = await Vehicle.findAll({
+      where: { ...where, status: 'Sold' },
+      attributes: [
+        [sequelize.fn('COUNT', sequelize.col('id')), 'total_units'],
+        [sequelize.fn('SUM', sequelize.col('price')), 'total_revenue'],
+        [sequelize.literal('SUM(price - (purchase_price + service_cost))'), 'total_margin']
+      ],
+      raw: true
+    });
+
+    const cumulativePurchases = await Vehicle.findAll({
+      where,
+      attributes: [
+        [sequelize.fn('COUNT', sequelize.col('id')), 'total_units'],
+        [sequelize.fn('SUM', sequelize.col('purchase_price')), 'total_purchase_cost'],
+        [sequelize.fn('SUM', sequelize.col('service_cost')), 'total_service_cost']
+      ],
+      raw: true
+    });
+
+    // Create a merged cash flow trend for the 2-bar chart
+    const allMonths = Array.from({length: 6}, (_, i) => {
+        const d = new Date();
+        d.setMonth(d.getMonth() - (5 - i));
+        return d.toISOString().substring(0, 7); // YYYY-MM
+    });
+
+    const cashFlowTrend = allMonths.map(month => {
+        const sale = soldTrendRaw.find(s => s.month === month) || {};
+        const purchase = purchaseTrendRaw.find(p => p.month === month) || {};
+        return {
+            month,
+            inflow: Number(sale.revenue || 0),
+            outflow: Number(purchase.purchase_cost || 0) + Number(purchase.service_cost || 0)
+        };
+    });
 
     res.json({
-      liveStock: {
-        total: liveStockCount,
-        potentialCashIn,
+      currentStock: {
+        totalUnits: liveStockCount,
+        potentialRevenue,
         potentialNetMargin,
-        brandDistribution: brandChartData
+        unitsPerBrand
       },
-      historical: {
-        totalUnits: totalUnitsSoldAllTime,
-        totalRevenue: totalRevenueAllTime,
-        totalMargin: totalMarginAllTime
+      trends: {
+        sales: soldTrendRaw.map(s => ({
+            month: s.month,
+            units: Number(s.units_sold || 0),
+            revenue: Number(s.revenue || 0),
+            margin: Number(s.margin || 0)
+        })),
+        purchases: purchaseTrendRaw.map(p => ({
+            month: p.month,
+            units: Number(p.units_purchased || 0),
+            cost: Number(p.purchase_cost || 0)
+        })),
+        cashFlow: cashFlowTrend
       },
-      comparison: {
-        thisMonth: {
-          units: thisMonthUnits,
-          margin: thisMonthMargin
+      overall: {
+        sales: {
+          units: Number(cumulativeSales[0]?.total_units || 0),
+          revenue: Number(cumulativeSales[0]?.total_revenue || 0),
+          margin: Number(cumulativeSales[0]?.total_margin || 0)
         },
-        avgLast3Months: {
-          units: avgLast3MonthsUnits,
-          margin: avgLast3MonthsMargin
+        purchases: {
+          units: Number(cumulativePurchases[0]?.total_units || 0),
+          cost: Number(cumulativePurchases[0]?.total_purchase_cost || 0),
+          service: Number(cumulativePurchases[0]?.total_service_cost || 0)
         }
       }
     });
 
   } catch (error) {
-    console.error('getAnalysisReport Error:', error);
+    console.error('Analysis Report Error:', error);
     res.status(500).json({ message: error.message });
   }
 };
+
+
 
