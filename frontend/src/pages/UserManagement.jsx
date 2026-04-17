@@ -8,6 +8,8 @@ import Select from '../components/ui/Select';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatOfficeHierarchy } from '../utils/hierarchy';
 import { IMAGE_BASE_URL } from '../config';
+import ViewSwitcher from '../components/ui/ViewSwitcher';
+import Pagination from '../components/ui/Pagination';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -23,6 +25,8 @@ const UserManagement = () => {
   const [notification, setNotification] = useState({ status: 'idle', message: '' });
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [viewMode, setViewMode] = useState(window.innerWidth < 768 ? 'grid' : 'table');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [officeFilter, setOfficeFilter] = useState('');
   
   // Session Related State
   const [isSessionsModalOpen, setIsSessionsModalOpen] = useState(false);
@@ -45,7 +49,9 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const r = await api.get(`/users?page=${page}&search=${search}`);
+      const r = await api.get(`/users`, {
+        params: { page, search, role_id: roleFilter, office_id: officeFilter }
+      });
       setUsers(Array.isArray(r.data.items) ? r.data.items : []);
       setTotalPages(r.data.total_pages || 1);
     } catch (e) { 
@@ -61,12 +67,15 @@ const UserManagement = () => {
     api.get('/offices').then(r => setOffices(formatOfficeHierarchy(r.data))).catch(console.error);
   }, []);
 
-  useEffect(() => { fetchUsers(); }, [page, search]);
+  useEffect(() => { fetchUsers(); }, [page, search, roleFilter, officeFilter]);
 
   const handleExport = async () => {
     try {
       notify('loading', 'Exporting...');
-      const r = await api.get('/export/users', { responseType: 'blob' });
+      const r = await api.get('/export/users', { 
+        params: { search, role_id: roleFilter, office_id: officeFilter },
+        responseType: 'blob' 
+      });
       const url = window.URL.createObjectURL(new Blob([r.data]));
       const a = document.createElement('a');
       a.href = url; a.setAttribute('download', 'users.xlsx'); document.body.appendChild(a); a.click();
@@ -144,38 +153,48 @@ const UserManagement = () => {
         onConfirm={handleDelete} onCancel={() => setConfirmDeleteId(null)}
       />
 
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="relative w-full sm:w-64">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text" placeholder="Search users..."
-            className="input pl-9"
-            value={search} onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <div className="flex gap-2 w-full sm:w-auto overflow-x-auto no-scrollbar pb-1 sm:pb-0">
-          <div className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-xl shrink-0">
-            <button 
-              onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded-lg flex items-center gap-2 text-[10px] font-bold transition-all ${viewMode === 'table' ? 'bg-white dark:bg-gray-700 text-blue-600 shadow-sm' : 'text-gray-400'}`}
-            >
-              <FileSpreadsheet size={12} /> <span className="hidden sm:inline">Grid</span>
-            </button>
-            <button 
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-lg flex items-center gap-2 text-[10px] font-bold transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-gray-700 text-blue-600 shadow-sm' : 'text-gray-400'}`}
-            >
-              <User size={12} /> <span className="hidden sm:inline">Card</span>
-            </button>
+      <div className="flex flex-col gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div className="relative">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text" placeholder="Search users..."
+              className="input pl-9 h-11"
+              value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            />
           </div>
-          <button onClick={handleExport} className="btn gap-2 text-xs h-9 shrink-0">
-            <FileSpreadsheet size={15} className="text-green-600" /> Export
-          </button>
-          {canAddUser && (
-            <button onClick={() => openModal()} className="btn-primary gap-2 text-xs h-9 shrink-0">
-              <Plus size={15} /> Add User
-            </button>
+
+          <select 
+            className="input h-11 text-xs"
+            value={roleFilter}
+            onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
+          >
+            <option value="">All Roles</option>
+            {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+          </select>
+
+          {isSuperAdmin && (
+            <select 
+              className="input h-11 text-xs"
+              value={officeFilter}
+              onChange={(e) => { setOfficeFilter(e.target.value); setPage(1); }}
+            >
+              <option value="">All Offices</option>
+              {offices.map(o => <option key={o.id} value={o.id}>{o.displayName}</option>)}
+            </select>
           )}
+
+          <div className="flex gap-2">
+            <ViewSwitcher viewMode={viewMode} setViewMode={setViewMode} />
+            <button onClick={handleExport} className="btn gap-2 text-xs h-11 grow flex-1 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+              <FileSpreadsheet size={15} className="text-green-600" /> Export
+            </button>
+            {canAddUser && (
+              <button onClick={() => openModal()} className="btn-primary gap-2 text-xs h-11 grow flex-1">
+                <Plus size={15} /> Add New
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -238,9 +257,9 @@ const UserManagement = () => {
                         </td>
                         <td className="px-5 py-3.5">
                           <div className="flex gap-1">
-                            <button onClick={() => handleViewSessions(u.id)} className="btn-icon p-1.5 text-blue-500 hover:bg-blue-50" title="View Sessions"><Monitor size={14} /></button>
-                            <button onClick={() => openModal(u)} className="btn-icon p-1.5 text-amber-500 hover:bg-amber-50"><Edit size={14} /></button>
-                            <button onClick={() => setConfirmDeleteId(u.id)} className="btn-icon p-1.5 text-red-500 hover:bg-red-50"><Trash2 size={14} /></button>
+                            <button onClick={() => handleViewSessions(u.id)} className="btn-icon text-blue-500" title="View Sessions"><Monitor size={14} /></button>
+                            <button onClick={() => openModal(u)} className="btn-edit" title="Edit User"><Edit size={14} /></button>
+                            <button onClick={() => setConfirmDeleteId(u.id)} className="btn-delete" title="Delete User"><Trash2 size={14} /></button>
                           </div>
                         </td>
                       </motion.tr>
@@ -274,9 +293,9 @@ const UserManagement = () => {
                       </div>
                     </div>
                     <div className="flex gap-0.5">
-                      <button onClick={() => handleViewSessions(u.id)} className="btn-icon p-1 text-blue-500"><Monitor size={12} /></button>
-                      <button onClick={() => openModal(u)} className="btn-icon p-1 text-amber-500"><Edit size={12} /></button>
-                      <button onClick={() => setConfirmDeleteId(u.id)} className="btn-icon p-1 text-red-500"><Trash2 size={12} /></button>
+                      <button onClick={() => handleViewSessions(u.id)} className="btn-icon text-blue-500" title="Sessions"><Monitor size={12} /></button>
+                      <button onClick={() => openModal(u)} className="btn-edit" title="Edit"><Edit size={12} /></button>
+                      <button onClick={() => setConfirmDeleteId(u.id)} className="btn-delete" title="Delete"><Trash2 size={12} /></button>
                     </div>
                   </div>
                   <div className="space-y-1.5 pb-2 border-b border-gray-100 dark:border-gray-800 text-[9px] md:text-xs text-gray-500 truncate">
@@ -297,65 +316,7 @@ const UserManagement = () => {
       )}
 
       {/* Pagination Controls */}
-      {!loading && users.length > 0 && (
-        <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-6 py-4 gap-4 shadow-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Page:</span>
-            <span className="text-xs font-black text-blue-600">{page} / {totalPages}</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button 
-              disabled={page === 1}
-              onClick={() => setPage(1)}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${page === 1 ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
-              title="First Page"
-            >
-              <ChevronsLeft size={16} />
-            </button>
-
-            <button 
-              disabled={page === 1}
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${page === 1 ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
-              title="Previous Page"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            
-            <div className="flex items-center gap-2 px-3 h-10 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800">
-              <span className="text-[10px] text-gray-400 font-bold uppercase">Go to</span>
-              <select 
-                value={page}
-                onChange={(e) => setPage(Number(e.target.value))}
-                className="bg-transparent text-xs font-black text-blue-600 outline-none cursor-pointer"
-              >
-                {Array.from({ length: totalPages }, (_, i) => (
-                  <option key={i + 1} value={i + 1}>{i + 1}</option>
-                ))}
-              </select>
-            </div>
-
-            <button 
-              disabled={page === totalPages}
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${page === totalPages ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
-              title="Next Page"
-            >
-              <ChevronRight size={16} />
-            </button>
-
-            <button 
-              disabled={page === totalPages}
-              onClick={() => setPage(totalPages)}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${page === totalPages ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
-              title="Last Page"
-            >
-              <ChevronsRight size={16} />
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination page={page} totalPages={totalPages} setPage={setPage} />
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingUser ? 'Edit User' : 'Create User'}>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -403,7 +364,7 @@ const UserManagement = () => {
                     </div>
                     <div>
                       <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-tight">{s.ip_address || 'Unknown IP'}</p>
-                      <p className="text-[9px] text-gray-400 font-bold flex items-center gap-1"><Clock size={10} /> {new Date(s.createdAt).toLocaleString('id-ID')}</p>
+                      <p className="text-[9px] text-gray-400 font-bold flex items-center gap-1"><Clock size={10} /> {new Date(s.createdAt).toLocaleString('en-GB')}</p>
                     </div>
                   </div>
                   <button 

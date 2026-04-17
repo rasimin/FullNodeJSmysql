@@ -90,8 +90,8 @@ const RoleManagement = () => {
                   <ShieldCheck size={16} className="md:size-5" />
                 </div>
                 <div className="flex gap-0.5">
-                  <button onClick={() => openModal(role)} className="btn-icon p-1 text-gray-400 hover:text-blue-600 focus:text-blue-600 outline-none"><Edit size={12} className="md:size-[14px]" /></button>
-                  <button onClick={() => setConfirmDeleteId(role.id)} className="btn-icon p-1 text-gray-400 hover:text-red-500 focus:text-red-500 outline-none"><Trash2 size={12} className="md:size-[14px]" /></button>
+                  <button onClick={() => openModal(role)} className="btn-edit p-1"><Edit size={12} className="md:size-[14px]" /></button>
+                  <button onClick={() => setConfirmDeleteId(role.id)} className="btn-delete p-1"><Trash2 size={12} className="md:size-[14px]" /></button>
                 </div>
               </div>
               <h3 className="text-xs md:text-sm font-semibold text-gray-900 dark:text-white truncate">{role.name}</h3>

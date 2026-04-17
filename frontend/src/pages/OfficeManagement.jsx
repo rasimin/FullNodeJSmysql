@@ -8,6 +8,7 @@ import Select from '../components/ui/Select';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IMAGE_BASE_URL } from '../config';
 import { formatOfficeHierarchy } from '../utils/hierarchy';
+import ViewSwitcher from '../components/ui/ViewSwitcher';
 
 const OfficeManagement = () => {
   const skipCascade = React.useRef(false);
@@ -210,10 +211,7 @@ const OfficeManagement = () => {
           <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Master Organization Hierarchy</p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
-          <div className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-xl grow sm:grow-0">
-             <button onClick={() => setViewMode('table')} className={`grow flex-1 p-2 rounded-lg flex items-center justify-center gap-2 text-[10px] font-black uppercase transition-all ${viewMode === 'table' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'}`}><FileSpreadsheet size={14} /> List</button>
-             <button onClick={() => setViewMode('grid')} className={`grow flex-1 p-2 rounded-lg flex items-center justify-center gap-2 text-[10px] font-black uppercase transition-all ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'}`}><LayoutGrid size={14} /> Tree</button>
-          </div>
+          <ViewSwitcher viewMode={viewMode} setViewMode={setViewMode} />
           <button onClick={() => openModal()} className="btn-primary h-11 px-4 text-xs font-black shadow-lg shadow-blue-500/20"><Plus size={18} /></button>
         </div>
       </div>
@@ -249,8 +247,8 @@ const OfficeManagement = () => {
                         </td>
                         <td className="px-6 py-4 text-right">
                             <div className="flex justify-end gap-2">
-                              <button onClick={() => openModal(o)} className="btn-icon p-1.5 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"><Edit size={16} /></button>
-                              <button onClick={() => setConfirmDeleteId(o.id)} className="btn-icon p-1.5 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                              <button onClick={() => openModal(o)} className="btn-edit"><Edit size={16} /></button>
+                              <button onClick={() => setConfirmDeleteId(o.id)} className="btn-delete"><Trash2 size={16} /></button>
                             </div>
                         </td>
                      </tr>
@@ -267,8 +265,8 @@ const OfficeManagement = () => {
                         {o.logo ? <img src={`${IMAGE_BASE_URL}${o.logo}`} className="w-full h-full object-cover" alt="" /> : <Building2 size={16} />}
                       </div>
                        <div className="flex gap-1">
-                        <button onClick={() => openModal(o)} className="btn-icon p-1.5 text-gray-400 hover:text-blue-500 transition-colors"><Edit size={14} /></button>
-                        <button onClick={() => setConfirmDeleteId(o.id)} className="btn-icon p-1.5 text-gray-400 hover:text-red-500 transition-colors"><Trash2 size={14} /></button>
+                        <button onClick={() => openModal(o)} className="btn-edit p-1.5"><Edit size={14} /></button>
+                        <button onClick={() => setConfirmDeleteId(o.id)} className="btn-delete p-1.5"><Trash2 size={14} /></button>
                       </div>
                    </div>
                    <h4 className="text-[10px] font-black text-gray-800 dark:text-gray-100 uppercase leading-tight line-clamp-2">{o.name}</h4>
@@ -293,8 +291,8 @@ const OfficeManagement = () => {
                       <div className="flex justify-between items-start mb-4 text-gray-400">
                         {ho.logo ? <div className="w-12 h-12 rounded-2xl overflow-hidden border border-gray-100 dark:border-white/5 shadow-sm bg-white dark:bg-gray-800"><img src={`${IMAGE_BASE_URL}${ho.logo}`} className="w-full h-full object-cover" /></div> : <Building2 size={24} className="text-purple-600" />}
                         <div className="flex gap-2">
-                          <button onClick={() => openModal(ho)} className="btn-icon p-1.5 text-gray-400 hover:text-blue-500 transition-colors"><Edit size={14} /></button>
-                          <button onClick={() => setConfirmDeleteId(ho.id)} className="btn-icon p-1.5 text-gray-400 hover:text-red-500 transition-colors"><Trash2 size={14} /></button>
+                          <button onClick={() => openModal(ho)} className="btn-edit p-1.5"><Edit size={14} /></button>
+                          <button onClick={() => setConfirmDeleteId(ho.id)} className="btn-delete p-1.5"><Trash2 size={14} /></button>
                         </div>
                       </div>
                       <h3 className="text-base font-black text-gray-900 dark:text-white uppercase leading-tight">{ho.name}</h3>
@@ -322,9 +320,9 @@ const OfficeManagement = () => {
                                 <div className="w-10 h-10 bg-blue-50 dark:bg-white/5 rounded-xl overflow-hidden flex items-center justify-center text-blue-500">
                                   {br.logo ? <img src={`${IMAGE_BASE_URL}${br.logo}`} className="w-full h-full object-cover" /> : <Building2 size={14} />}
                                 </div>
-                                 <div className="flex gap-1 text-gray-300 group-hover:text-gray-500 transition-colors">
-                                  <button onClick={() => openModal(br)} className="btn-icon p-1.5 hover:text-blue-500 transition-colors"><Edit size={12} /></button>
-                                  <button onClick={() => setConfirmDeleteId(br.id)} className="btn-icon p-1.5 hover:text-red-500 transition-colors"><Trash2 size={12} /></button>
+                                 <div className="flex gap-1">
+                                  <button onClick={() => openModal(br)} className="btn-edit p-1.5"><Edit size={12} /></button>
+                                  <button onClick={() => setConfirmDeleteId(br.id)} className="btn-delete p-1.5"><Trash2 size={12} /></button>
                                 </div>
                               </div>
                              <h4 className="text-[10px] font-black text-gray-800 dark:text-gray-100 uppercase line-clamp-2 leading-tight">{br.name}</h4>
@@ -368,12 +366,12 @@ const OfficeManagement = () => {
           )}
 
           <div className="space-y-4 pt-2">
-            <div className="flex items-center gap-2"><div className="w-1 h-3 bg-blue-500 rounded-full" /><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Regional Hierarchy (Wajib Kelurahan)</label></div>
+            <div className="flex items-center gap-2"><div className="w-1 h-3 bg-blue-500 rounded-full" /><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Regional Hierarchy (Ward Required)</label></div>
             <div className="grid grid-cols-2 gap-4">
                <Select label="Province" value={selectedLoc.province} onChange={e => setSelectedLoc({...selectedLoc, province: e.target.value})} options={provinces.map(p => ({ value: p.id, label: p.name }))} />
                <Select label="City/Regency" value={selectedLoc.city} onChange={e => setSelectedLoc({...selectedLoc, city: e.target.value})} options={cities.map(c => ({ value: c.id, label: c.name }))} disabled={!selectedLoc.province} />
                <Select label="District" value={selectedLoc.district} onChange={e => setSelectedLoc({...selectedLoc, district: e.target.value})} options={districts.map(d => ({ value: d.id, label: d.name }))} disabled={!selectedLoc.city} />
-               <Select label="Ward/Kelurahan" value={selectedLoc.ward} onChange={e => setSelectedLoc({...selectedLoc, ward: e.target.value})} options={wards.map(w => ({ value: w.id, label: w.name }))} disabled={!selectedLoc.district} />
+               <Select label="Ward" value={selectedLoc.ward} onChange={e => setSelectedLoc({...selectedLoc, ward: e.target.value})} options={wards.map(w => ({ value: w.id, label: w.name }))} disabled={!selectedLoc.district} />
             </div>
             <Input label="Manual Postal Code" value={formData.postal_code} onChange={e => setFormData({...formData, postal_code: e.target.value})} placeholder="e.g. 12345" />
           </div>

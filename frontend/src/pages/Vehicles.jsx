@@ -13,9 +13,11 @@ import Modal from '../components/Modal';
 import DynamicIsland from '../components/DynamicIsland';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
+import ViewSwitcher from '../components/ui/ViewSwitcher';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatOfficeHierarchy } from '../utils/hierarchy';
 import { IMAGE_BASE_URL } from '../config';
+import Pagination from '../components/ui/Pagination';
 
 const Vehicles = () => {
   const [vehicles, setVehicles] = useState([]);
@@ -363,6 +365,26 @@ const Vehicles = () => {
     setter({ ...state, [field]: num });
   };
 
+  const handleExport = async () => {
+    try {
+      notify('loading', 'Preparing full inventory report...');
+      const res = await api.get('/export/vehicles', {
+        params: { search, officeId: selectedBranch, type: '', status: filterStatus },
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Vehicle_Inventory_${new Date().toISOString().split('T')[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      notify('success', 'Excel exported successfully');
+    } catch (e) {
+      console.error('Export error:', e);
+      notify('error', 'Failed to export data');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <DynamicIsland status={confirmDeleteId ? 'confirm' : notification.status} message={confirmDeleteId ? 'Delete vehicle?' : notification.message} onConfirm={handleDelete} onCancel={() => setConfirmDeleteId(null)} />
@@ -373,10 +395,13 @@ const Vehicles = () => {
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{isHeadOffice ? 'All Branches' : user?.Office?.name}</p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
-          <div className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
-            <button onClick={() => setViewMode('table')} className={`p-1.5 rounded-lg flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'table' ? 'bg-white dark:bg-blue-600 text-blue-600 dark:text-white shadow-sm' : 'text-gray-400'}`}><FileSpreadsheet size={16} /> <span className="hidden md:inline">Grid</span></button>
-            <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-lg flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-blue-600 text-blue-600 dark:text-white shadow-sm' : 'text-gray-400'}`}><Car size={16} /> <span className="hidden md:inline">Card</span></button>
-          </div>
+          <ViewSwitcher viewMode={viewMode} setViewMode={setViewMode} />
+          <button 
+            onClick={handleExport}
+            className="flex items-center gap-2 h-11 px-4 bg-white dark:bg-gray-800 text-green-600 border border-green-100 dark:border-green-900/30 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-green-600 hover:text-white transition-all shadow-sm"
+          >
+            <FileSpreadsheet size={18} /> Export
+          </button>
           <button onClick={() => openModal()} className="btn-primary gap-2 h-11 px-6 text-xs font-black shadow-lg shadow-blue-500/20 uppercase tracking-widest"><Plus size={18} /> Add New</button>
         </div>
       </div>
@@ -457,9 +482,9 @@ const Vehicles = () => {
                     </div></td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => openModal(v, true)} className="p-2 hover:bg-purple-100 hover:text-purple-600 rounded-lg transition-colors" title="View Detail"><Eye size={16} /></button>
-                        <button onClick={() => openModal(v)} className="p-2 hover:bg-blue-100 hover:text-blue-600 rounded-lg transition-colors" title="Edit Unit"><Edit size={16} /></button>
-                        <button onClick={() => setConfirmDeleteId(v.id)} className="p-2 hover:bg-red-100 hover:text-red-500 rounded-lg transition-colors" title="Delete Unit"><Trash2 size={16} /></button>
+                        <button onClick={() => openModal(v, true)} className="btn-icon hover:bg-purple-100 hover:text-purple-600" title="View Detail"><Eye size={16} /></button>
+                        <button onClick={() => openModal(v)} className="btn-edit" title="Edit Unit"><Edit size={16} /></button>
+                        <button onClick={() => setConfirmDeleteId(v.id)} className="btn-delete" title="Delete Unit"><Trash2 size={16} /></button>
                       </div>
                     </td>
                   </tr>
@@ -538,67 +563,7 @@ const Vehicles = () => {
         </div>
       )}
 
-      {/* Pagination Controls */}
-      {!loading && totalItems > 0 && (
-        <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-6 py-4 gap-4 shadow-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Results:</span>
-            <span className="text-xs font-black text-blue-600">{totalItems} Units</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button 
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(1)}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${currentPage === 1 ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
-              title="First Page"
-            >
-              <ChevronsLeft size={16} />
-            </button>
-
-            <button 
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${currentPage === 1 ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
-              title="Previous Page"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            
-            <div className="flex items-center gap-2 px-3 h-10 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800">
-              <span className="text-[10px] text-gray-400 font-bold uppercase">Page</span>
-              <select 
-                value={currentPage}
-                onChange={(e) => setCurrentPage(Number(e.target.value))}
-                className="bg-transparent text-xs font-black text-blue-600 outline-none cursor-pointer"
-              >
-                {Array.from({ length: totalPages }, (_, i) => (
-                  <option key={i + 1} value={i + 1}>{i + 1}</option>
-                ))}
-              </select>
-              <span className="text-[10px] text-gray-400 font-bold uppercase">of {totalPages}</span>
-            </div>
-
-            <button 
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${currentPage === totalPages ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
-              title="Next Page"
-            >
-              <ChevronRight size={16} />
-            </button>
-
-            <button 
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(totalPages)}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${currentPage === totalPages ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
-              title="Last Page"
-            >
-              <ChevronsRight size={16} />
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination page={currentPage} totalPages={totalPages} setPage={setCurrentPage} />
 
       {/* MASTER VEHICLE FORM MODAL */}
       <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setIsViewOnly(false); }} title="Master Vehicle Overview" maxWidth="max-w-5xl">
@@ -644,7 +609,7 @@ const Vehicles = () => {
                       value={formData.office_id}
                       onChange={e => setFormData({ ...formData, office_id: e.target.value })}
                       options={[
-                        { value: '', label: '-- Pilih Cabang --' },
+                        { value: '', label: '-- Select Branch --' },
                         ...offices.map(o => ({ value: o.id, label: o.displayName }))
                       ]}
                       required
@@ -720,7 +685,7 @@ const Vehicles = () => {
               )}
             </div>
           </div>
-          {!isViewOnly && <div className="pt-6 border-t border-gray-100 text-right"><button type="submit" className="btn-primary px-8 py-3 bg-blue-600 border-none text-[10px] font-black uppercase tracking-widest shadow-xl">Simpan Perubahan Master</button></div>}
+          {!isViewOnly && <div className="pt-6 border-t border-gray-100 text-right"><button type="submit" className="btn-primary px-8 py-3 bg-blue-600 border-none text-[10px] font-black uppercase tracking-widest shadow-xl">Save Master Changes</button></div>}
         </form>
       </Modal>
 
@@ -749,7 +714,7 @@ const Vehicles = () => {
             label="Sales Agent (Optional)"
             value={bookingData.sales_agent_id}
             onChange={e => setBookingData({ ...bookingData, sales_agent_id: e.target.value })}
-            options={[{ value: '', label: '-- Pilih Sales (Opsional) --' }, ...salesAgents.map(a => ({ value: a.id, label: `${a.name} [${a.sales_code}] - ${a.Office?.name || 'Unknown'}` }))]}
+            options={[{ value: '', label: '-- Select Sales (Optional) --' }, ...salesAgents.map(a => ({ value: a.id, label: `${a.name} [${a.sales_code}] - ${a.Office?.name || 'Unknown'}` }))]}
           />
           <button type="submit" className="btn-primary w-full py-4 bg-orange-600 border-none uppercase text-xs font-black tracking-widest">SAVE RESERVATION</button>
         </form>

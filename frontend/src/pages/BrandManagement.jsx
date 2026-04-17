@@ -5,6 +5,8 @@ import Modal from '../components/Modal';
 import DynamicIsland from '../components/DynamicIsland';
 import Input from '../components/ui/Input';
 import { motion, AnimatePresence } from 'framer-motion';
+import ViewSwitcher from '../components/ui/ViewSwitcher';
+import Pagination from '../components/ui/Pagination';
 
 const BrandManagement = () => {
   const [brands, setBrands] = useState([]);
@@ -45,7 +47,7 @@ const BrandManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.for_car && !formData.for_motorcycle) {
-      return notify('error', 'Pilih minimal satu tipe');
+      return notify('error', 'Select at least one category');
     }
     notify('loading', editingBrand ? 'Updating...' : 'Adding...');
     try {
@@ -70,10 +72,7 @@ const BrandManagement = () => {
           <p className="text-sm text-gray-500">Manage master brand list</p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
-          <div className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
-             <button onClick={() => setViewMode('table')} className={`p-1.5 rounded-lg flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'table' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'}`}><FileSpreadsheet size={16} /> <span className="hidden md:inline">Grid</span></button>
-             <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-lg flex items-center gap-2 text-xs font-bold transition-all ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'}`}><Tags size={16} /> <span className="hidden md:inline">Card</span></button>
-          </div>
+          <ViewSwitcher viewMode={viewMode} setViewMode={setViewMode} />
           <button onClick={() => openModal()} className="btn-primary gap-2 h-11 px-4 text-sm"><Plus size={18} /> Add Brand</button>
         </div>
       </div>
@@ -107,8 +106,8 @@ const BrandManagement = () => {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
-                      <button onClick={() => openModal(b)} className="btn-icon hover:text-blue-600"><Edit size={16} /></button>
-                      <button onClick={() => setConfirmDeleteId(b.id)} className="btn-icon hover:text-red-500"><Trash2 size={16} /></button>
+                      <button onClick={() => openModal(b)} className="btn-edit"><Edit size={16} /></button>
+                      <button onClick={() => setConfirmDeleteId(b.id)} className="btn-delete"><Trash2 size={16} /></button>
                     </div>
                   </td>
                 </tr>
@@ -131,8 +130,8 @@ const BrandManagement = () => {
                     <div className="min-w-0"><h3 className="text-xs md:text-sm font-black text-gray-900 dark:text-white truncate">{b.name}</h3><p className="text-[10px] text-gray-400 capitalize">Master Brand</p></div>
                   </div>
                   <div className="flex gap-0.5" onClick={e => e.stopPropagation()}>
-                    <button onClick={() => openModal(b)} className="btn-icon p-1 text-gray-400 hover:text-blue-600"><Edit size={14} /></button>
-                    <button onClick={() => setConfirmDeleteId(b.id)} className="btn-icon p-1 text-gray-400 hover:text-red-500"><Trash2 size={14} /></button>
+                    <button onClick={() => openModal(b)} className="btn-edit p-1"><Edit size={14} /></button>
+                    <button onClick={() => setConfirmDeleteId(b.id)} className="btn-delete p-1"><Trash2 size={14} /></button>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -145,66 +144,7 @@ const BrandManagement = () => {
         </div>
       )}
 
-      {/* Pagination Controls */}
-      {!loading && brands.length > 0 && (
-        <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-6 py-4 gap-4 shadow-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Page:</span>
-            <span className="text-xs font-black text-blue-600">{page} / {totalPages}</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button 
-              disabled={page === 1}
-              onClick={() => setPage(1)}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${page === 1 ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
-              title="First Page"
-            >
-              <ChevronsLeft size={16} />
-            </button>
-
-            <button 
-              disabled={page === 1}
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${page === 1 ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
-              title="Previous Page"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            
-            <div className="flex items-center gap-2 px-3 h-10 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800">
-              <span className="text-[10px] text-gray-400 font-bold uppercase">Go to</span>
-              <select 
-                value={page}
-                onChange={(e) => setPage(Number(e.target.value))}
-                className="bg-transparent text-xs font-black text-blue-600 outline-none cursor-pointer"
-              >
-                {Array.from({ length: totalPages }, (_, i) => (
-                  <option key={i + 1} value={i + 1}>{i + 1}</option>
-                ))}
-              </select>
-            </div>
-
-            <button 
-              disabled={page === totalPages}
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${page === totalPages ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
-              title="Next Page"
-            >
-              <ChevronRight size={16} />
-            </button>
-
-            <button 
-              disabled={page === totalPages}
-              onClick={() => setPage(totalPages)}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${page === totalPages ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
-              title="Last Page"
-            >
-              <ChevronsRight size={16} />
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination page={page} totalPages={totalPages} setPage={setPage} />
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingBrand ? 'Edit Brand' : 'New Brand'}>
         <form onSubmit={handleSubmit} className="space-y-4">

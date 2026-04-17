@@ -60,7 +60,7 @@ const Reports = () => {
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
   const AGING_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
-  const formatCurrency = (val) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
+  const formatCurrency = (val) => new Intl.NumberFormat('en-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
 
   if (loading && !stats) return (
     <div className="flex items-center justify-center min-h-[400px]">
@@ -257,7 +257,7 @@ const Reports = () => {
                       {analytics?.inventoryAging?.slowMoving.map((v, i) => (
                         <tr key={i} className="group hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                           <td className="py-4 font-black text-[11px] uppercase text-gray-900 dark:text-white">{v.name}</td>
-                          <td className="py-4 text-[10px] font-bold text-gray-500">{new Date(v.entry_date).toLocaleDateString('id-ID')}</td>
+                          <td className="py-4 text-[10px] font-bold text-gray-500">{new Date(v.entry_date).toLocaleDateString('en-GB')}</td>
                           <td className="py-4">
                             <div className="flex items-center gap-2">
                               <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black ${v.days > 90 ? 'bg-red-100 text-red-600' : v.days > 60 ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}`}>{v.days} Days</span>
