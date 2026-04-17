@@ -43,6 +43,23 @@ exports.getDashboardStats = async (req, res) => {
     const totalRevenue = await Vehicle.sum('price', { where: { ...where, status: 'Sold' } }) || 0;
     const potentialRevenue = await Vehicle.sum('price', { where: { ...where, status: 'Available' } }) || 0;
 
+    // Calculate Net Margins
+    const soldVehiclesRaw = await Vehicle.findAll({
+      where: { ...where, status: 'Sold' },
+      attributes: ['price', 'purchase_price', 'service_cost']
+    });
+    const totalNetMargin = soldVehiclesRaw.reduce((sum, v) => {
+      return sum + (Number(v.price) - (Number(v.purchase_price) + Number(v.service_cost)));
+    }, 0);
+
+    const availableVehiclesRaw = await Vehicle.findAll({
+      where: { ...where, status: 'Available' },
+      attributes: ['price', 'purchase_price', 'service_cost']
+    });
+    const potentialNetMargin = availableVehiclesRaw.reduce((sum, v) => {
+      return sum + (Number(v.price) - (Number(v.purchase_price) + Number(v.service_cost)));
+    }, 0);
+
     // 2. Incoming Goods Chart (by month - last 6 months)
     const incomingData = await Vehicle.findAll({
       where,
@@ -133,7 +150,9 @@ exports.getDashboardStats = async (req, res) => {
         totalSold,
         totalPending,
         totalRevenue: Number(totalRevenue),
-        potentialRevenue: Number(potentialRevenue)
+        potentialRevenue: Number(potentialRevenue),
+        totalNetMargin: Number(totalNetMargin),
+        potentialNetMargin: Number(potentialNetMargin)
       },
       charts: {
         incoming: incomingData,

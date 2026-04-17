@@ -124,10 +124,24 @@ const Reports = () => {
           >
             {/* Stats Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-              <StatCard title="Total Revenue" value={formatCurrency(stats?.summary?.totalRevenue)} subValue="+12% VS LAST MONTH" icon={DollarSign} color="blue" />
+              <StatCard 
+                title="Total Revenue" 
+                value={formatCurrency(stats?.summary?.totalRevenue)} 
+                extraValue={`Net: ${formatCurrency(stats?.summary?.totalNetMargin)}`}
+                subValue="+12% VS LAST MONTH" 
+                icon={DollarSign} 
+                color="blue" 
+              />
               <StatCard title="Units Sold" value={stats?.summary?.totalSold} subValue="TOTAL CLOSED DEALS" icon={ShoppingCart} color="green" />
               <StatCard title="Current Stock" value={stats?.summary?.totalAvailable} subValue="READY TO SELL" icon={Package} color="amber" />
-              <StatCard title="Potential Value" value={formatCurrency(stats?.summary?.potentialRevenue)} subValue="UNSOLD INVENTORY" icon={TrendingUp} color="purple" />
+              <StatCard 
+                title="Potential Value" 
+                value={formatCurrency(stats?.summary?.potentialRevenue)} 
+                extraValue={`Net: ${formatCurrency(stats?.summary?.potentialNetMargin)}`}
+                subValue="UNSOLD INVENTORY" 
+                icon={TrendingUp} 
+                color="purple" 
+              />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -343,7 +357,7 @@ const Reports = () => {
   );
 };
 
-const StatCard = ({ title, value, subValue, icon: Icon, color }) => {
+const StatCard = ({ title, value, extraValue, subValue, icon: Icon, color }) => {
   const colorClasses = {
     blue: 'bg-blue-50 text-blue-600 dark:bg-blue-900/20',
     green: 'bg-green-50 text-green-600 dark:bg-green-900/20',
@@ -360,6 +374,7 @@ const StatCard = ({ title, value, subValue, icon: Icon, color }) => {
       <div>
         <p className="text-[10px] md:text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-widest font-black">{title}</p>
         <h4 className="text-sm md:text-xl font-bold text-gray-900 dark:text-white mt-0.5 md:mt-1 truncate">{value}</h4>
+        {extraValue && <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-tighter mt-0.5">{extraValue}</p>}
         <p className="text-[8px] md:text-[10px] font-black text-green-500 mt-1.5 md:mt-2 flex items-center gap-1 uppercase tracking-tighter"><TrendingUp size={10} /> {subValue}</p>
       </div>
     </motion.div>
