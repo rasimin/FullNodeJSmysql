@@ -250,3 +250,113 @@ exports.getAgentSalesDetails = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+exports.getAdvancedAnalytics = async (req, res) => {
+  try {
+    const { officeId } = req.query;
+    const user = req.user;
+    
+    // Permission & Office Scope (Same logic as dashboard)
+    const isSuperAdmin = user.Role?.name === 'Super Admin';
+    let officeIds = [];
+    if (isSuperAdmin) {
+      if (officeId) officeIds = [officeId];
+      else {
+        const all = await Office.findAll({ attributes: ['id'] });
+        officeIds = all.map(o => o.id);
+      }
+    } else {
+      const currentOffice = await Office.findByPk(user.office_id);
+      if (currentOffice && !currentOffice.parent_id) {
+        const mapping = await Office.findAll({
+          where: { [Op.or]: [{ id: user.office_id }, { parent_id: user.office_id }] },
+          attributes: ['id']
+        });
+        officeIds = mapping.map(o => o.id);
+      } else {
+        officeIds = [user.office_id];
+      }
+    }
+
+    const baseWhere = { office_id: { [Op.in]: officeIds } };
+
+    // 1. Inventory Aging (For Available Units)
+    const availableVehicles = await Vehicle.findAll({
+      where: { ...baseWhere, status: 'Available' },
+      attributes: ['id', 'brand', 'model', 'entry_date', 'price']
+    });
+
+    const now = new Date();
+    const agingData = {
+      '0-30 Days': 0,
+      '31-60 Days': 0,
+      '61-90 Days': 0,
+      'Over 90 Days': 0
+    };
+
+    const slowMoving = availableVehicles.map(v => {
+      const entryDate = new Date(v.entry_date);
+      const diffTime = Math.abs(now - entryDate);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays <= 30) agingData['0-30 Days']++;
+      else if (diffDays <= 60) agingData['31-60 Days']++;
+      else if (diffDays <= 90) agingData['61-90 Days']++;
+      else agingData['Over 90 Days']++;
+
+      return {
+        id: v.id,
+        name: `${v.brand} ${v.model}`,
+        days: diffDays,
+        price: v.price,
+        entry_date: v.entry_date
+      };
+    }).sort((a, b) => b.days - a.days).slice(0, 10); // Top 10 oldest
+
+    // 2. Profit Analysis (For Sold Units)
+    const soldVehicles = await Vehicle.findAll({
+      where: { ...baseWhere, status: 'Sold' },
+      attributes: ['brand', 'price', 'purchase_price', 'service_cost', 'office_id'],
+      include: [{ model: Office, attributes: ['name'] }]
+    });
+
+    // Profit by Brand
+    const profitByBrand = {};
+    const profitByOffice = {};
+    let totalGrossProfit = 0;
+
+    soldVehicles.forEach(v => {
+      const margin = Number(v.price) - (Number(v.purchase_price) + Number(v.service_cost));
+      totalGrossProfit += margin;
+
+      // Group by Brand
+      if (!profitByBrand[v.brand]) profitByBrand[v.brand] = { revenue: 0, margin: 0, count: 0 };
+      profitByBrand[v.brand].revenue += Number(v.price);
+      profitByBrand[v.brand].margin += margin;
+      profitByBrand[v.brand].count++;
+
+      // Group by Office
+      const officeName = v.Office?.name || 'Unknown';
+      if (!profitByOffice[officeName]) profitByOffice[officeName] = { revenue: 0, margin: 0, count: 0 };
+      profitByOffice[officeName].revenue += Number(v.price);
+      profitByOffice[officeName].margin += margin;
+      profitByOffice[officeName].count++;
+    });
+
+    res.json({
+      inventoryAging: {
+        summary: agingData,
+        slowMoving
+      },
+      profitability: {
+        totalGrossProfit,
+        byBrand: Object.keys(profitByBrand).map(key => ({ brand: key, ...profitByBrand[key] })),
+        byOffice: Object.keys(profitByOffice).map(key => ({ office: key, ...profitByOffice[key] }))
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
