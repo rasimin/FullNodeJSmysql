@@ -59,7 +59,6 @@ const DashboardLayout = () => {
           { to: '/', icon: BarChart2, label: 'Reports & Analytics' },
           { to: '/analysis-report', icon: Activity, label: 'Business Analysis' },
           { to: '/sales-report', icon: BarChart3, label: 'Sales Performance' },
-          { to: '/analysis-report', icon: Zap, label: 'Business Analysis' },
         ]
       },
       {
