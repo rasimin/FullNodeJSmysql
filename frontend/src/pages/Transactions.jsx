@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import {
   Search, FileSpreadsheet, Printer, Eye, Calendar, User,
@@ -15,6 +16,7 @@ import Modal from '../components/Modal';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Transactions = () => {
+  const navigate = useNavigate();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -267,7 +269,7 @@ const Transactions = () => {
                     <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Office / Sales</th>
                     <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Pricing</th>
                     <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right whitespace-nowrap">Operations</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right whitespace-nowrap">Print Out</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -315,7 +317,12 @@ const Transactions = () => {
                         </td>
                         <td className="px-6 py-4">
                           <p className="text-xs font-bold text-gray-900 dark:text-white">{t.Vehicle?.brand} {t.Vehicle?.model}</p>
-                          <p className="text-[10px] text-blue-600 font-black uppercase">{t.Vehicle?.plate_number}</p>
+                          <button 
+                            onClick={() => navigate('/vehicles', { state: { searchPlate: t.Vehicle?.plate_number } })}
+                            className="text-[10px] text-blue-600 font-black uppercase hover:underline cursor-pointer text-left block"
+                          >
+                            {t.Vehicle?.plate_number}
+                          </button>
                         </td>
                         <td className="px-6 py-4">
                           <div className="space-y-1">
@@ -405,7 +412,12 @@ const Transactions = () => {
                             <p className="text-[10px] font-black text-gray-400 uppercase leading-none mb-1">Unit Detail</p>
                             <p className="text-xs font-bold text-gray-900 dark:text-white uppercase">{t.Vehicle?.brand} {t.Vehicle?.model}</p>
                           </div>
-                          <span className="px-2 py-0.5 bg-blue-600 text-[10px] font-black text-white rounded-md uppercase tracking-tight">{t.Vehicle?.plate_number}</span>
+                          <button 
+                            onClick={() => navigate('/vehicles', { state: { searchPlate: t.Vehicle?.plate_number } })}
+                            className="px-2 py-0.5 bg-blue-600 text-[10px] font-black text-white rounded-md uppercase tracking-tight hover:bg-blue-700 transition-colors cursor-pointer"
+                          >
+                            {t.Vehicle?.plate_number}
+                          </button>
                         </div>
                         <div className="flex justify-between items-end pt-2 border-t border-gray-200/50 dark:border-gray-700/50">
                           <div>

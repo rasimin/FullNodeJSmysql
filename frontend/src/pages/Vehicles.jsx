@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import api from '../services/api';
 import {
   Search, Plus, Car, Tag, MapPin,
@@ -20,6 +21,7 @@ import { IMAGE_BASE_URL } from '../config';
 import Pagination from '../components/ui/Pagination';
 
 const Vehicles = () => {
+  const location = useLocation();
   const [vehicles, setVehicles] = useState([]);
   const [brands, setBrands] = useState([]);
   const [modelHistory, setModelHistory] = useState([]);
@@ -139,10 +141,10 @@ const Vehicles = () => {
     } catch (e) { console.error(e); }
   };
 
-  const fetchVehicles = async (page = currentPage) => {
+  const fetchVehicles = async (page = currentPage, currentSearch = search) => {
     setLoading(true);
     try {
-      const params = { page, size: 8, search, officeId: selectedBranch, status: filterStatus };
+      const params = { page, size: 8, search: currentSearch, officeId: selectedBranch, status: filterStatus };
       const [vRes, sRes] = await Promise.all([
         api.get('/vehicles', { params }),
         api.get('/vehicles/summary', { params: { officeId: selectedBranch } })
@@ -157,7 +159,17 @@ const Vehicles = () => {
   };
 
   useEffect(() => { fetchMetadata(); }, []);
-  useEffect(() => { fetchVehicles(currentPage); }, [currentPage, search, selectedBranch, filterStatus]);
+  
+  useEffect(() => {
+    if (location.state?.searchPlate) {
+      const plate = location.state.searchPlate;
+      setSearch(plate);
+      fetchVehicles(1, plate);
+      window.history.replaceState({}, document.title);
+    } else {
+      fetchVehicles(currentPage, search);
+    }
+  }, [currentPage, search, selectedBranch, filterStatus, location.state]);
 
   const handleSearch = (e) => { setSearch(e.target.value); setCurrentPage(1); };
   const formatPrice = (p) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(p);
