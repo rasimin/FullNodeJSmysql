@@ -133,34 +133,30 @@ const Reports = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="card p-6">
                 <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2"><Activity size={16} className="text-blue-500" /> Sales Trend (Last 6 Months)</h3>
-                <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={stats?.charts?.sales}>
+                <div className="flex justify-center w-full overflow-hidden">
+                    <AreaChart width={500} height={300} data={stats?.charts?.sales}>
                       <defs>
                         <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/><stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/></linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
                       <XAxis dataKey="month" stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
                       <YAxis stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} tickFormatter={(v) => `Rp${(v/1000000).toFixed(0)}jt`} />
-                      <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }} />
+                      <Tooltip contentStyle={{ backgroundColor: '#1e293b', color: '#f8fafc', borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.5)' }} itemStyle={{ color: '#f8fafc' }} />
                       <Area type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" isAnimationActive={false} />
                     </AreaChart>
-                  </ResponsiveContainer>
                 </div>
               </div>
 
               <div className="card p-6">
                 <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2"><BarChart2 size={16} className="text-green-500" /> Units Movement</h3>
-                <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={stats?.charts?.sales}>
+                <div className="flex justify-center w-full overflow-hidden">
+                    <BarChart width={500} height={300} data={stats?.charts?.sales}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
                       <XAxis dataKey="month" stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
                       <YAxis stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
-                      <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }} />
+                      <Tooltip cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }} contentStyle={{ backgroundColor: '#1e293b', color: '#f8fafc', borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.5)' }} itemStyle={{ color: '#f8fafc' }} />
                       <Bar dataKey="count" fill="#10b981" radius={[6, 6, 0, 0]} barSize={40} isAnimationActive={false} />
                     </BarChart>
-                  </ResponsiveContainer>
                 </div>
               </div>
             </div>
@@ -168,15 +164,13 @@ const Reports = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="card p-6">
                 <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2"><PieIcon size={16} className="text-amber-500" /> Category Distribution</h3>
-                <div className="h-[250px] relative">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={stats?.charts?.distribution} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={8} dataKey="count">
+                <div className="h-[250px] flex justify-center items-center relative">
+                    <PieChart width={250} height={250}>
+                      <Pie data={stats?.charts?.distribution} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={8} dataKey="count" isAnimationActive={false}>
                         {stats?.charts?.distribution.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                       </Pie>
                       <Tooltip />
                     </PieChart>
-                  </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                     <span className="text-2xl font-black">{stats?.summary?.totalInventory}</span>
                     <span className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">Total Stock</span>
@@ -214,17 +208,15 @@ const Reports = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="card p-6">
                 <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2"><Clock size={16} className="text-red-500" /> Stock Duration Summary</h3>
-                <div className="h-[300px] w-full mt-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={Object.entries(analytics?.inventoryAging?.summary || {}).map(([label, count]) => ({ label, count }))} layout="vertical">
+                <div className="flex justify-center w-full mt-4">
+                    <BarChart width={300} height={300} data={Object.entries(analytics?.inventoryAging?.summary || {}).map(([label, count]) => ({ label, count }))} layout="vertical">
                       <XAxis type="number" hide />
                       <YAxis dataKey="label" type="category" stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} width={80} />
-                      <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '16px', border: 'none' }} />
+                      <Tooltip cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }} contentStyle={{ backgroundColor: '#1e293b', color: '#f8fafc', borderRadius: '16px', border: 'none' }} itemStyle={{ color: '#f8fafc' }} />
                       <Bar dataKey="count" radius={[0, 6, 6, 0]} barSize={24} isAnimationActive={false}>
                         {Object.keys(analytics?.inventoryAging?.summary || {}).map((_, i) => <Cell key={i} fill={AGING_COLORS[i % AGING_COLORS.length]} />)}
                       </Bar>
                     </BarChart>
-                  </ResponsiveContainer>
                 </div>
                 <div className="mt-6 p-4 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/20 flex gap-3">
                   <AlertCircle className="text-red-500 shrink-0" size={18} />
@@ -287,18 +279,16 @@ const Reports = () => {
 
               <div className="lg:col-span-3 card p-6">
                 <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2"><Target size={16} className="text-green-500" /> Profitability by Brand</h3>
-                <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={analytics?.profitability?.byBrand}>
+                <div className="flex justify-center w-full mt-4">
+                    <BarChart width={700} height={300} data={analytics?.profitability?.byBrand}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
                       <XAxis dataKey="brand" stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
                       <YAxis stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} tickFormatter={(v) => `Rp${(v/1000000).toFixed(0)}jt`} />
-                      <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '16px', border: 'none' }} />
+                      <Tooltip cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }} contentStyle={{ backgroundColor: '#1e293b', color: '#f8fafc', borderRadius: '16px', border: 'none' }} itemStyle={{ color: '#f8fafc' }} />
                       <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
                       <Bar name="Revenue" dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={30} isAnimationActive={false} />
                       <Bar name="Net Margin" dataKey="margin" fill="#10b981" radius={[4, 4, 0, 0]} barSize={30} isAnimationActive={false} />
                     </BarChart>
-                  </ResponsiveContainer>
                 </div>
               </div>
             </div>
@@ -306,9 +296,8 @@ const Reports = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="card p-6">
                 <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2"><ShieldCheck size={16} className="text-indigo-500" /> Branch Contribution (Margin)</h3>
-                <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
+                <div className="h-[300px] flex justify-center items-center w-full">
+                    <PieChart width={300} height={300}>
                       <Pie 
                         data={analytics?.profitability?.byOffice} 
                         cx="50%" 
@@ -322,9 +311,8 @@ const Reports = () => {
                       >
                         {analytics?.profitability?.byOffice.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip contentStyle={{ backgroundColor: '#1e293b', color: '#f8fafc', borderRadius: '16px', border: 'none' }} itemStyle={{ color: '#f8fafc' }} />
                     </PieChart>
-                  </ResponsiveContainer>
                 </div>
                 <div className="mt-4 flex flex-wrap justify-center gap-4">
                   {analytics?.profitability?.byOffice.map((entry, i) => (
