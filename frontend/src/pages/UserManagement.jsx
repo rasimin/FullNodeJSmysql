@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { Search, Plus, FileSpreadsheet, Trash2, Edit, User, Mail, Lock, Shield, Building2, Monitor, LogOut, XCircle, Smartphone, Clock } from 'lucide-react';
+import { Search, Plus, FileSpreadsheet, Trash2, Edit, User, Mail, Lock, Shield, Building2, Monitor, LogOut, XCircle, Smartphone, Clock, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import Modal from '../components/Modal';
 import DynamicIsland from '../components/DynamicIsland';
 import Input from '../components/ui/Input';
@@ -226,7 +226,7 @@ const UserManagement = () => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ duration: 0.2, delay: i * 0.03 }}
-                        className="table-row group"
+                        className="hover:bg-blue-100/40 dark:hover:bg-blue-900/20 transition-colors group"
                       >
                         <td className="px-5 py-3.5 font-bold text-gray-900 dark:text-white">{u.name}</td>
                         <td className="px-5 py-3.5 text-blue-600 dark:text-blue-400 font-mono text-xs">{u.username}</td>
@@ -261,7 +261,7 @@ const UserManagement = () => {
             ) : (
               users.map((u) => (
                 <motion.div layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={u.id}
-                  className="card p-3 md:p-4 flex flex-col justify-between gap-3"
+                  className="card p-3 md:p-4 flex flex-col justify-between gap-3 group hover:bg-blue-50/50 hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-400/50 dark:hover:bg-blue-900/20 dark:hover:border-blue-800/50 transition-all duration-500 hover:-translate-y-1.5"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2 min-w-0">
@@ -296,12 +296,64 @@ const UserManagement = () => {
         </div>
       )}
 
-      {/* Pagination Fix - Placed outside the view condition */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-2">
-          <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="btn text-[10px] py-1 px-3 disabled:opacity-40">Prev</button>
-          <span className="text-[10px] text-gray-500">Page {page} / {totalPages}</span>
-          <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)} className="btn text-[10px] py-1 px-3 disabled:opacity-40">Next</button>
+      {/* Pagination Controls */}
+      {!loading && users.length > 0 && (
+        <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-6 py-4 gap-4 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Page:</span>
+            <span className="text-xs font-black text-blue-600">{page} / {totalPages}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button 
+              disabled={page === 1}
+              onClick={() => setPage(1)}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${page === 1 ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
+              title="First Page"
+            >
+              <ChevronsLeft size={16} />
+            </button>
+
+            <button 
+              disabled={page === 1}
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${page === 1 ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
+              title="Previous Page"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            
+            <div className="flex items-center gap-2 px-3 h-10 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800">
+              <span className="text-[10px] text-gray-400 font-bold uppercase">Go to</span>
+              <select 
+                value={page}
+                onChange={(e) => setPage(Number(e.target.value))}
+                className="bg-transparent text-xs font-black text-blue-600 outline-none cursor-pointer"
+              >
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <option key={i + 1} value={i + 1}>{i + 1}</option>
+                ))}
+              </select>
+            </div>
+
+            <button 
+              disabled={page === totalPages}
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${page === totalPages ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
+              title="Next Page"
+            >
+              <ChevronRight size={16} />
+            </button>
+
+            <button 
+              disabled={page === totalPages}
+              onClick={() => setPage(totalPages)}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${page === totalPages ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
+              title="Last Page"
+            >
+              <ChevronsRight size={16} />
+            </button>
+          </div>
         </div>
       )}
 

@@ -420,7 +420,7 @@ const Vehicles = () => {
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {vehicles.map((v, i) => (
-                  <tr key={v.id} className="hover:bg-blue-50/20 transition-colors group">
+                  <tr key={v.id} className="hover:bg-blue-100/40 dark:hover:bg-blue-900/20 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden ${v.type === 'Mobil' ? 'bg-indigo-50 text-indigo-600' : 'bg-orange-50 text-orange-600'}`}>
@@ -443,14 +443,14 @@ const Vehicles = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase">{v.Office?.name || '-'}</td>
-                    <td className="px-6 py-4 font-black text-blue-600">{formatPrice(v.price)}</td>
+                    <td className="px-6 py-4 font-black text-blue-600 dark:text-gray-200">{formatPrice(v.price)}</td>
                     <td className="px-6 py-4"><span className={`badge ${v.status === 'Available' ? 'badge-green' : v.status === 'Sold' ? 'badge-red' : 'badge-yellow'}`}>{v.status}</span></td>
                     <td className="px-6 py-4"><div className="flex justify-center gap-2">
-                      {v.status === 'Available' && <button onClick={() => openBookingModal(v)} className="flex items-center gap-1.5 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-black uppercase rounded-xl shadow-lg shadow-orange-500/20 transition-all active:scale-95 cursor-pointer"><Bookmark size={12} /> Book Now</button>}
+                      {v.status === 'Available' && <button onClick={() => openBookingModal(v)} className="flex items-center gap-1.5 px-4 py-2 bg-orange-600 hover:bg-orange-700 dark:bg-orange-800 dark:hover:bg-orange-700 text-white text-[10px] font-black uppercase rounded-xl shadow-md shadow-orange-500/10 transition-all active:scale-95 cursor-pointer"><Bookmark size={12} /> Book Now</button>}
                       {v.status === 'Booked' && (
                         <div className="flex gap-1">
-                          <button onClick={() => preConfirmAction(v, 'sold')} className="flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-[10px] font-black uppercase rounded-xl shadow-lg shadow-green-500/20 transition-all active:scale-95 cursor-pointer"><CheckCircle size={12} /> Close Deal</button>
-                          <button onClick={() => preConfirmAction(v, 'cancel')} className="flex items-center gap-1.5 px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 text-[10px] font-black uppercase rounded-xl hover:bg-red-600 hover:text-white transition-all active:scale-95 cursor-pointer" title="Cancel Booking">Cancel</button>
+                          <button onClick={() => preConfirmAction(v, 'sold')} className="flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 dark:bg-emerald-800 dark:hover:bg-emerald-700 text-white text-[10px] font-black uppercase rounded-xl shadow-md shadow-green-500/10 transition-all active:scale-95 cursor-pointer"><CheckCircle size={12} /> Close Deal</button>
+                          <button onClick={() => preConfirmAction(v, 'cancel')} className="flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-800 dark:hover:bg-red-700 text-white text-[10px] font-black uppercase rounded-xl shadow-md shadow-red-500/10 transition-all active:scale-95 cursor-pointer" title="Cancel Booking">Cancel</button>
                         </div>
                       )}
                       {v.status === 'Sold' && <div className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-400 text-[10px] font-black uppercase rounded-xl">Completed</div>}
@@ -473,7 +473,7 @@ const Vehicles = () => {
           {vehicles.map((v) => {
             const displayImage = v.images?.find(img => img.is_primary)?.image_url || v.images?.[0]?.image_url;
             return (
-              <div key={v.id} onClick={() => openModal(v, true)} className="card relative group pt-1.5 px-3 pb-3 hover:border-blue-300 dark:hover:border-blue-900 transition-all cursor-pointer overflow-hidden">
+              <div key={v.id} onClick={() => openModal(v, true)} className="card relative group pt-1.5 px-3 pb-3 hover:bg-blue-50/50 hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-400/50 dark:hover:bg-blue-900/20 dark:hover:border-blue-800/50 transition-all duration-500 hover:-translate-y-1.5 cursor-pointer overflow-hidden">
                 <div className="flex justify-between items-center mb-1.5" onClick={e => e.stopPropagation()}>
                   <span className={`text-[8px] md:text-[9px] font-black px-2 py-1 rounded uppercase tracking-tighter ${v.status === 'Available' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : v.status === 'Sold' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'}`}>{v.status}</span>
                   <div className="relative">

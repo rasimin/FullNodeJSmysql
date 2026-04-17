@@ -385,8 +385,30 @@ const setPrimaryImage = async (req, res) => {
 
 const getBrands = async (req, res) => {
   try {
-    const brands = await VehicleBrand.findAll({ order: [['name', 'ASC']] });
-    res.json(brands);
+    const { page, size, search } = req.query;
+    const { limit, offset } = getPagination(page, size);
+
+    const condition = {};
+    if (search) {
+      condition.name = { [Op.like]: `%${search}%` };
+    }
+
+    // If no page and no search, return simple list for dropdowns
+    if (!page && !search) {
+      const allBrands = await VehicleBrand.findAll({
+        order: [['name', 'ASC']]
+      });
+      return res.json(allBrands);
+    }
+
+    const { count, rows } = await VehicleBrand.findAndCountAll({
+      where: condition,
+      limit,
+      offset,
+      order: [['name', 'ASC']]
+    });
+
+    res.json(getPagingData({ count, rows }, page, limit));
   } catch (error) {
     console.error('getBrands Error:', error);
     res.status(500).json({ message: error.message });

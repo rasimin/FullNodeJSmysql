@@ -248,10 +248,10 @@ const OfficeManagement = () => {
                            </div>
                         </td>
                         <td className="px-6 py-4 text-right">
-                           <div className="flex justify-end gap-2 text-gray-400">
-                             <button onClick={() => openModal(o)} className="hover:text-blue-600 transition-colors"><Edit size={16} /></button>
-                             <button onClick={() => setConfirmDeleteId(o.id)} className="hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
-                           </div>
+                            <div className="flex justify-end gap-2">
+                              <button onClick={() => openModal(o)} className="btn-icon p-1.5 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"><Edit size={16} /></button>
+                              <button onClick={() => setConfirmDeleteId(o.id)} className="btn-icon p-1.5 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                            </div>
                         </td>
                      </tr>
                    ))}
@@ -266,9 +266,9 @@ const OfficeManagement = () => {
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden shrink-0 ${o.isParent ? 'bg-purple-50 text-purple-500' : 'bg-blue-50 text-blue-500'}`}>
                         {o.logo ? <img src={`${IMAGE_BASE_URL}${o.logo}`} className="w-full h-full object-cover" alt="" /> : <Building2 size={16} />}
                       </div>
-                      <div className="flex gap-1">
-                        <button onClick={() => openModal(o)} className="text-gray-400"><Edit size={14} /></button>
-                        <button onClick={() => setConfirmDeleteId(o.id)} className="text-gray-400"><Trash2 size={14} /></button>
+                       <div className="flex gap-1">
+                        <button onClick={() => openModal(o)} className="btn-icon p-1.5 text-gray-400 hover:text-blue-500 transition-colors"><Edit size={14} /></button>
+                        <button onClick={() => setConfirmDeleteId(o.id)} className="btn-icon p-1.5 text-gray-400 hover:text-red-500 transition-colors"><Trash2 size={14} /></button>
                       </div>
                    </div>
                    <h4 className="text-[10px] font-black text-gray-800 dark:text-gray-100 uppercase leading-tight line-clamp-2">{o.name}</h4>
@@ -292,7 +292,10 @@ const OfficeManagement = () => {
                    <div className="card-interactive p-5 border-l-4 border-purple-600 bg-white dark:bg-gray-900 shadow-xl shadow-purple-900/5">
                       <div className="flex justify-between items-start mb-4 text-gray-400">
                         {ho.logo ? <div className="w-12 h-12 rounded-2xl overflow-hidden border border-gray-100 dark:border-white/5 shadow-sm bg-white dark:bg-gray-800"><img src={`${IMAGE_BASE_URL}${ho.logo}`} className="w-full h-full object-cover" /></div> : <Building2 size={24} className="text-purple-600" />}
-                        <div className="flex gap-2"><Edit size={14} onClick={() => openModal(ho)} /><Trash2 size={14} onClick={() => setConfirmDeleteId(ho.id)} /></div>
+                        <div className="flex gap-2">
+                          <button onClick={() => openModal(ho)} className="btn-icon p-1.5 text-gray-400 hover:text-blue-500 transition-colors"><Edit size={14} /></button>
+                          <button onClick={() => setConfirmDeleteId(ho.id)} className="btn-icon p-1.5 text-gray-400 hover:text-red-500 transition-colors"><Trash2 size={14} /></button>
+                        </div>
                       </div>
                       <h3 className="text-base font-black text-gray-900 dark:text-white uppercase leading-tight">{ho.name}</h3>
                       <div className="flex flex-wrap gap-3 items-center mt-2">
@@ -319,7 +322,10 @@ const OfficeManagement = () => {
                                 <div className="w-10 h-10 bg-blue-50 dark:bg-white/5 rounded-xl overflow-hidden flex items-center justify-center text-blue-500">
                                   {br.logo ? <img src={`${IMAGE_BASE_URL}${br.logo}`} className="w-full h-full object-cover" /> : <Building2 size={14} />}
                                 </div>
-                                <div className="flex gap-1 text-gray-300 group-hover:text-gray-500 transition-colors"><Edit size={12} onClick={() => openModal(br)} /><Trash2 size={12} onClick={() => setConfirmDeleteId(br.id)} /></div>
+                                 <div className="flex gap-1 text-gray-300 group-hover:text-gray-500 transition-colors">
+                                  <button onClick={() => openModal(br)} className="btn-icon p-1.5 hover:text-blue-500 transition-colors"><Edit size={12} /></button>
+                                  <button onClick={() => setConfirmDeleteId(br.id)} className="btn-icon p-1.5 hover:text-red-500 transition-colors"><Trash2 size={12} /></button>
+                                </div>
                               </div>
                              <h4 className="text-[10px] font-black text-gray-800 dark:text-gray-100 uppercase line-clamp-2 leading-tight">{br.name}</h4>
                              <div className="mt-2 space-y-1">

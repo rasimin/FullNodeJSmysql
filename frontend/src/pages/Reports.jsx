@@ -366,16 +366,27 @@ const StatCard = ({ title, value, extraValue, subValue, icon: Icon, color }) => 
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card p-3 md:p-5">
-      <div className="flex justify-between items-start mb-2 md:mb-4">
-        <div className={`p-2 md:p-3 rounded-xl md:rounded-2xl ${colorClasses[color]}`}><Icon size={18} className="md:size-6" /></div>
-        <button className="text-gray-400 hover:text-gray-600 hidden md:block"><ChevronRight size={18} /></button>
-      </div>
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card p-4 md:p-6 flex flex-col justify-between h-full">
       <div>
-        <p className="text-[10px] md:text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-widest font-black">{title}</p>
-        <h4 className="text-sm md:text-xl font-bold text-gray-900 dark:text-white mt-0.5 md:mt-1 truncate">{value}</h4>
-        {extraValue && <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-tighter mt-0.5">{extraValue}</p>}
-        <p className="text-[8px] md:text-[10px] font-black text-green-500 mt-1.5 md:mt-2 flex items-center gap-1 uppercase tracking-tighter"><TrendingUp size={10} /> {subValue}</p>
+        <div className="flex justify-between items-start mb-4">
+          <div className={`p-2 md:p-3 rounded-xl md:rounded-2xl ${colorClasses[color]}`}><Icon size={18} className="md:size-6" /></div>
+          <button className="text-gray-400 hover:text-gray-600 hidden md:block"><ChevronRight size={18} /></button>
+        </div>
+        <div>
+          <p className="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest mb-1">{title}</p>
+          <h4 className="text-base md:text-xl font-black text-gray-900 dark:text-white truncate">{value}</h4>
+        </div>
+      </div>
+
+      {extraValue && (
+        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Net Margin</p>
+          <p className="text-sm md:text-lg font-black text-indigo-600 dark:text-indigo-400 truncate">{extraValue.replace('Net: ', '')}</p>
+        </div>
+      )}
+
+      <div className="mt-4">
+        <p className="text-[8px] md:text-[10px] font-black text-green-500 flex items-center gap-1 uppercase tracking-tighter"><TrendingUp size={10} /> {subValue}</p>
       </div>
     </motion.div>
   );

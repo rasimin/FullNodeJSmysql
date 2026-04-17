@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { Search, Plus, Tags, Trash2, Edit, Car, FileSpreadsheet, Smartphone } from 'lucide-react';
+import { Search, Plus, Tags, Trash2, Edit, Car, FileSpreadsheet, Smartphone, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import Modal from '../components/Modal';
 import DynamicIsland from '../components/DynamicIsland';
 import Input from '../components/ui/Input';
@@ -9,6 +9,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 const BrandManagement = () => {
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState(null);
   const [formData, setFormData] = useState({ name: '', for_car: false, for_motorcycle: true });
@@ -25,13 +27,14 @@ const BrandManagement = () => {
   const fetchBrands = async () => {
     setLoading(true);
     try {
-      const r = await api.get('/vehicles/brands');
-      setBrands(r.data);
+      const r = await api.get(`/vehicles/brands?page=${page}&search=${search}`);
+      setBrands(r.data.items || []);
+      setTotalPages(r.data.total_pages || 1);
     } catch { notify('error', 'Failed to fetch brands'); }
     setLoading(false);
   };
 
-  useEffect(() => { fetchBrands(); }, []);
+  useEffect(() => { fetchBrands(); }, [page, search]);
 
   const openModal = (brand = null) => {
     setEditingBrand(brand);
@@ -57,8 +60,6 @@ const BrandManagement = () => {
     catch { notify('error', 'Error'); }
   };
 
-  const filteredBrands = brands.filter(b => b.name.toLowerCase().includes(search.toLowerCase()));
-
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <DynamicIsland status={confirmDeleteId ? 'confirm' : notification.status} message={confirmDeleteId ? 'Delete brand?' : notification.message} onConfirm={handleDelete} onCancel={() => setConfirmDeleteId(null)} />
@@ -79,7 +80,7 @@ const BrandManagement = () => {
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-        <input type="text" className="input pl-10 h-11" placeholder="Search brands..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        <input type="text" className="input pl-10 h-11" placeholder="Search brands..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
       </div>
 
       {viewMode === 'table' ? (
@@ -94,9 +95,9 @@ const BrandManagement = () => {
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {loading ? <tr><td colSpan={3} className="px-6 py-12 text-center text-gray-400 italic animate-pulse">Loading brands...</td></tr> : 
-               filteredBrands.length === 0 ? <tr><td colSpan={3} className="px-6 py-12 text-center text-gray-400 italic">No brands found</td></tr> :
-               filteredBrands.map(b => (
-                <tr key={b.id} className="hover:bg-gray-50/50 transition-colors">
+               brands.length === 0 ? <tr><td colSpan={3} className="px-6 py-12 text-center text-gray-400 italic">No brands found</td></tr> :
+               brands.map(b => (
+                <tr key={b.id} className="hover:bg-blue-100/40 dark:hover:bg-blue-900/20 transition-colors">
                   <td className="px-6 py-4 font-bold">{b.name}</td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
@@ -119,12 +120,14 @@ const BrandManagement = () => {
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
           <AnimatePresence mode="popLayout">
             {loading ? [...Array(6)].map((_, i) => <div key={i} className="card h-32 animate-pulse bg-gray-50 dark:bg-gray-900/40" />) :
-             filteredBrands.length === 0 ? <div className="col-span-full py-12 text-center text-gray-400 card italic">No brands found</div> :
-             filteredBrands.map((b) => (
-              <motion.div layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={b.id} className="card p-3 md:p-4 flex flex-col justify-between gap-4 group hover:border-blue-500/30 transition-all">
+             brands.length === 0 ? <div className="col-span-full py-12 text-center text-gray-400 card italic">No brands found</div> :
+             brands.map((b) => (
+              <motion.div layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={b.id} 
+                className="card p-3 md:p-4 flex flex-col justify-between gap-4 group hover:bg-blue-50/50 hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-400/50 dark:hover:bg-blue-900/20 dark:hover:border-blue-800/50 transition-all duration-500 hover:-translate-y-1.5"
+              >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 shrink-0 font-black"><Tags size={20} /></div>
+                    <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 shrink-0 font-black group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors"><Tags size={20} /></div>
                     <div className="min-w-0"><h3 className="text-xs md:text-sm font-black text-gray-900 dark:text-white truncate">{b.name}</h3><p className="text-[10px] text-gray-400 capitalize">Master Brand</p></div>
                   </div>
                   <div className="flex gap-0.5" onClick={e => e.stopPropagation()}>
@@ -139,6 +142,67 @@ const BrandManagement = () => {
               </motion.div>
             ))}
           </AnimatePresence>
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {!loading && brands.length > 0 && (
+        <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-6 py-4 gap-4 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Page:</span>
+            <span className="text-xs font-black text-blue-600">{page} / {totalPages}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button 
+              disabled={page === 1}
+              onClick={() => setPage(1)}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${page === 1 ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
+              title="First Page"
+            >
+              <ChevronsLeft size={16} />
+            </button>
+
+            <button 
+              disabled={page === 1}
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${page === 1 ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
+              title="Previous Page"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            
+            <div className="flex items-center gap-2 px-3 h-10 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800">
+              <span className="text-[10px] text-gray-400 font-bold uppercase">Go to</span>
+              <select 
+                value={page}
+                onChange={(e) => setPage(Number(e.target.value))}
+                className="bg-transparent text-xs font-black text-blue-600 outline-none cursor-pointer"
+              >
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <option key={i + 1} value={i + 1}>{i + 1}</option>
+                ))}
+              </select>
+            </div>
+
+            <button 
+              disabled={page === totalPages}
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${page === totalPages ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
+              title="Next Page"
+            >
+              <ChevronRight size={16} />
+            </button>
+
+            <button 
+              disabled={page === totalPages}
+              onClick={() => setPage(totalPages)}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all ${page === totalPages ? 'border-gray-100 text-gray-300' : 'border-gray-200 hover:border-blue-500 text-gray-600 dark:text-gray-400 hover:text-blue-500 cursor-pointer'}`}
+              title="Last Page"
+            >
+              <ChevronsRight size={16} />
+            </button>
+          </div>
         </div>
       )}
 
