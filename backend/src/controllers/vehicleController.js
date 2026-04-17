@@ -417,6 +417,37 @@ const getTypeHistory = async (req, res) => {
   }
 };
 
+const getYearHistory = async (req, res) => {
+  try {
+    const years = await Vehicle.findAll({
+      attributes: [[sequelize.fn('DISTINCT', sequelize.col('year')), 'year']],
+      order: [['year', 'DESC']]
+    });
+    res.json(years.map(y => y.year));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const getFilterOptions = async (req, res) => {
+  try {
+    const brands = await Vehicle.findAll({
+      attributes: [[sequelize.fn('DISTINCT', sequelize.col('brand')), 'brand']],
+      order: [['brand', 'ASC']]
+    });
+    const years = await Vehicle.findAll({
+      attributes: [[sequelize.fn('DISTINCT', sequelize.col('year')), 'year']],
+      order: [['year', 'DESC']]
+    });
+    res.json({
+      brands: brands.map(b => b.brand),
+      years: years.map(y => y.year)
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 const createBrand = async (req, res) => {
   try {
     const brand = await VehicleBrand.create(req.body, { userId: req.user.id });
@@ -518,5 +549,7 @@ module.exports = {
   createBrand,
   updateBrand,
   deleteBrand,
-  getVehicleSummary
+  getVehicleSummary,
+  getYearHistory,
+  getFilterOptions
 };

@@ -55,6 +55,7 @@ const Catalog = () => {
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [filterOptions, setFilterOptions] = useState({ brands: [], years: [] });
 
   // Refs for sliding pill indicator
   const filterContainerRef = useRef(null);
@@ -103,6 +104,18 @@ const Catalog = () => {
     }, { rootMargin: '100px' });
     if (node) observer.current.observe(node);
   }, [loading, moreLoading, page, totalPages]);
+
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        const res = await api.get('/vehicles/filter-options');
+        setFilterOptions(res.data);
+      } catch (err) {
+        console.error('Error fetching filter options:', err);
+      }
+    };
+    fetchFilterOptions();
+  }, []);
 
   useEffect(() => {
     fetchVehicles();
@@ -169,13 +182,8 @@ const Catalog = () => {
     });
   }, [vehicles, finalSearchTerm, filterType, filters]);
 
-  const uniqueBrands = useMemo(() => {
-    return [...new Set(vehicles.map(v => v.brand))].sort();
-  }, [vehicles]);
-
-  const uniqueYears = useMemo(() => {
-    return [...new Set(vehicles.map(v => v.year))].sort((a,b) => b-a);
-  }, [vehicles]);
+  const uniqueBrands = useMemo(() => filterOptions.brands, [filterOptions.brands]);
+  const uniqueYears = useMemo(() => filterOptions.years, [filterOptions.years]);
 
   const suggestions = useMemo(() => {
     if (!localSearch) return [];
@@ -423,118 +431,106 @@ const Catalog = () => {
                     transition={{ duration: 0.3, ease: 'easeInOut' }}
                     className="overflow-hidden"
                   >
-                    <div className="pt-6 pb-2 px-4 grid grid-cols-1 md:grid-cols-4 gap-8 border-t border-gray-100 dark:border-white/5 mt-6">
-                        <div className="space-y-3">
-                          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Brand Selection</label>
-                          <select 
-                            value={filters.brand}
-                            onChange={(e) => { setFilters({...filters, brand: e.target.value}); setPage(1); }}
-                            className="w-full h-12 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl px-4 text-xs font-bold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white/20 transition-all cursor-pointer"
-                          >
-                            <option value="" className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">All Premium Brands</option>
-                            {uniqueBrands.map(b => (
-                              <option key={b} value={b} className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">{b}</option>
-                            ))}
-                          </select>
-                        </div>
+                    <div className="pt-4 pb-2 px-4 border-t border-gray-100 dark:border-white/5 mt-4">
+                        {/* All Filters in One Row on Desktop */}
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-5 md:items-start">
+                          {/* Brand - 3 cols */}
+                          <div className="md:col-span-3 flex items-center md:block gap-3">
+                            <label className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] shrink-0 w-10 md:w-auto md:mb-2 md:block md:px-1">Brand</label>
+                            <select 
+                              value={filters.brand}
+                              onChange={(e) => { setFilters({...filters, brand: e.target.value}); setPage(1); }}
+                              className="flex-1 md:w-full h-9 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-3 text-[11px] font-bold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white/20 transition-all cursor-pointer"
+                            >
+                              <option value="">All Brands</option>
+                              {uniqueBrands.map(b => (
+                                <option key={b} value={b}>{b}</option>
+                              ))}
+                            </select>
+                          </div>
 
-                        <div className="space-y-3">
-                          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Year Model</label>
-                          <select 
-                            value={filters.year}
-                            onChange={(e) => { setFilters({...filters, year: e.target.value}); setPage(1); }}
-                            className="w-full h-12 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl px-4 text-xs font-bold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white/20 transition-all cursor-pointer"
-                          >
-                            <option value="" className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">All Release Years</option>
-                            {uniqueYears.map(y => (
-                              <option key={y} value={y} className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">{y}</option>
-                            ))}
-                          </select>
-                        </div>
+                          {/* Year - 3 cols */}
+                          <div className="md:col-span-3 flex items-center md:block gap-3">
+                            <label className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] shrink-0 w-10 md:w-auto md:mb-2 md:block md:px-1">Year</label>
+                            <select 
+                              value={filters.year}
+                              onChange={(e) => { setFilters({...filters, year: e.target.value}); setPage(1); }}
+                              className="flex-1 md:w-full h-9 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-3 text-[11px] font-bold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white/20 transition-all cursor-pointer"
+                            >
+                              <option value="">All Years</option>
+                              {uniqueYears.map(y => (
+                                <option key={y} value={y}>{y}</option>
+                              ))}
+                            </select>
+                          </div>
 
-                        <div className="md:col-span-2 space-y-4">
-                           <div className="flex justify-between items-end px-1">
-                              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Price Range</label>
-                              <p className="text-[10px] font-black text-gray-900 dark:text-white">
-                                {formatPrice(filters.minPrice || priceRange.min)} — {formatPrice(filters.maxPrice || priceRange.max)}
-                              </p>
-                           </div>
-                           
-                           {/* Dual Textboxes */}
-                           <div className="grid grid-cols-2 gap-2">
-                             <div className="space-y-1">
-                               <p className="text-[8px] text-gray-400 font-bold uppercase">Min Price (IDR)</p>
-                               <input 
-                                 type="text"
-                                 value={filters.minPrice ? formatNumberDots(filters.minPrice) : ''}
-                                 onChange={handleMinPriceText}
-                                 placeholder={formatNumberDots(priceRange.min)}
-                                 className="w-full h-10 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-3 text-[10px] font-bold text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-gray-900 dark:focus:ring-white/20 transition-all"
-                               />
-                             </div>
-                             <div className="space-y-1">
-                               <p className="text-[8px] text-gray-400 font-bold uppercase">Max Price (IDR)</p>
-                               <input 
-                                 type="text"
-                                 value={filters.maxPrice ? formatNumberDots(filters.maxPrice) : ''}
-                                 onChange={handleMaxPriceText}
-                                 placeholder={formatNumberDots(priceRange.max)}
-                                 className="w-full h-10 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-3 text-[10px] font-bold text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-gray-900 dark:focus:ring-white/20 transition-all"
-                               />
-                             </div>
-                           </div>
-
-                           {/* Dual Range Slider (always visible, synced) */}
-                           <div className="flex items-center gap-2">
-                             <div className="flex-1 relative h-6 flex items-center px-1 group">
-                                {/* Custom Dual Range Slider Rail */}
-                                <div className="absolute inset-x-1 h-1.5 bg-gray-100 dark:bg-white/10 rounded-lg overflow-hidden">
-                                  <div 
-                                    className="absolute h-full bg-gray-950 dark:bg-white transition-all duration-300"
-                                    style={{
-                                      left: `${(( (parseInt(filters.minPrice) || priceRange.min) - priceRange.min) / (priceRange.max - priceRange.min)) * 100}%`,
-                                      width: `${(((parseInt(filters.maxPrice) || priceRange.max) - (parseInt(filters.minPrice) || priceRange.min)) / (priceRange.max - priceRange.min)) * 100}%`
-                                    }}
-                                  />
-                                </div>
-                                
-                                <input 
-                                  type="range" 
-                                  min={priceRange.min}
-                                  max={priceRange.max}
-                                  step="5000000"
-                                  value={filters.minPrice || priceRange.min}
-                                  onChange={(e) => {
-                                    const val = Math.min(parseInt(e.target.value), (parseInt(filters.maxPrice) || priceRange.max) - 10000000);
-                                    setFilters({...filters, minPrice: val.toString()});
-                                    setPage(1);
+                          {/* Price Range - 6 cols */}
+                          <div className="md:col-span-6 space-y-2">
+                            <label className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] px-1 block">Price Range</label>
+                            <div className="grid grid-cols-2 gap-2">
+                              <input 
+                                type="text"
+                                value={filters.minPrice ? formatNumberDots(filters.minPrice) : ''}
+                                onChange={handleMinPriceText}
+                                placeholder={`Min: ${formatNumberDots(priceRange.min)}`}
+                                className="w-full h-9 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-3 text-[10px] font-bold text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-gray-900 dark:focus:ring-white/20 transition-all"
+                              />
+                              <input 
+                                type="text"
+                                value={filters.maxPrice ? formatNumberDots(filters.maxPrice) : ''}
+                                onChange={handleMaxPriceText}
+                                placeholder={`Max: ${formatNumberDots(priceRange.max)}`}
+                                className="w-full h-9 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-3 text-[10px] font-bold text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-gray-900 dark:focus:ring-white/20 transition-all"
+                              />
+                            </div>
+                            <div className="relative h-5 flex items-center px-1">
+                              <div className="absolute inset-x-1 h-1.5 bg-gray-100 dark:bg-white/10 rounded-lg overflow-hidden">
+                                <div 
+                                  className="absolute h-full bg-gray-950 dark:bg-white transition-all duration-300"
+                                  style={{
+                                    left: `${(( (parseInt(filters.minPrice) || priceRange.min) - priceRange.min) / (priceRange.max - priceRange.min)) * 100}%`,
+                                    width: `${(((parseInt(filters.maxPrice) || priceRange.max) - (parseInt(filters.minPrice) || priceRange.min)) / (priceRange.max - priceRange.min)) * 100}%`
                                   }}
-                                  className="absolute inset-x-0 w-full h-1.5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white dark:[&::-webkit-slider-thumb]:bg-gray-900 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-gray-900 dark:[&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-xl [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:active:scale-125 z-20"
                                 />
-                                <input 
-                                  type="range" 
-                                  min={priceRange.min}
-                                  max={priceRange.max}
-                                  step="5000000"
-                                  value={filters.maxPrice || priceRange.max}
-                                  onChange={(e) => {
-                                    const val = Math.max(parseInt(e.target.value), (parseInt(filters.minPrice) || priceRange.min) + 10000000);
-                                    setFilters({...filters, maxPrice: val.toString()});
-                                    setPage(1);
-                                  }}
-                                  className="absolute inset-x-0 w-full h-1.5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gray-900 dark:[&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white dark:[&::-webkit-slider-thumb]:border-gray-900 [&::-webkit-slider-thumb]:shadow-xl [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:active:scale-125 z-30"
-                                />
-                             </div>
-                           </div>
+                              </div>
+                              <input 
+                                type="range" 
+                                min={priceRange.min}
+                                max={priceRange.max}
+                                step="5000000"
+                                value={filters.minPrice || priceRange.min}
+                                onChange={(e) => {
+                                  const val = Math.min(parseInt(e.target.value), (parseInt(filters.maxPrice) || priceRange.max) - 10000000);
+                                  setFilters({...filters, minPrice: val.toString()});
+                                  setPage(1);
+                                }}
+                                className="absolute inset-x-0 w-full h-1.5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white dark:[&::-webkit-slider-thumb]:bg-gray-900 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-gray-900 dark:[&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-xl [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:active:scale-125 z-20"
+                              />
+                              <input 
+                                type="range" 
+                                min={priceRange.min}
+                                max={priceRange.max}
+                                step="5000000"
+                                value={filters.maxPrice || priceRange.max}
+                                onChange={(e) => {
+                                  const val = Math.max(parseInt(e.target.value), (parseInt(filters.minPrice) || priceRange.min) + 10000000);
+                                  setFilters({...filters, maxPrice: val.toString()});
+                                  setPage(1);
+                                }}
+                                className="absolute inset-x-0 w-full h-1.5 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gray-900 dark:[&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white dark:[&::-webkit-slider-thumb]:border-gray-900 [&::-webkit-slider-thumb]:shadow-xl [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:active:scale-125 z-30"
+                              />
+                            </div>
+                          </div>
                         </div>
 
-                        <div className="md:col-span-4 py-4 flex justify-between items-center border-t border-gray-50 dark:border-white/5 mt-2">
-                           <p className="text-[10px] text-gray-400 font-medium">Found <span className="text-gray-900 dark:text-white font-bold">{filteredVehicles.length}</span> units matching your criteria</p>
+                        {/* Footer */}
+                        <div className="pt-3 mt-3 border-t border-gray-50 dark:border-white/5 flex justify-between items-center">
+                           <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Found <span className="text-gray-900 dark:text-white">{filteredVehicles.length} Units</span></p>
                            <button 
                             onClick={() => setFilters({ brand: '', year: '', minPrice: priceRange.min.toString(), maxPrice: priceRange.max.toString() })}
-                            className="text-[10px] font-bold text-red-500 uppercase tracking-widest hover:bg-red-50 dark:hover:bg-red-950/30 px-4 py-2 rounded-xl transition-all"
+                            className="text-[9px] font-black text-gray-400 hover:text-red-500 uppercase tracking-[0.15em] px-3 py-1.5 rounded-lg transition-colors"
                            >
-                             Clear All
+                             Reset Filters
                            </button>
                         </div>
                     </div>
