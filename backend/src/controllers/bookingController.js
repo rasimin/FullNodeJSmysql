@@ -108,12 +108,40 @@ exports.getVehicleBooking = async (req, res) => {
 
 exports.getAllBookings = async (req, res) => {
   try {
-    const { page, size, search, status, officeId } = req.query;
+    const { page, size, search, status, officeId: filterOfficeId } = req.query;
     const { limit, offset } = getPagination(page, size);
+    const user = req.user;
 
-    const condition = {};
+    // --- Office Filtering Logic ---
+    const isSuperAdmin = user.Role?.name === 'Super Admin';
+    const currentOffice = await Office.findByPk(user.office_id);
+    let officeIds = [];
+
+    if (isSuperAdmin) {
+      if (filterOfficeId) {
+        officeIds = [filterOfficeId];
+      } else {
+        // Super Admin sees all
+        const allOffices = await Office.findAll({ attributes: ['id'] });
+        officeIds = allOffices.map(o => o.id);
+      }
+    } else if (currentOffice && !currentOffice.parent_id) {
+      // Head Office: see self + all children
+      const allowed = await Office.findAll({
+        where: { 
+          [Op.or]: [{ id: user.office_id }, { parent_id: user.office_id }] 
+        },
+        attributes: ['id']
+      });
+      const allowedIds = allowed.map(o => o.id);
+      officeIds = (filterOfficeId && allowedIds.includes(parseInt(filterOfficeId))) ? [filterOfficeId] : allowedIds;
+    } else {
+      // Branch Office or User with specific office: only see self
+      officeIds = [user.office_id];
+    }
+
+    const condition = { office_id: { [Op.in]: officeIds } };
     if (status) condition.status = status;
-    if (officeId) condition.office_id = officeId;
     
     if (search) {
       condition[Op.or] = [
