@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { 
-  Search, FileSpreadsheet, Printer, Eye, Calendar, User, 
+import {
+  Search, FileSpreadsheet, Printer, Eye, Calendar, User,
   Phone, Tag, Clock, CheckCircle, XCircle, MoreHorizontal,
-  Building2, Hash, Wallet, UserCheck, Trash2
+  Building2, Hash, Wallet, UserCheck, Trash2, Edit, CheckCircle2,
+  PhoneCall, CreditCard as CardIcon
 } from 'lucide-react';
+import Input from '../components/ui/Input';
+import Select from '../components/ui/Select';
 import DynamicIsland from '../components/DynamicIsland';
 import ViewSwitcher from '../components/ui/ViewSwitcher';
 import Pagination from '../components/ui/Pagination';
@@ -20,10 +23,20 @@ const Transactions = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [notification, setNotification] = useState({ status: 'idle', message: '' });
   const [viewMode, setViewMode] = useState('table');
-  
+
   // Delete handling
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
+
+  // Booking Edit handling
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [salesAgents, setSalesAgents] = useState([]);
+  const [bookingData, setBookingData] = useState({
+    vehicle_id: '', customer_name: '', customer_phone: '', id_number: '',
+    booking_date: '', down_payment: '', notes: '', sales_agent_id: ''
+  });
+  const [printReceipt, setPrintReceipt] = useState(localStorage.getItem('pref_print_receipt') === 'true');
+  const [printInvoice, setPrintInvoice] = useState(localStorage.getItem('pref_print_invoice') === 'true');
 
   const storedUser = JSON.parse(localStorage.getItem('user_data') || '{}');
   const user = storedUser.user || storedUser;
@@ -54,28 +67,99 @@ const Transactions = () => {
     fetchTransactions();
   }, [page, search, statusFilter]);
 
-  const handlePrint = async (id, type) => {
-    notify('loading', `Generating document...`);
+  const handlePrintDoc = async (bookingId, type) => {
+    notify('loading', `Preparing document...`);
     try {
       let url = '';
+      let filename = '';
+      let label = '';
+
+      const customerSuffix = bookingData.customer_name ? `_${bookingData.customer_name.replace(/\s+/g, '_')}` : '';
+
       if (type === 'receipt' || type === 'invoice') {
         const docType = type === 'receipt' ? 'receipt' : 'dp-invoice';
-        const res = await api.get(`/export/bookings/${id}?type=${docType}`, { responseType: 'blob' });
+        label = type === 'receipt' ? 'Reservation Receipt' : 'Settlement Invoice';
+        filename = type === 'receipt' ? `Reservation_Receipt${customerSuffix}.pdf` : `Settlement_Invoice${customerSuffix}.pdf`;
+
+        const res = await api.get(`/export/bookings/${bookingId}?type=${docType}`, { responseType: 'blob' });
         url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
       } else if (type === 'sale-invoice' || type === 'deal-proof') {
         const isProof = type === 'deal-proof';
-        const res = await api.get(`/export/sales/${id}/invoice${isProof ? '?isProof=true' : ''}`, { responseType: 'blob' });
+        label = isProof ? 'Official Bill of Sale' : 'Final Settlement Invoice';
+        filename = isProof ? `Official_Bill_of_Sale${customerSuffix}.pdf` : `Settlement_Invoice${customerSuffix}.pdf`;
+
+        const res = await api.get(`/export/sales/${bookingId}/invoice${isProof ? '?isProof=true' : ''}`, { responseType: 'blob' });
         url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
       }
-      
+
       if (url) {
-        window.open(url, '_blank');
-        notify('success', 'Document generated!');
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        notify('success', `${label} downloaded!`);
       }
     } catch (e) {
       console.error('Print error:', e);
       notify('error', 'Failed to generate document');
     }
+  };
+
+  const handleBookingSubmit = async (e) => {
+    e.preventDefault();
+    notify('loading', 'Updating booking details...');
+    try {
+      const cleanData = {
+        ...bookingData,
+        down_payment: bookingData.down_payment?.toString().replace(/\D/g, '') || 0
+      };
+
+      await api.put(`/bookings/${bookingData.id}`, cleanData);
+
+      notify('success', 'Booking updated successfully!');
+      setIsBookingModalOpen(false);
+      fetchTransactions();
+
+      if (printReceipt) handlePrintDoc(bookingData.id, 'receipt');
+      if (printInvoice) handlePrintDoc(bookingData.id, 'invoice');
+
+    } catch (err) {
+      console.error('Booking Update Error:', err);
+      notify('error', err.response?.data?.message || 'Update failed');
+    }
+  };
+
+  const openBookingModal = (t) => {
+    setBookingData({
+      ...t,
+      id: t.id,
+      vehicle_id: t.vehicle_id,
+      booking_date: t.booking_date?.split('T')[0] || '',
+      id_number: t.id_number || '',
+      notes: t.notes || '',
+      sales_agent_id: t.sales_agent_id || ''
+    });
+    fetchAgentsByOffice(t.office_id);
+    setIsBookingModalOpen(true);
+  };
+
+  const fetchAgentsByOffice = async (officeId) => {
+    try {
+      const r = await api.get('/sales-agents/active', { params: { officeId } });
+      setSalesAgents(r.data);
+    } catch (e) { console.error(e); }
+  };
+
+  const handleCurrencyChange = (setter, state, field, val) => {
+    const num = val.replace(/\D/g, '');
+    setter({ ...state, [field]: num });
+  };
+
+  const displayCurrency = (val) => {
+    if (val === null || val === undefined || val === '') return '';
+    return parseInt(val).toLocaleString('id-ID');
   };
 
   const handleDelete = async () => {
@@ -94,22 +178,26 @@ const Transactions = () => {
 
   const getStatusBadge = (status) => {
     if (!status) return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-gray-50 text-gray-400 dark:bg-gray-800 border border-gray-100 dark:border-gray-800">No Status</span>;
-    
+
     const s = status.toLowerCase();
     switch (s) {
-      case 'active': 
+      case 'active':
         return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-100 dark:border-blue-800">Booking</span>;
-      case 'sold': 
+      case 'sold':
         return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400 border border-green-100 dark:border-green-800">Sold / Deal</span>;
-      case 'cancelled': 
+      case 'cancelled':
         return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 border border-red-100 dark:border-red-800">Cancelled</span>;
-      default: 
+      default:
         return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border border-gray-100 dark:border-gray-800">{status}</span>;
     }
   };
 
   const formatPrice = (val) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
+  };
+
+  const formatNumber = (val) => {
+    return new Intl.NumberFormat('id-ID').format(val);
   };
 
   return (
@@ -132,13 +220,13 @@ const Transactions = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input 
+          <input
             type="text" placeholder="Search customer or unit..."
             className="input pl-10 h-11"
             value={search} onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <select 
+        <select
           className="input h-11 text-xs"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
@@ -162,16 +250,15 @@ const Transactions = () => {
                 <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Customer</th>
                 <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Unit Detail</th>
                 <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Office / Sales</th>
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Booking Fee</th>
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Sale Price</th>
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
+                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Pricing</th>
+                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
+                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right whitespace-nowrap">Operations</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {loading ? (
                 <tr>
-                  <td colSpan="9" className="px-6 py-20 text-center">
+                  <td colSpan="10" className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center gap-3">
                       <div className="w-8 h-8 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
                       <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Loading transactions...</p>
@@ -180,7 +267,7 @@ const Transactions = () => {
                 </tr>
               ) : transactions.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="px-6 py-20 text-center">
+                  <td colSpan="10" className="px-6 py-20 text-center">
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No transactions found</p>
                   </td>
                 </tr>
@@ -188,9 +275,18 @@ const Transactions = () => {
                 const s = (t.status || '').toLowerCase();
                 return (
                   <tr key={t.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                    {/* ... other cells remain same ... */}
                     <td className="px-6 py-4">
-                      <p className="text-xs font-bold text-gray-900 dark:text-white">{new Date(t.booking_date).toLocaleDateString('id-ID')}</p>
-                      <p className="text-[9px] text-gray-300 font-bold uppercase truncate max-w-[80px]">ID: {t.id.split('-')[0]}</p>
+                      <div className="flex items-center gap-2 group">
+                        <div>
+                          <p className="text-xs font-bold text-gray-900 dark:text-white">{new Date(t.booking_date).toLocaleDateString('id-ID')}</p>
+                          <p className="text-[9px] text-gray-300 font-bold uppercase truncate max-w-[80px]">ID: {t.id.split('-')[0]}</p>
+                        </div>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {s === 'active' && <button onClick={() => openBookingModal(t)} className="btn-edit !p-1" title="Edit"><Edit size={12} /></button>}
+                          <button onClick={() => { setSelectedTransaction(t); setIsDeleteModalOpen(true); }} className="btn-delete !p-1" title="Trash"><Trash2 size={12} /></button>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       {s === 'sold' ? (
@@ -236,51 +332,24 @@ const Transactions = () => {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <p className="text-xs font-black text-gray-900 dark:text-white">{formatPrice(t.down_payment)}</p>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-black text-blue-600 dark:text-blue-400">Rp. {formatNumber(t.Vehicle?.price || 0)}</span>
+                        <span className="text-[10px] font-bold text-gray-400">Dp. {formatPrice(t.down_payment)}</span>
+                      </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <p className="text-xs font-black text-blue-600 dark:text-blue-400">{formatPrice(t.Vehicle?.price || 0)}</p>
-                    </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 text-center">
                       {getStatusBadge(t.status)}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-1.5">
                         {(s === 'active' || s === 'sold') && (
                           <>
-                            <button 
-                              onClick={() => handlePrint(t.id, 'receipt')}
-                              className="p-2 bg-white dark:bg-gray-800 border border-blue-100 dark:border-blue-900/30 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm cursor-pointer"
-                              title="Print Reservation Receipt"
-                            >
-                              <Printer size={14} />
-                            </button>
-                            <button 
-                              onClick={() => handlePrint(t.id, 'sale-invoice')}
-                              className="p-2 bg-white dark:bg-gray-800 border border-orange-100 dark:border-orange-900/30 text-orange-600 rounded-lg hover:bg-orange-600 hover:text-white transition-all shadow-sm cursor-pointer"
-                              title="Print Final Settlement Invoice"
-                            >
-                              <FileSpreadsheet size={14} />
-                            </button>
+                            <button onClick={() => handlePrintDoc(t.id, 'receipt')} className="btn-icon hover:text-indigo-600 hover:bg-indigo-50" title="Print Receipt"><Printer size={12} /></button>
+                            <button onClick={() => handlePrintDoc(t.id, 'sale-invoice')} className="btn-icon hover:text-amber-600 hover:bg-amber-50" title="Print Invoice"><FileSpreadsheet size={12} /></button>
                           </>
                         )}
-                        {s === 'sold' && (
-                          <button 
-                            onClick={() => handlePrint(t.id, 'deal-proof')}
-                            className="p-2 bg-white dark:bg-gray-800 border border-green-100 dark:border-green-900/30 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-all shadow-sm cursor-pointer"
-                            title="Print Official Bill of Sale"
-                          >
-                            <CheckCircle size={14} />
-                          </button>
-                        )}
-                        <button 
-                          onClick={() => { setSelectedTransaction(t); setIsDeleteModalOpen(true); }}
-                          className="p-2 bg-white dark:bg-gray-800 border border-red-100 dark:border-red-900/30 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-all shadow-sm cursor-pointer"
-                          title="Move to Trash"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        {s === 'sold' && <button onClick={() => handlePrintDoc(t.id, 'deal-proof')} className="btn-icon hover:text-green-600 hover:bg-green-50" title="Print Bill of Sale"><CheckCircle size={12} /></button>}
                       </div>
                     </td>
                   </tr>
@@ -294,9 +363,9 @@ const Transactions = () => {
       <Pagination page={page} totalPages={totalPages} setPage={setPage} />
 
       {/* Delete Confirmation Modal */}
-      <Modal 
-        isOpen={isDeleteModalOpen} 
-        onClose={() => setIsDeleteModalOpen(false)} 
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
         title="Move to Trash"
       >
         <div className="space-y-6 pt-2">
@@ -309,7 +378,7 @@ const Transactions = () => {
               <p className="text-xs font-bold text-gray-400 mt-1 uppercase">Transaction ID: {selectedTransaction?.id.split('-')[0]}</p>
             </div>
           </div>
-          
+
           <div className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800">
             <p className="text-[10px] font-black text-gray-400 uppercase mb-2">Transaction Details:</p>
             <div className="grid grid-cols-2 gap-4">
@@ -325,13 +394,13 @@ const Transactions = () => {
           </div>
 
           <div className="flex gap-3">
-            <button 
+            <button
               onClick={() => setIsDeleteModalOpen(false)}
               className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all uppercase text-xs tracking-widest"
             >
               Cancel
             </button>
-            <button 
+            <button
               onClick={handleDelete}
               className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold shadow-lg shadow-red-500/20 transition-all active:scale-95 uppercase text-xs tracking-widest"
             >
@@ -339,6 +408,42 @@ const Transactions = () => {
             </button>
           </div>
         </div>
+      </Modal>
+
+      {/* Booking Edit Modal */}
+      <Modal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} title="Update Reservation Details">
+        <form onSubmit={handleBookingSubmit} className="space-y-4">
+          <Input label="Customer Name" value={bookingData.customer_name} onChange={e => setBookingData({ ...bookingData, customer_name: e.target.value })} required />
+          <Input label="Phone Number" placeholder="+62..." value={bookingData.customer_phone} onChange={e => setBookingData({ ...bookingData, customer_phone: e.target.value })} required />
+          <Input label="Down Payment (DP)" value={displayCurrency(bookingData.down_payment)} onChange={e => handleCurrencyChange(setBookingData, bookingData, 'down_payment', e.target.value)} />
+          <Select
+            label="Sales Agent (Optional)"
+            value={bookingData.sales_agent_id}
+            onChange={e => setBookingData({ ...bookingData, sales_agent_id: e.target.value })}
+            options={[{ value: '', label: '-- Select Sales (Optional) --' }, ...salesAgents.map(a => ({ value: a.id, label: `${a.name} [${a.sales_code}] - ${a.Office?.name || 'Unknown'}` }))]}
+          />
+
+          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+            <div className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all cursor-pointer" onClick={() => {
+              const newVal = !printReceipt;
+              setPrintReceipt(newVal);
+              localStorage.setItem('pref_print_receipt', newVal);
+            }}>
+              <input type="checkbox" checked={printReceipt} onChange={() => { }} className="w-4 h-4 rounded text-blue-600" />
+              <span className="text-[9px] font-black text-gray-400 uppercase leading-none">Print Reservation Receipt</span>
+            </div>
+            <div className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all cursor-pointer" onClick={() => {
+              const newVal = !printInvoice;
+              setPrintInvoice(newVal);
+              localStorage.setItem('pref_print_invoice', newVal);
+            }}>
+              <input type="checkbox" checked={printInvoice} onChange={() => { }} className="w-4 h-4 rounded text-blue-600" />
+              <span className="text-[9px] font-black text-gray-400 uppercase leading-none">Print Settlement Invoice</span>
+            </div>
+          </div>
+
+          <button type="submit" className="btn-primary w-full py-4 bg-indigo-600 border-none uppercase text-xs font-black tracking-widest">UPDATE RESERVATION</button>
+        </form>
       </Modal>
     </div>
   );

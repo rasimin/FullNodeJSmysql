@@ -177,6 +177,7 @@ const exportVehicles = async (req, res) => {
 const exportBookingPdf = async (req, res) => {
   try {
     const { id } = req.params;
+    const { type } = req.query;
     const booking = await Booking.findByPk(id, {
       include: [{ model: Vehicle }, { model: Office }, { model: SalesAgent, as: 'salesAgent' }]
     });
@@ -187,14 +188,18 @@ const exportBookingPdf = async (req, res) => {
     res.setHeader('Content-Type', 'application/pdf');
     doc.pipe(res);
 
+    const isInvoice = type === 'dp-invoice';
+    const title = isInvoice ? 'FINAL SETTLEMENT INVOICE' : 'VEHICLE RESERVATION RECEIPT';
+    const subTitle = isInvoice ? 'Payment Request for Remaining Vehicle Balance' : 'Official Vehicle Booking & Security Deposit Statement';
+
     // Header
-    doc.fontSize(18).font('Helvetica-Bold').fillColor('#1e40af').text('VEHICLE RESERVATION RECEIPT', { align: 'right' });
+    doc.fontSize(18).font('Helvetica-Bold').fillColor('#1e40af').text(title, { align: 'right' });
     doc.fontSize(10).font('Helvetica').fillColor('#64748b').text(`Document ID: REF-${booking.id.split('-')[0].toUpperCase()}`, { align: 'right' });
     doc.moveDown(1.5);
 
     // Business Info
     doc.fillColor('#000').fontSize(14).font('Helvetica-Bold').text(booking.Office?.name || 'Showroom Management System');
-    doc.fontSize(10).font('Helvetica').text('Official Vehicle Booking & Security Deposit Statement');
+    doc.fontSize(10).font('Helvetica').text(subTitle);
     doc.moveDown(2);
 
     // Client & Vehicle Grid
@@ -218,11 +223,31 @@ const exportBookingPdf = async (req, res) => {
     doc.fillColor('#1e293b').font('Helvetica-Bold').text('TRANSACTION SUMMARY', 60, tableTop + 8);
     doc.text('AMOUNT', 450, tableTop + 8);
     
-    doc.font('Helvetica').fillColor('#000').text('Security Deposit / Vehicle Booking Fee', 60, tableTop + 40);
-    doc.fontSize(12).font('Helvetica-Bold').text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(booking.down_payment), 400, tableTop + 40, { align: 'right', width: 140 });
+    if (isInvoice) {
+      const price = parseFloat(booking.Vehicle?.price || 0);
+      const dp = parseFloat(booking.down_payment || 0);
+      const total = price - dp;
 
-    doc.moveDown(6);
-    doc.fontSize(10).font('Helvetica-Oblique').fillColor('#64748b').text('Note: This document serves as a formal acknowledgement of the reservation payment. The unit is reserved for the client pending final settlement.', { align: 'center' });
+      doc.font('Helvetica').fillColor('#000').text('Vehicle Agreed Selling Price', 60, tableTop + 40);
+      doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(price), 400, tableTop + 40, { align: 'right', width: 140 });
+
+      doc.text('Less: Security Deposit (DP Paid)', 60, tableTop + 60);
+      doc.text(`- ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(dp)}`, 400, tableTop + 60, { align: 'right', width: 140 });
+
+      doc.rect(350, tableTop + 80, 200, 1).fill('#cbd5e1');
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#b91c1c').text('REMAINING BALANCE PAYABLE', 180, tableTop + 90);
+      doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(total), 400, tableTop + 90, { align: 'right', width: 140 });
+    } else {
+      doc.font('Helvetica').fillColor('#000').text('Security Deposit / Vehicle Booking Fee', 60, tableTop + 40);
+      doc.fontSize(12).font('Helvetica-Bold').text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(booking.down_payment), 400, tableTop + 40, { align: 'right', width: 140 });
+    }
+
+    doc.moveDown(8);
+    const note = isInvoice 
+      ? 'Note: This invoice is for the final settlement of the vehicle purchase. Please ensure payment is made before the delivery date.'
+      : 'Note: This document serves as a formal acknowledgement of the reservation payment. The unit is reserved for the client pending final settlement.';
+    
+    doc.fontSize(10).font('Helvetica-Oblique').fillColor('#64748b').text(note, 50, doc.y, { align: 'center', width: 500 });
 
     doc.moveDown(4);
     doc.fillColor('#000').fontSize(10).font('Helvetica').text('Issued by Dealer Representative,', 350, doc.y);

@@ -42,7 +42,9 @@ const Vehicles = () => {
     vehicle_id: '', customer_name: '', customer_phone: '', id_number: '',
     booking_date: new Date().toISOString().split('T')[0], down_payment: '', notes: '', sales_agent_id: ''
   });
-  const [openMenuId, setOpenMenuId] = useState(null);
+  const [printReceipt, setPrintReceipt] = useState(localStorage.getItem('pref_print_receipt') === 'true');
+  const [printInvoice, setPrintInvoice] = useState(localStorage.getItem('pref_print_invoice') === 'true');
+  const [printDealProof, setPrintDealProof] = useState(localStorage.getItem('pref_print_deal') === 'true');
 
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -72,6 +74,44 @@ const Vehicles = () => {
   const notify = (status, message, delay = 2000) => {
     setNotification({ status, message });
     if (status !== 'loading' && status !== 'confirm') setTimeout(() => setNotification({ status: 'idle' }), delay);
+  };
+
+  const handlePrintDoc = async (bookingId, type) => {
+    notify('loading', 'Preparing document for download...');
+    try {
+      let url = '';
+      let filename = '';
+      let label = '';
+      
+      const customerSuffix = bookingData.customer_name ? `_${bookingData.customer_name.replace(/\s+/g, '_')}` : '';
+
+      if (type === 'receipt' || type === 'invoice') {
+        const docType = type === 'receipt' ? 'receipt' : 'dp-invoice';
+        label = type === 'receipt' ? 'Reservation Receipt' : 'Settlement Invoice';
+        filename = type === 'receipt' ? `Reservation_Receipt${customerSuffix}.pdf` : `Settlement_Invoice${customerSuffix}.pdf`;
+        
+        const res = await api.get(`/export/bookings/${bookingId}?type=${docType}`, { responseType: 'blob' });
+        url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      } else if (type === 'deal-proof') {
+        label = 'Official Bill of Sale';
+        filename = `Official_Bill_of_Sale${customerSuffix}.pdf`;
+        const res = await api.get(`/export/sales/${bookingId}/invoice?isProof=true`, { responseType: 'blob' });
+        url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      }
+
+      if (url) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        notify('success', `${label} downloaded!`);
+      }
+    } catch (e) {
+      console.error('Download error:', e);
+      notify('error', 'Failed to download document');
+    }
   };
 
   const fetchAgentsByOffice = async (officeId) => {
@@ -278,12 +318,28 @@ const Vehicles = () => {
         down_payment: bookingData.down_payment?.toString().replace(/\D/g, '') || 0
       };
 
+      let bookingId = bookingData.id;
       if (bookingData.id) {
         await api.put(`/bookings/${bookingData.id}`, cleanData);
       } else {
-        await api.post('/bookings', cleanData);
+        const res = await api.post('/bookings', cleanData);
+        bookingId = res.data.id;
       }
-      notify('success', 'Booking saved!'); setIsBookingModalOpen(false); fetchVehicles();
+      
+      notify('success', 'Booking saved successfully!'); 
+      setIsBookingModalOpen(false); 
+      fetchVehicles();
+
+      // Conditional Print - Robust immediate opening
+      if (printReceipt) {
+        handlePrintDoc(bookingId, 'receipt');
+      }
+      
+      if (printInvoice) {
+        handlePrintDoc(bookingId, 'invoice');
+      }
+
+      // No longer resetting to false, we keep the user preference
     } catch (err) {
       console.error('Booking Submit Error:', err);
       notify('error', err.response?.data?.message || 'Booking failed');
@@ -309,15 +365,26 @@ const Vehicles = () => {
   const handleConfirmSale = async () => {
     notify('loading', 'Selling unit...');
     try {
-      await api.put(`/bookings/vehicle/${editingVehicle.id}/sold`, {
+      const res = await api.put(`/bookings/vehicle/${editingVehicle.id}/sold`, {
         booking_id: activeBooking?.id,
         customer_name: bookingData.customer_name,
         customer_phone: bookingData.customer_phone,
         sold_date: new Date().toISOString().split('T')[0],
         sales_agent_id: bookingData.sales_agent_id
       });
-      notify('success', 'Unit sold!'); setIsConfirmActionModalOpen(false); fetchVehicles();
-    } catch { notify('error', 'Sale failed'); }
+      
+      notify('success', 'Unit sold successfully!'); 
+      setIsConfirmActionModalOpen(false); 
+      fetchVehicles();
+
+      if (printDealProof) {
+        handlePrintDoc(res.data.id, 'deal-proof');
+        // No reset, keep preference
+      }
+    } catch (e) { 
+      console.error('Sale error:', e);
+      notify('error', 'Sale failed'); 
+    }
   };
 
   const handleCancelBooking = async () => {
@@ -718,6 +785,16 @@ const Vehicles = () => {
                   </div>
                 )}
                 <Select label="Sales Executive" value={bookingData.sales_agent_id} onChange={e => setBookingData({ ...bookingData, sales_agent_id: e.target.value })} options={salesAgents.map(a => ({ value: a.id, label: `${a.name} [${a.sales_code}] - ${a.Office?.name || 'Unknown'}` }))} required />
+                
+                <div className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all cursor-pointer" onClick={() => {
+                  const newVal = !printDealProof;
+                  setPrintDealProof(newVal);
+                  localStorage.setItem('pref_print_deal', newVal);
+                }}>
+                  <input type="checkbox" checked={printDealProof} onChange={() => {}} className="w-4 h-4 rounded text-blue-600" />
+                  <span className="text-[10px] font-black text-gray-500 uppercase">Print Official Bill of Sale after save</span>
+                </div>
+
                 <button onClick={handleConfirmSale} className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-lg shadow-green-500/20 transition-all active:scale-95 uppercase text-xs tracking-widest">CLOSE DEAL NOW</button>
               </>
             )}
@@ -738,6 +815,26 @@ const Vehicles = () => {
             onChange={e => setBookingData({ ...bookingData, sales_agent_id: e.target.value })}
             options={[{ value: '', label: '-- Select Sales (Optional) --' }, ...salesAgents.map(a => ({ value: a.id, label: `${a.name} [${a.sales_code}] - ${a.Office?.name || 'Unknown'}` }))]}
           />
+
+          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+            <div className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all cursor-pointer" onClick={() => {
+              const newVal = !printReceipt;
+              setPrintReceipt(newVal);
+              localStorage.setItem('pref_print_receipt', newVal);
+            }}>
+              <input type="checkbox" checked={printReceipt} onChange={() => {}} className="w-4 h-4 rounded text-blue-600" />
+              <span className="text-[9px] font-black text-gray-400 uppercase leading-none">Print Reservation Receipt</span>
+            </div>
+            <div className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all cursor-pointer" onClick={() => {
+              const newVal = !printInvoice;
+              setPrintInvoice(newVal);
+              localStorage.setItem('pref_print_invoice', newVal);
+            }}>
+              <input type="checkbox" checked={printInvoice} onChange={() => {}} className="w-4 h-4 rounded text-blue-600" />
+              <span className="text-[9px] font-black text-gray-400 uppercase leading-none">Print Settlement Invoice</span>
+            </div>
+          </div>
+
           <button type="submit" className="btn-primary w-full py-4 bg-orange-600 border-none uppercase text-xs font-black tracking-widest">SAVE RESERVATION</button>
         </form>
       </Modal>

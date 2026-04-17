@@ -180,7 +180,7 @@ exports.confirmSale = async (req, res) => {
       sales_agent_id: sales_agent_id || (booking ? booking.sales_agent_id : null) || null
     }, { userId: req.user.id });
 
-    res.json({ message: 'Unit successfully marked as Sold and transaction recorded' });
+    res.json(booking);
   } catch (err) {
     console.error('Confirm Sale Error:', err);
     res.status(500).json({ message: err.message });
