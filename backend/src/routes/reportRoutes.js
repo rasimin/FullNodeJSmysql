@@ -10,6 +10,6 @@ router.get('/analytics', reportController.getAdvancedAnalytics);
 router.get('/business-analysis', reportController.getBusinessAnalysisReport);
 router.get('/sales-agents', reportController.getSalesAgentReport);
 router.get('/sales-agents/:id/details', reportController.getAgentSalesDetails);
-router.get('/analysis', reportController.getAnalysisReport);
+router.get('/analysis', reportController.getBusinessAnalysisReport);
 
 module.exports = router;
