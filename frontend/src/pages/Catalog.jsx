@@ -290,8 +290,15 @@ const Catalog = () => {
           </header>
         )}
         {/* Main Search & Filters Bar */}
-        <div className={`sticky ${finalSearchTerm ? 'top-2 md:top-4' : 'top-4 md:top-8'} z-40 transition-all duration-300`}>
-           <div className="bg-white/90 dark:bg-[#12141c]/90 border border-gray-200 dark:border-white/10 p-2 md:p-2.5 rounded-[32px] md:rounded-[36px] shadow-xl transition-all">
+        <div className={`sticky ${finalSearchTerm ? 'top-1 md:top-2' : 'top-4 md:top-8'} z-40 transition-all duration-300`}>
+           {finalSearchTerm && (
+             <div className="flex justify-center -mb-5 relative z-0 animate-in fade-in slide-in-from-top-4 duration-500">
+               <div className="bg-gray-100 dark:bg-[#1a1c26] border border-gray-200 dark:border-white/5 px-10 pt-2 pb-6 rounded-t-[24px]">
+                 <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.4em]">Product Catalog</p>
+               </div>
+             </div>
+           )}
+           <div className="relative z-10 bg-white/95 dark:bg-[#12141c]/95 border border-gray-200 dark:border-white/10 p-2 md:p-2.5 rounded-[32px] md:rounded-[36px] shadow-2xl transition-all backdrop-blur-md">
               <div className="flex flex-wrap md:flex-nowrap items-center gap-x-2 gap-y-3">
                 {/* 1. Search */}
                 <div className="relative flex-1 min-w-[200px]">
@@ -575,7 +582,7 @@ const Catalog = () => {
                   <article
                     key={v.id}
                     onClick={() => { setSelectedVehicle(v); setActiveImageIndex(0); }}
-                    className="group relative bg-[#fcfcfd] dark:bg-gray-900 rounded-[24px] overflow-hidden border border-gray-100 dark:border-gray-800 hover:shadow-xl transition-all duration-200 cursor-pointer animate-in fade-in zoom-in-95 duration-300"
+                    className="group relative bg-white dark:bg-[#12141c] rounded-[20px] overflow-hidden border border-gray-200/60 dark:border-white/5 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer animate-in fade-in zoom-in-95"
                   >
                     {/* Visual Badge */}
                     <div className="absolute top-5 right-5 z-20">
@@ -591,7 +598,7 @@ const Catalog = () => {
                     </div>
 
                     <div className="p-4">
-                      <div className="relative aspect-[4/3] rounded-[20px] overflow-hidden bg-gray-50 dark:bg-gray-800">
+                      <div className="relative aspect-[4/3] rounded-[14px] overflow-hidden bg-gray-50 dark:bg-gray-800">
                         {v.images && v.images.length > 0 ? (
                           <img 
                             src={`${IMAGE_BASE_URL}${v.images.find(img => img.is_primary)?.image_url || v.images[0].image_url}`} 
