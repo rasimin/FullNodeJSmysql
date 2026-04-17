@@ -35,7 +35,8 @@ const Catalog = () => {
   const [loading, setLoading] = useState(true);
   const [moreLoading, setMoreLoading] = useState(false);
   const [localSearch, setLocalSearch] = useState('');
-  const searchTerm = useDebounce(localSearch, 350);
+  const [finalSearchTerm, setFinalSearchTerm] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [filterType, setFilterType] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -54,7 +55,6 @@ const Catalog = () => {
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   // Refs for sliding pill indicator
   const filterContainerRef = useRef(null);
@@ -106,7 +106,13 @@ const Catalog = () => {
 
   useEffect(() => {
     fetchVehicles();
-  }, [page, searchTerm, filterType, filters]);
+  }, [page, finalSearchTerm, filterType, filters]);
+
+  const handleManualSearch = () => {
+    setFinalSearchTerm(localSearch);
+    setShowSuggestions(false);
+    setPage(1);
+  };
 
   const fetchVehicles = async () => {
     const isFirstPage = page === 1;
@@ -119,7 +125,7 @@ const Catalog = () => {
           status: 'Available', 
           page, 
           size: 15, // Slightly larger page size for infinite scroll
-          search: searchTerm,
+          search: finalSearchTerm,
           type: filterType,
           brand: filters.brand,
           year: filters.year,
@@ -151,8 +157,8 @@ const Catalog = () => {
 
   const filteredVehicles = useMemo(() => {
     return vehicles.filter(v => {
-      const matchesSearch = v.model.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                           v.brand.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = v.model.toLowerCase().includes(finalSearchTerm.toLowerCase()) || 
+                           v.brand.toLowerCase().includes(finalSearchTerm.toLowerCase());
       const matchesType = filterType ? v.type === filterType : true;
       const matchesBrand = filters.brand ? v.brand === filters.brand : true;
       const matchesYear = filters.year ? v.year.toString() === filters.year : true;
@@ -161,7 +167,7 @@ const Catalog = () => {
       
       return matchesSearch && matchesType && matchesBrand && matchesYear && matchesMinPrice && matchesMaxPrice;
     });
-  }, [vehicles, searchTerm, filterType, filters]);
+  }, [vehicles, finalSearchTerm, filterType, filters]);
 
   const uniqueBrands = useMemo(() => {
     return [...new Set(vehicles.map(v => v.brand))].sort();
@@ -170,6 +176,16 @@ const Catalog = () => {
   const uniqueYears = useMemo(() => {
     return [...new Set(vehicles.map(v => v.year))].sort((a,b) => b-a);
   }, [vehicles]);
+
+  const suggestions = useMemo(() => {
+    if (!localSearch) return [];
+    const lower = localSearch.toLowerCase();
+    const all = [
+      ...new Set(vehicles.map(v => v.brand)),
+      ...new Set(vehicles.map(v => v.model))
+    ];
+    return all.filter(s => s.toLowerCase().includes(lower)).slice(0, 5);
+  }, [vehicles, localSearch]);
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
@@ -233,16 +249,15 @@ const Catalog = () => {
   // Card staggered animation variants
   const cardVariants = {
     hidden: { opacity: 0, y: 30, scale: 0.97 },
-    visible: (i) => ({
+    visible: {
       opacity: 1,
       y: 0,
       scale: 1,
       transition: {
-        delay: i * 0.06,
-        duration: 0.5,
+        duration: 0.4,
         ease: [0.25, 0.46, 0.45, 0.94]
       }
-    }),
+    },
     exit: { 
       opacity: 0, 
       y: -10,
@@ -251,36 +266,24 @@ const Catalog = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-slate-50 dark:bg-[#0a0b0f] p-5 md:p-10 lg:p-14 transition-colors duration-500 overflow-x-hidden overflow-y-scroll">
-      {/* Dynamic Ambient Background */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[10%] -left-[10%] w-[500px] h-[500px] bg-indigo-600/10 dark:bg-indigo-600/10 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[10%] -right-[10%] w-[500px] h-[500px] bg-emerald-600/10 dark:bg-emerald-600/10 blur-[120px] rounded-full" />
-      </div>
+    <div className={`relative min-h-screen bg-slate-50 dark:bg-[#0a0b0f] transition-all duration-500 overflow-x-hidden overflow-y-scroll
+      px-5 md:px-10 lg:px-14 pb-10 ${finalSearchTerm ? 'pt-4 md:pt-6' : 'pt-5 md:p-10 lg:p-14'}`}>
+      {/* Ambient backgrounds removed for performance */}
 
-      <div className="relative z-10 w-full max-w-5xl mx-auto space-y-12">
-        <AnimatePresence>
-          {!isSearchFocused && !localSearch && (
-            <motion.header 
-              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-              animate={{ opacity: 1, height: 'auto', marginBottom: '3rem' }}
-              exit={{ opacity: 0, height: 0, marginBottom: 0, overflow: 'hidden' }}
-              transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-              className="flex flex-col gap-3 pt-8 px-2 md:items-center md:text-center"
-            >
-               <h1 className="text-5xl md:text-7xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-none">
-                 Product <span className="text-gray-400">Catalog</span>
-               </h1>
-               <p className="text-gray-500 dark:text-gray-400 text-lg font-light tracking-wide max-w-2xl">
-                 Temukan unit impian Anda dengan standar kualitas terbaik dan proses yang transparan.
-               </p>
-            </motion.header>
-          )}
-        </AnimatePresence>
-
+      <div className={`relative z-10 w-full max-w-5xl mx-auto transition-all duration-500 ${finalSearchTerm ? 'space-y-10' : 'space-y-12'}`}>
+        {!finalSearchTerm && (
+          <header className="flex flex-col gap-3 pt-8 px-2 md:items-center md:text-center mb-12 animate-in fade-in duration-500">
+             <h1 className="text-5xl md:text-7xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-none">
+               Product <span className="text-gray-400">Catalog</span>
+             </h1>
+             <p className="text-gray-500 dark:text-gray-400 text-lg font-light tracking-wide max-w-2xl">
+               Temukan unit impian Anda dengan standar kualitas terbaik dan proses yang transparan.
+             </p>
+          </header>
+        )}
         {/* Main Search & Filters Bar */}
-        <div className="sticky top-4 z-40">
-           <div className="bg-white/70 dark:bg-white/5 backdrop-blur-xl border border-gray-200 dark:border-white/10 p-2 md:p-2.5 rounded-[32px] md:rounded-[36px] shadow-xl transition-all duration-500">
+        <div className={`sticky ${finalSearchTerm ? 'top-2 md:top-4' : 'top-4 md:top-8'} z-40 transition-all duration-300`}>
+           <div className="bg-white/90 dark:bg-[#12141c]/90 border border-gray-200 dark:border-white/10 p-2 md:p-2.5 rounded-[32px] md:rounded-[36px] shadow-xl transition-all">
               <div className="flex flex-wrap md:flex-nowrap items-center gap-x-2 gap-y-3">
                 {/* 1. Search */}
                 <div className="relative flex-1 min-w-[200px]">
@@ -288,12 +291,43 @@ const Catalog = () => {
                   <input 
                     type="text"
                     placeholder="Search by brand, model, or plate number..."
-                    className="w-full h-12 bg-gray-100 dark:bg-white/5 border-none rounded-[24px] pl-12 pr-4 text-sm text-gray-900 dark:text-white placeholder:text-gray-500 focus:ring-1 focus:ring-gray-300 dark:focus:ring-white/20 transition-all outline-none"
+                    className="w-full h-12 bg-gray-100 dark:bg-white/5 border-none rounded-[24px] pl-12 pr-12 text-sm text-gray-900 dark:text-white placeholder:text-gray-500 focus:ring-1 focus:ring-gray-300 dark:focus:ring-white/20 transition-all outline-none"
                     value={localSearch}
-                    onChange={(e) => { setLocalSearch(e.target.value); setPage(1); }}
-                    onFocus={() => setIsSearchFocused(true)}
-                    onBlur={() => setIsSearchFocused(false)}
+                    onChange={(e) => { setLocalSearch(e.target.value); setShowSuggestions(true); }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleManualSearch()}
+                    onFocus={() => { setShowSuggestions(true); }}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                   />
+                  
+                  {/* Suggestion Dropdown */}
+                  <AnimatePresence>
+                    {showSuggestions && suggestions.length > 0 && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-gray-900 border border-gray-100 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 px-1 py-1"
+                      >
+                        {suggestions.map((s, idx) => (
+                          <button 
+                            key={idx}
+                            onClick={() => { setLocalSearch(s); setFinalSearchTerm(s); setShowSuggestions(false); setPage(1); }}
+                            className="w-full text-left px-4 py-2.5 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl transition-colors flex items-center justify-between group"
+                          >
+                            <span>{s}</span>
+                            <ChevronRight size={14} className="text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors" />
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <button 
+                    onClick={handleManualSearch}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-900 dark:bg-white text-white dark:text-gray-950 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
+                  >
+                    <Search size={14} strokeWidth={3} />
+                  </button>
                 </div>
 
                 {/* 2. Filters (Pills with sliding indicator) */}
@@ -512,7 +546,7 @@ const Catalog = () => {
 
         {/* Grid Section with Smooth Transition */}
         <div className="min-h-[400px]">
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             {loading ? (
               <motion.div 
                 key="loading"
@@ -523,7 +557,7 @@ const Catalog = () => {
                 className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6"
               >
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="aspect-[3/4] bg-white/5 rounded-[32px] animate-pulse border border-white/5" />
+                  <div key={i} className="aspect-[3/4] bg-gray-200/50 dark:bg-white/5 rounded-[32px] animate-pulse" />
                 ))}
               </motion.div>
             ) : filteredVehicles.length === 0 ? (
@@ -540,24 +574,12 @@ const Catalog = () => {
                  <p className="text-gray-500 text-xl">Belum ada unit tersedia untuk kategori ini.</p>
               </motion.div>
             ) : (
-              <motion.div 
-                key="results"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6"
-              >
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
                 {filteredVehicles.map((v, i) => (
-                  <motion.article
-                    custom={i}
-                    variants={cardVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
+                  <article
                     key={v.id}
                     onClick={() => { setSelectedVehicle(v); setActiveImageIndex(0); }}
-                    className="group relative bg-[#fcfcfd] dark:bg-gray-900 rounded-[24px] overflow-hidden border border-gray-100 dark:border-gray-800 hover:shadow-xl dark:hover:shadow-black/50 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer"
+                    className="group relative bg-[#fcfcfd] dark:bg-gray-900 rounded-[24px] overflow-hidden border border-gray-100 dark:border-gray-800 hover:shadow-xl transition-all duration-200 cursor-pointer animate-in fade-in zoom-in-95 duration-300"
                   >
                     {/* Visual Badge */}
                     <div className="absolute top-5 right-5 z-20">
@@ -620,9 +642,9 @@ const Catalog = () => {
                          </div>
                       </footer>
                     </div>
-                  </motion.article>
+                  </article>
                 ))}
-              </motion.div>
+              </div>
             )}
           </AnimatePresence>
         </div>
