@@ -379,3 +379,132 @@ exports.getAdvancedAnalytics = async (req, res) => {
   }
 };
 
+exports.getAnalysisReport = async (req, res) => {
+  try {
+    const { officeId } = req.query;
+    const user = req.user;
+    
+    // Permission & Office Scope
+    const isSuperAdmin = user.Role?.name === 'Super Admin';
+    let officeIds = [];
+    if (isSuperAdmin) {
+      if (officeId) officeIds = [officeId];
+      else {
+        const all = await Office.findAll({ attributes: ['id'] });
+        officeIds = all.map(o => o.id);
+      }
+    } else {
+      const currentOffice = await Office.findByPk(user.office_id);
+      if (currentOffice && !currentOffice.parent_id) { // Head Office
+        const mapping = await Office.findAll({
+          where: { [Op.or]: [{ id: user.office_id }, { parent_id: user.office_id }] },
+          attributes: ['id']
+        });
+        officeIds = mapping.map(o => o.id);
+      } else {
+        officeIds = [user.office_id];
+      }
+    }
+
+    const baseWhere = { office_id: { [Op.in]: officeIds } };
+
+    // 1. Current Live Stock Analytics (Available & Booked)
+    const liveStockWhere = { ...baseWhere, status: { [Op.in]: ['Available', 'Booked'] } };
+    const liveStockUnits = await Vehicle.findAll({
+      where: liveStockWhere,
+      attributes: ['brand', 'price', 'purchase_price', 'service_cost']
+    });
+
+    const liveStockCount = liveStockUnits.length;
+    let potentialCashIn = 0;
+    let potentialNetMargin = 0;
+    const brandDistribution = {};
+
+    liveStockUnits.forEach(v => {
+      potentialCashIn += Number(v.price);
+      potentialNetMargin += (Number(v.price) - (Number(v.purchase_price) + Number(v.service_cost)));
+      
+      brandDistribution[v.brand] = (brandDistribution[v.brand] || 0) + 1;
+    });
+
+    const brandChartData = Object.keys(brandDistribution).map(brand => ({
+      brand,
+      count: brandDistribution[brand]
+    })).sort((a, b) => b.count - a.count);
+
+    // 2. All-Time Historical Performance (Sold Units)
+    const soldWhere = { ...baseWhere, status: 'Sold' };
+    const allTimeSold = await Vehicle.findAll({
+      where: soldWhere,
+      attributes: ['price', 'purchase_price', 'service_cost']
+    });
+
+    const totalUnitsSoldAllTime = allTimeSold.length;
+    const totalRevenueAllTime = allTimeSold.reduce((sum, v) => sum + Number(v.price), 0);
+    const totalMarginAllTime = allTimeSold.reduce((sum, v) => sum + (Number(v.price) - (Number(v.purchase_price) + Number(v.service_cost))), 0);
+
+    // 3. Comparison Logic (This Month vs Last 3 Months)
+    const now = new Date();
+    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfThreeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+
+    // This Month Stats
+    const thisMonthSold = await Vehicle.findAll({
+      where: { 
+        ...soldWhere, 
+        sold_date: { [Op.gte]: startOfThisMonth } 
+      },
+      attributes: ['price', 'purchase_price', 'service_cost']
+    });
+
+    const thisMonthUnits = thisMonthSold.length;
+    const thisMonthMargin = thisMonthSold.reduce((sum, v) => sum + (Number(v.price) - (Number(v.purchase_price) + Number(v.service_cost))), 0);
+
+    // Last 3 Months Stats (Average)
+    const lastThreeMonthsSold = await Vehicle.findAll({
+      where: { 
+        ...soldWhere, 
+        sold_date: { 
+          [Op.gte]: startOfThreeMonthsAgo,
+          [Op.lt]: startOfThisMonth
+        } 
+      },
+      attributes: ['price', 'purchase_price', 'service_cost']
+    });
+
+    const totalLast3MonthsUnits = lastThreeMonthsSold.length;
+    const totalLast3MonthsMargin = lastThreeMonthsSold.reduce((sum, v) => sum + (Number(v.price) - (Number(v.purchase_price) + Number(v.service_cost))), 0);
+    
+    const avgLast3MonthsUnits = totalLast3MonthsUnits / 3;
+    const avgLast3MonthsMargin = totalLast3MonthsMargin / 3;
+
+    res.json({
+      liveStock: {
+        total: liveStockCount,
+        potentialCashIn,
+        potentialNetMargin,
+        brandDistribution: brandChartData
+      },
+      historical: {
+        totalUnits: totalUnitsSoldAllTime,
+        totalRevenue: totalRevenueAllTime,
+        totalMargin: totalMarginAllTime
+      },
+      comparison: {
+        thisMonth: {
+          units: thisMonthUnits,
+          margin: thisMonthMargin
+        },
+        avgLast3Months: {
+          units: avgLast3MonthsUnits,
+          margin: avgLast3MonthsMargin
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('getAnalysisReport Error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+

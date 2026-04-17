@@ -23,6 +23,7 @@ import AdminSessions from './pages/AdminSessions';
 import LandingPage from './pages/LandingPage';
 import SalesReport from './pages/SalesReport';
 import Transactions from './pages/Transactions';
+import AnalysisReport from './pages/AnalysisReport';
 import DashboardLayout from './layouts/DashboardLayout';
 
 function App() {
@@ -53,6 +54,7 @@ function App() {
                 <Route path="/sessions" element={<Sessions />} />
                 <Route path="/admin-sessions" element={<AdminSessions />} />
                 <Route path="/sales-report" element={<SalesReport />} />
+                <Route path="/analysis-report" element={<AnalysisReport />} />
                 <Route path="/old-dashboard" element={<Dashboard />} />
               </Route>
 
