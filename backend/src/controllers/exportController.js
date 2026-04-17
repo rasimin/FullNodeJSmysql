@@ -189,8 +189,8 @@ const exportBookingPdf = async (req, res) => {
     doc.pipe(res);
 
     const isInvoice = type === 'dp-invoice';
-    const title = isInvoice ? 'FINAL SETTLEMENT INVOICE' : 'VEHICLE RESERVATION RECEIPT';
-    const subTitle = isInvoice ? 'Payment Request for Remaining Vehicle Balance' : 'Official Vehicle Booking & Security Deposit Statement';
+    const title = isInvoice ? 'FINAL SETTLEMENT INVOICE' : 'VEHICLE DOWN PAYMENT RECEIPT';
+    const subTitle = isInvoice ? 'Payment Request for Remaining Vehicle Balance' : 'Official Vehicle Down Payment & Security Deposit Statement';
 
     // Header
     doc.fontSize(18).font('Helvetica-Bold').fillColor('#1e40af').text(title, { align: 'right' });
@@ -231,14 +231,14 @@ const exportBookingPdf = async (req, res) => {
       doc.font('Helvetica').fillColor('#000').text('Vehicle Agreed Selling Price', 60, tableTop + 40);
       doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(price), 400, tableTop + 40, { align: 'right', width: 140 });
 
-      doc.text('Less: Security Deposit (DP Paid)', 60, tableTop + 60);
+      doc.text('Less: Down Payment (Paid)', 60, tableTop + 60);
       doc.text(`- ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(dp)}`, 400, tableTop + 60, { align: 'right', width: 140 });
 
       doc.rect(350, tableTop + 80, 200, 1).fill('#cbd5e1');
       doc.fontSize(12).font('Helvetica-Bold').fillColor('#b91c1c').text('REMAINING BALANCE PAYABLE', 180, tableTop + 90);
       doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(total), 400, tableTop + 90, { align: 'right', width: 140 });
     } else {
-      doc.font('Helvetica').fillColor('#000').text('Security Deposit / Vehicle Booking Fee', 60, tableTop + 40);
+      doc.font('Helvetica').fillColor('#000').text('Security Deposit / Vehicle Down Payment', 60, tableTop + 40);
       doc.fontSize(12).font('Helvetica-Bold').text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(booking.down_payment), 400, tableTop + 40, { align: 'right', width: 140 });
     }
 
@@ -310,7 +310,7 @@ const exportSaleInvoicePdf = async (req, res) => {
     doc.fillColor('#000').fontSize(10).font('Helvetica').text('Vehicle Agreed Selling Price', 50, tableY + 15);
     doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(price), 400, tableY + 15, { align: 'right', width: 140 });
 
-    doc.text('Less: Security Deposit (DP)', 50, tableY + 35);
+    doc.text('Less: Down Payment', 50, tableY + 35);
     doc.text(`- ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(dp)}`, 400, tableY + 35, { align: 'right', width: 140 });
 
     doc.rect(350, tableY + 55, 200, 1).fill('#cbd5e1');

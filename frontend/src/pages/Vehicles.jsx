@@ -66,6 +66,7 @@ const Vehicles = () => {
 
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [openMenuId, setOpenMenuId] = useState(null);
 
   const { user } = JSON.parse(localStorage.getItem('user_data') || '{}');
   const isSuperAdmin = user?.role === 'Super Admin';

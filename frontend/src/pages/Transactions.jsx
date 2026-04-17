@@ -22,7 +22,7 @@ const Transactions = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [notification, setNotification] = useState({ status: 'idle', message: '' });
-  const [viewMode, setViewMode] = useState('table');
+  const [viewMode, setViewMode] = useState(window.innerWidth < 768 ? 'grid' : 'table');
 
   // Delete handling
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -240,124 +240,221 @@ const Transactions = () => {
       </div>
 
       {/* Content */}
-      <div className="card overflow-hidden border-none shadow-xl shadow-gray-200/50 dark:shadow-none">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Booking Date</th>
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Processed Date</th>
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Customer</th>
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Unit Detail</th>
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Office / Sales</th>
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Pricing</th>
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
-                <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right whitespace-nowrap">Operations</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {loading ? (
-                <tr>
-                  <td colSpan="10" className="px-6 py-20 text-center">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="w-8 h-8 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
-                      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Loading transactions...</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : transactions.length === 0 ? (
-                <tr>
-                  <td colSpan="10" className="px-6 py-20 text-center">
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No transactions found</p>
-                  </td>
-                </tr>
-              ) : transactions.map((t) => {
+      <div className="card-container min-h-[400px]">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
+            <div className="w-10 h-10 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
+            <p className="mt-4 text-xs font-black text-gray-400 uppercase tracking-widest">Refreshing transactions...</p>
+          </div>
+        ) : transactions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
+            <div className="w-16 h-16 bg-gray-50 dark:bg-gray-900 rounded-full flex items-center justify-center text-gray-300 mb-4">
+              <Search size={32} />
+            </div>
+            <p className="text-xs font-black text-gray-400 uppercase tracking-widest">No transactions found</p>
+          </div>
+        ) : viewMode === 'table' ? (
+          <div className="card overflow-hidden border-none shadow-xl shadow-gray-200/50 dark:shadow-none">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Booking Date</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Processed Date</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Customer</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Unit Detail</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Office / Sales</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Pricing</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right whitespace-nowrap">Operations</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {transactions.map((t) => {
+                    const s = (t.status || '').toLowerCase();
+                    return (
+                      <tr key={t.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2 group">
+                            <div>
+                              <p className="text-xs font-bold text-gray-900 dark:text-white">{new Date(t.booking_date).toLocaleDateString('id-ID')}</p>
+                              <p className="text-[9px] text-gray-300 font-bold uppercase truncate max-w-[80px]">ID: {t.id.split('-')[0]}</p>
+                            </div>
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {s === 'active' && <button onClick={() => openBookingModal(t)} className="btn-edit !p-1" title="Edit"><Edit size={12} /></button>}
+                              <button onClick={() => { setSelectedTransaction(t); setIsDeleteModalOpen(true); }} className="btn-delete !p-1" title="Trash"><Trash2 size={12} /></button>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          {s === 'sold' ? (
+                            <div className="flex flex-col">
+                              <span className="text-[9px] font-black text-green-600 uppercase tracking-tighter">Sold On</span>
+                              <span className="text-xs font-bold text-green-700 dark:text-green-400">{new Date(t.updatedAt).toLocaleDateString('id-ID')}</span>
+                            </div>
+                          ) : s === 'cancelled' ? (
+                            <div className="flex flex-col">
+                              <span className="text-[9px] font-black text-red-600 uppercase tracking-tighter">Cancelled On</span>
+                              <span className="text-xs font-bold text-red-700 dark:text-red-400">{new Date(t.updatedAt).toLocaleDateString('id-ID')}</span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-300 italic font-medium">Pending...</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500">
+                              <User size={14} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-black text-gray-900 dark:text-white uppercase truncate">{t.customer_name}</p>
+                              <p className="text-[10px] text-gray-400 font-bold">{t.customer_phone}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-xs font-bold text-gray-900 dark:text-white">{t.Vehicle?.brand} {t.Vehicle?.model}</p>
+                          <p className="text-[10px] text-blue-600 font-black uppercase">{t.Vehicle?.plate_number}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5">
+                              <Building2 size={12} className="text-gray-400" />
+                              <p className="text-xs font-black text-gray-700 dark:text-gray-300 uppercase">{t.Office?.name || 'Central Office'}</p>
+                            </div>
+                            {t.salesAgent && (
+                              <div className="flex items-center gap-1.5">
+                                <UserCheck size={12} className="text-blue-500" />
+                                <p className="text-[10px] font-bold text-blue-600 uppercase">{t.salesAgent?.name}</p>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex flex-col">
+                            <span className="text-xs font-black text-blue-600 dark:text-blue-400">Rp. {formatNumber(t.Vehicle?.price || 0)}</span>
+                            <span className="text-[10px] font-bold text-gray-400">Dp. {formatPrice(t.down_payment)}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          {getStatusBadge(t.status)}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-1.5">
+                            {(s === 'active' || s === 'sold') && (
+                              <>
+                                <button onClick={() => handlePrintDoc(t.id, 'receipt')} className="btn-icon hover:text-indigo-600 hover:bg-indigo-50" title="Print Receipt"><Printer size={12} /></button>
+                                <button onClick={() => handlePrintDoc(t.id, 'sale-invoice')} className="btn-icon hover:text-amber-600 hover:bg-amber-50" title="Print Invoice"><FileSpreadsheet size={12} /></button>
+                              </>
+                            )}
+                            {s === 'sold' && <button onClick={() => handlePrintDoc(t.id, 'deal-proof')} className="btn-icon hover:text-green-600 hover:bg-green-50" title="Print Bill of Sale"><CheckCircle size={12} /></button>}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <AnimatePresence mode="popLayout">
+              {transactions.map((t, idx) => {
                 const s = (t.status || '').toLowerCase();
                 return (
-                  <tr key={t.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
-                    {/* ... other cells remain same ... */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 group">
-                        <div>
-                          <p className="text-xs font-bold text-gray-900 dark:text-white">{new Date(t.booking_date).toLocaleDateString('id-ID')}</p>
-                          <p className="text-[9px] text-gray-300 font-bold uppercase truncate max-w-[80px]">ID: {t.id.split('-')[0]}</p>
-                        </div>
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {s === 'active' && <button onClick={() => openBookingModal(t)} className="btn-edit !p-1" title="Edit"><Edit size={12} /></button>}
-                          <button onClick={() => { setSelectedTransaction(t); setIsDeleteModalOpen(true); }} className="btn-delete !p-1" title="Trash"><Trash2 size={12} /></button>
-                        </div>
+                  <motion.div 
+                    key={t.id}
+                    layout
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ delay: idx * 0.05 }}
+                    className="card-hover overflow-hidden group border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 bg-white dark:bg-gray-900"
+                  >
+                    {/* Header: Date & Status */}
+                    <div className="p-4 border-b border-gray-50 dark:border-gray-800 flex justify-between items-start bg-gray-50/50 dark:bg-gray-800/30">
+                      <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase leading-none mb-1">Booking Date</p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-white">{new Date(t.booking_date).toLocaleDateString('id-ID')}</p>
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {s === 'sold' ? (
-                        <div className="flex flex-col">
-                          <span className="text-[9px] font-black text-green-600 uppercase tracking-tighter">Sold On</span>
-                          <span className="text-xs font-bold text-green-700 dark:text-green-400">{new Date(t.updatedAt).toLocaleDateString('id-ID')}</span>
-                        </div>
-                      ) : s === 'cancelled' ? (
-                        <div className="flex flex-col">
-                          <span className="text-[9px] font-black text-red-600 uppercase tracking-tighter">Cancelled On</span>
-                          <span className="text-xs font-bold text-red-700 dark:text-red-400">{new Date(t.updatedAt).toLocaleDateString('id-ID')}</span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-gray-300 italic font-medium">Pending...</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
+                      {getStatusBadge(t.status)}
+                    </div>
+
+                    {/* Content: Customer & Vehicle */}
+                    <div className="p-4 space-y-4">
+                      {/* Customer Info */}
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500">
-                          <User size={14} />
+                        <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600">
+                          <User size={18} />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs font-black text-gray-900 dark:text-white uppercase truncate">{t.customer_name}</p>
-                          <p className="text-[10px] text-gray-400 font-bold">{t.customer_phone}</p>
+                          <p className="text-sm font-black text-gray-900 dark:text-white uppercase truncate">{t.customer_name}</p>
+                          <div className="flex items-center gap-1 text-gray-400">
+                            <Phone size={10} className="text-blue-400" />
+                            <p className="text-[11px] font-bold">{t.customer_phone}</p>
+                          </div>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-xs font-bold text-gray-900 dark:text-white">{t.Vehicle?.brand} {t.Vehicle?.model}</p>
-                      <p className="text-[10px] text-blue-600 font-black uppercase">{t.Vehicle?.plate_number}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
+
+                      {/* Vehicle Info */}
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-800">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase leading-none mb-1">Unit Detail</p>
+                            <p className="text-xs font-bold text-gray-900 dark:text-white uppercase">{t.Vehicle?.brand} {t.Vehicle?.model}</p>
+                          </div>
+                          <span className="px-2 py-0.5 bg-blue-600 text-[10px] font-black text-white rounded-md uppercase tracking-tight">{t.Vehicle?.plate_number}</span>
+                        </div>
+                        <div className="flex justify-between items-end pt-2 border-t border-gray-200/50 dark:border-gray-700/50">
+                          <div>
+                            <p className="text-[9px] font-black text-blue-400 uppercase leading-none">Sale Price</p>
+                            <p className="text-sm font-black text-blue-600 dark:text-blue-400">Rp. {formatNumber(t.Vehicle?.price || 0)}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[9px] font-black text-gray-400 uppercase leading-none">Down Payment</p>
+                            <p className="text-xs font-bold text-gray-700 dark:text-gray-300">{formatPrice(t.down_payment)}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Office/Sales */}
+                      <div className="flex justify-between items-center px-1">
                         <div className="flex items-center gap-1.5">
                           <Building2 size={12} className="text-gray-400" />
-                          <p className="text-xs font-black text-gray-700 dark:text-gray-300 uppercase">{t.Office?.name || 'Central Office'}</p>
+                          <p className="text-[10px] font-bold text-gray-500 uppercase">{t.Office?.name || 'Central Office'}</p>
                         </div>
                         {t.salesAgent && (
-                          <div className="flex items-center gap-1.5">
-                            <UserCheck size={12} className="text-blue-500" />
-                            <p className="text-[10px] font-bold text-blue-600 uppercase">{t.salesAgent?.name}</p>
+                          <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-50/50 dark:bg-blue-900/20 rounded-lg">
+                            <UserCheck size={10} className="text-blue-500" />
+                            <p className="text-[9px] font-black text-blue-600 uppercase tracking-tighter">{t.salesAgent?.name.split(' ')[0]}</p>
                           </div>
                         )}
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex flex-col">
-                        <span className="text-xs font-black text-blue-600 dark:text-blue-400">Rp. {formatNumber(t.Vehicle?.price || 0)}</span>
-                        <span className="text-[10px] font-bold text-gray-400">Dp. {formatPrice(t.down_payment)}</span>
+                    </div>
+
+                    {/* Footer: All Actions */}
+                    <div className="p-4 bg-gray-50 dark:bg-gray-800/20 border-t border-gray-50 dark:border-gray-800 flex justify-between items-center">
+                      <div className="flex gap-2">
+                        {s === 'active' && <button onClick={() => openBookingModal(t)} className="btn-edit !bg-white dark:!bg-gray-800 !p-2 shadow-sm" title="Edit"><Edit size={16} /></button>}
+                        <button onClick={() => { setSelectedTransaction(t); setIsDeleteModalOpen(true); }} className="btn-delete !bg-white dark:!bg-gray-800 !p-2 shadow-sm" title="Trash"><Trash2 size={16} /></button>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {getStatusBadge(t.status)}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-1.5">
+                      <div className="flex gap-1.5">
                         {(s === 'active' || s === 'sold') && (
                           <>
-                            <button onClick={() => handlePrintDoc(t.id, 'receipt')} className="btn-icon hover:text-indigo-600 hover:bg-indigo-50" title="Print Receipt"><Printer size={12} /></button>
-                            <button onClick={() => handlePrintDoc(t.id, 'sale-invoice')} className="btn-icon hover:text-amber-600 hover:bg-amber-50" title="Print Invoice"><FileSpreadsheet size={12} /></button>
+                            <button onClick={() => handlePrintDoc(t.id, 'receipt')} className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all shadow-sm" title="Receipt"><Printer size={16} /></button>
+                            <button onClick={() => handlePrintDoc(t.id, 'sale-invoice')} className="p-2 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-600 hover:text-white transition-all shadow-sm" title="Invoice"><FileSpreadsheet size={16} /></button>
                           </>
                         )}
-                        {s === 'sold' && <button onClick={() => handlePrintDoc(t.id, 'deal-proof')} className="btn-icon hover:text-green-600 hover:bg-green-50" title="Print Bill of Sale"><CheckCircle size={12} /></button>}
+                        {s === 'sold' && <button onClick={() => handlePrintDoc(t.id, 'deal-proof')} className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-all shadow-sm" title="Bill of Sale"><CheckCircle size={16} /></button>}
                       </div>
-                    </td>
-                  </tr>
+                    </div>
+                  </motion.div>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
+            </AnimatePresence>
+          </div>
+        )}
       </div>
 
       <Pagination page={page} totalPages={totalPages} setPage={setPage} />
