@@ -37,7 +37,7 @@ function App() {
             <Route element={<ProtectedRoute />}>
               {/* Layout for Admin Pages */}
               <Route element={<DashboardLayout />}>
-                <Route path="/" element={<Reports />} />
+                <Route path="/" element={<AnalysisReport />} />
                 <Route path="/users" element={<UserManagement />} />
                 <Route path="/sales-agents" element={<SalesAgents />} />
                 <Route path="/vehicles" element={<Vehicles />} />
@@ -48,7 +48,7 @@ function App() {
                 <Route path="/roles" element={<RoleManagement />} />
                 <Route path="/locations" element={<LocationManagement />} />
                 <Route path="/audit-trails" element={<AuditTrail />} />
-                <Route path="/reports" element={<Reports />} />
+                <Route path="/standard-reports" element={<Reports />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/security-settings" element={<SecuritySettings />} />
                 <Route path="/sessions" element={<Sessions />} />

@@ -417,6 +417,10 @@ exports.getBusinessAnalysisReport = async (req, res) => {
     });
 
     const liveStockCount = availableVehicles.length;
+    const bookedCount = await Vehicle.count({
+      where: { ...where, status: 'Booked' }
+    });
+
     const potentialRevenue = availableVehicles.reduce((sum, v) => sum + Number(v.price || 0), 0);
     const potentialNetMargin = availableVehicles.reduce((sum, v) => {
       const price = Number(v.price || 0);
@@ -528,6 +532,7 @@ exports.getBusinessAnalysisReport = async (req, res) => {
     res.json({
       currentStock: {
         totalUnits: liveStockCount,
+        bookedUnits: bookedCount,
         potentialRevenue,
         potentialNetMargin,
         unitsPerBrand

@@ -7,7 +7,7 @@ import {
 import {
   TrendingUp, Package, DollarSign, ShoppingCart, 
   ArrowUpRight, BarChart2, PieChart as PieIcon,
-  Activity, Calendar, Filter, Download, Briefcase
+  Activity, Calendar, Filter, Download, Briefcase, Wallet
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatOfficeHierarchy } from '../utils/hierarchy';
@@ -116,9 +116,17 @@ const AnalysisReport = () => {
       {/* Top Cards: Current Live Stock & Potential */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard 
-          title="Live Stock Count" 
-          value={data?.currentStock?.totalUnits} 
-          subValue="Units Currently Available" 
+          title="Live Stock Summary" 
+          value={
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl">{data?.currentStock?.totalUnits || 0}</span>
+              <span className="text-[10px] text-gray-400 font-bold uppercase">Available</span>
+              <div className="w-[1px] h-3 bg-gray-200 dark:bg-gray-700 mx-1" />
+              <span className="text-xl text-orange-500">{data?.currentStock?.bookedUnits || 0}</span>
+              <span className="text-[10px] text-orange-400 font-bold uppercase">Booked</span>
+            </div>
+          } 
+          subValue="Real-time Inventory Status" 
           icon={Package} 
           color="blue" 
         />
@@ -145,71 +153,98 @@ const AnalysisReport = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Brand Distribution Chart */}
-        <div className="card p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
-              <PieIcon size={16} className="text-blue-500" /> Current Units Per Brand (Top 10)
-            </h3>
-          </div>
-          <div className="flex justify-center w-full overflow-hidden">
-            {data?.currentStock?.unitsPerBrand?.length > 0 ? (
-              <BarChart 
-                width={500} 
-                height={320} 
-                data={data.currentStock.unitsPerBrand} 
-                layout="vertical" 
-                margin={{ left: 10, right: 30, top: 0, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} strokeOpacity={0.1} />
-                <XAxis type="number" hide />
-                <YAxis 
-                  dataKey="brand" 
-                  type="category" 
-                  stroke="#94a3b8" 
-                  fontSize={10} 
-                  axisLine={false} 
-                  tickLine={false} 
-                  width={90}
-                />
-                <Bar dataKey="count" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={16} isAnimationActive={false}>
-                  <LabelList dataKey="count" position="right" fill="#94a3b8" fontSize={10} fontWeight="bold" offset={10} />
-                </Bar>
-              </BarChart>
-            ) : (
-              <div className="h-[300px] flex items-center justify-center text-xs text-gray-400 font-bold uppercase">No data available</div>
-            )}
-          </div>
+      {/* Financial Summary Row */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* Cumulative Sales Summary */}
+        <div className="card overflow-hidden">
+            <div className="h-1 bg-green-500" />
+            <div className="p-6">
+                <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <Briefcase size={16} className="text-green-500" /> Cumulative Sales Summary
+                </h3>
+                <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                        <p className="text-[10px] font-black text-gray-400 uppercase">Total Units</p>
+                        <p className="text-xl font-black text-gray-900 dark:text-white">{data?.overall?.sales?.units}</p>
+                        <p className="text-[9px] font-bold text-gray-400">UNITS CLOSED</p>
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-[10px] font-black text-gray-400 uppercase">Revenue</p>
+                        <p className="text-sm xl:text-base font-black text-blue-600 truncate">{formatCurrency(data?.overall?.sales?.revenue)}</p>
+                        <p className="text-[9px] font-bold text-gray-400">GROSS SALES</p>
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-[10px] font-black text-gray-400 uppercase">Margin</p>
+                        <p className="text-sm xl:text-base font-black text-green-600 truncate">{formatCurrency(data?.overall?.sales?.margin)}</p>
+                        <p className="text-[9px] font-bold text-gray-400">NET PROFIT</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        {/* Monthly Margin Trend */}
-        <div className="card p-6">
-          <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
-            <TrendingUp size={16} className="text-green-500" /> Monthly Margin Trend (6 Months)
-          </h3>
-          <div className="flex justify-center w-full overflow-hidden">
-            {data?.trends?.sales?.length > 0 ? (
-              <AreaChart width={500} height={320} data={data.trends.sales}>
-                <defs>
-                  <linearGradient id="colorMargin" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
-                <XAxis dataKey="month" stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} tickFormatter={formatShort} />
-                <Area type="monotone" dataKey="margin" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorMargin)" isAnimationActive={false}>
-                  <LabelList dataKey="margin" position="top" formatter={formatShort} fill="#10b981" fontSize={10} fontWeight="bold" offset={10} />
-                </Area>
-              </AreaChart>
-            ) : (
-              <div className="h-[300px] flex items-center justify-center text-xs text-gray-400 font-bold uppercase">No data available</div>
-            )}
-          </div>
+        {/* Cumulative Purchase Summary */}
+        <div className="card overflow-hidden">
+            <div className="h-1 bg-blue-500" />
+            <div className="p-6">
+                <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <ShoppingCart size={16} className="text-blue-500" /> Cumulative Purchase Summary
+                </h3>
+                <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                        <p className="text-[10px] font-black text-gray-400 uppercase">Total Units</p>
+                        <p className="text-xl font-black text-gray-900 dark:text-white">{data?.overall?.purchases?.units}</p>
+                        <p className="text-[9px] font-bold text-gray-400">INVENTORY IN</p>
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-[10px] font-black text-gray-400 uppercase">Purchase Cost</p>
+                        <p className="text-sm xl:text-base font-black text-red-600 truncate">{formatCurrency(data?.overall?.purchases?.cost)}</p>
+                        <p className="text-[9px] font-bold text-gray-400">CAPITAL OUT</p>
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-[10px] font-black text-gray-400 uppercase">Service Cost</p>
+                        <p className="text-sm xl:text-base font-black text-orange-600 truncate">{formatCurrency(data?.overall?.purchases?.service)}</p>
+                        <p className="text-[9px] font-bold text-gray-400">PREP COSTS</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {/* Cash Flow Balance Card */}
+        <div className="card overflow-hidden">
+            <div className="h-1 bg-purple-500" />
+            <div className="p-6">
+                <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <Wallet size={16} className="text-purple-500" /> All-Time Cash Flow Balance
+                </h3>
+                <div className="space-y-4">
+                    <div className="flex justify-between items-end">
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Total Net Cash Balance</p>
+                            <p className={`text-2xl font-black ${
+                                (data?.overall?.sales?.revenue - (data?.overall?.purchases?.cost + data?.overall?.purchases?.service)) >= 0 
+                                ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                                {formatCurrency(data?.overall?.sales?.revenue - (data?.overall?.purchases?.cost + data?.overall?.purchases?.service))}
+                            </p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Real-Time Account Value</p>
+                        </div>
+                    </div>
+                    <div className="w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
+                        <div 
+                            className="bg-purple-500 h-full" 
+                            style={{ 
+                                width: `${Math.min(100, (data?.overall?.sales?.revenue / Math.max(1, (data?.overall?.purchases?.cost + data?.overall?.purchases?.service))) * 100)}%` 
+                            }} 
+                        />
+                    </div>
+                    <p className="text-[9px] font-medium text-gray-400 italic">Calculation: Total Revenue - (Capital Out + Prep Costs)</p>
+                </div>
+            </div>
         </div>
       </div>
+
 
       <div className="grid grid-cols-1 gap-6">
         {/* Cash Flow Comparison Chart - Full Width Highlight */}
@@ -280,6 +315,72 @@ const AnalysisReport = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Brand Distribution Chart */}
+        <div className="card p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
+              <PieIcon size={16} className="text-blue-500" /> Current Units Per Brand (Top 10)
+            </h3>
+          </div>
+          <div className="flex justify-center w-full overflow-hidden">
+            {data?.currentStock?.unitsPerBrand?.length > 0 ? (
+              <BarChart 
+                width={500} 
+                height={320} 
+                data={data.currentStock.unitsPerBrand} 
+                layout="vertical" 
+                margin={{ left: 10, right: 30, top: 0, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} strokeOpacity={0.1} />
+                <XAxis type="number" hide />
+                <YAxis 
+                  dataKey="brand" 
+                  type="category" 
+                  stroke="#94a3b8" 
+                  fontSize={10} 
+                  axisLine={false} 
+                  tickLine={false} 
+                  width={90}
+                />
+                <Bar dataKey="count" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={16} isAnimationActive={false}>
+                  <LabelList dataKey="count" position="right" fill="#94a3b8" fontSize={10} fontWeight="bold" offset={10} />
+                </Bar>
+              </BarChart>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-xs text-gray-400 font-bold uppercase">No data available</div>
+            )}
+          </div>
+        </div>
+
+        {/* Monthly Margin Trend */}
+        <div className="card p-6">
+          <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+            <TrendingUp size={16} className="text-green-500" /> Monthly Margin Trend (6 Months)
+          </h3>
+          <div className="flex justify-center w-full overflow-hidden">
+            {data?.trends?.sales?.length > 0 ? (
+              <AreaChart width={500} height={320} data={data.trends.sales}>
+                <defs>
+                  <linearGradient id="colorMargin" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
+                <XAxis dataKey="month" stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} tickFormatter={formatShort} />
+                <Area type="monotone" dataKey="margin" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorMargin)" isAnimationActive={false}>
+                  <LabelList dataKey="margin" position="top" formatter={formatShort} fill="#10b981" fontSize={10} fontWeight="bold" offset={10} />
+                </Area>
+              </AreaChart>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-xs text-gray-400 font-bold uppercase">No data available</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Units Sold Trend */}
         <div className="card p-6">
           <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
@@ -323,62 +424,8 @@ const AnalysisReport = () => {
         </div>
       </div>
 
-      {/* Bottom Summary Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Cumulative Sales Summary */}
-        <div className="card overflow-hidden">
-            <div className="h-1 bg-green-500" />
-            <div className="p-6">
-                <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
-                    <Briefcase size={16} className="text-green-500" /> Cumulative Sales Summary
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="space-y-1">
-                        <p className="text-[10px] font-black text-gray-400 uppercase">Total Units Sold</p>
-                        <p className="text-2xl font-black text-gray-900 dark:text-white">{data?.overall?.sales?.units}</p>
-                        <p className="text-[9px] font-bold text-gray-400">UNITS CLOSED</p>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-[10px] font-black text-gray-400 uppercase">Total Revenue</p>
-                        <p className="text-lg xl:text-xl font-black text-blue-600">{formatCurrency(data?.overall?.sales?.revenue)}</p>
-                        <p className="text-[9px] font-bold text-gray-400">GROSS SALES</p>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-[10px] font-black text-gray-400 uppercase">Total Margin</p>
-                        <p className="text-lg xl:text-xl font-black text-green-600">{formatCurrency(data?.overall?.sales?.margin)}</p>
-                        <p className="text-[9px] font-bold text-gray-400">NET PROFIT</p>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        {/* Cumulative Purchase Summary */}
-        <div className="card overflow-hidden">
-            <div className="h-1 bg-blue-500" />
-            <div className="p-6">
-                <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
-                    <ShoppingCart size={16} className="text-blue-500" /> Cumulative Purchase Summary
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="space-y-1">
-                        <p className="text-[10px] font-black text-gray-400 uppercase">Total Units Bought</p>
-                        <p className="text-2xl font-black text-gray-900 dark:text-white">{data?.overall?.purchases?.units}</p>
-                        <p className="text-[9px] font-bold text-gray-400">INVENTORY IN</p>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-[10px] font-black text-gray-400 uppercase">Purchase Cost</p>
-                        <p className="text-lg xl:text-xl font-black text-red-600">{formatCurrency(data?.overall?.purchases?.cost)}</p>
-                        <p className="text-[9px] font-bold text-gray-400">CAPITAL OUT</p>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-[10px] font-black text-gray-400 uppercase">Total Service Cost</p>
-                        <p className="text-lg xl:text-xl font-black text-orange-600">{formatCurrency(data?.overall?.purchases?.service)}</p>
-                        <p className="text-[9px] font-bold text-gray-400">PREP COSTS</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-      </div>
+
     </div>
   );
 };
@@ -404,7 +451,7 @@ const MetricCard = ({ title, value, subValue, icon: Icon, color }) => {
         <ArrowUpRight size={16} className="text-gray-300" />
       </div>
       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{title}</p>
-      <h4 className="text-xl font-black text-gray-900 dark:text-white truncate">{value}</h4>
+      <h4 className="text-xl font-black text-gray-900 dark:text-white">{value}</h4>
       <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter mt-2">{subValue}</p>
     </motion.div>
   );
