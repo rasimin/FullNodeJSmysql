@@ -381,7 +381,7 @@ exports.getAdvancedAnalytics = async (req, res) => {
 
 exports.getBusinessAnalysisReport = async (req, res) => {
   try {
-    const { officeId } = req.query;
+    const { officeId, year } = req.query;
     const user = req.user;
     
     // Permission & Office Scope
@@ -409,7 +409,38 @@ exports.getBusinessAnalysisReport = async (req, res) => {
 
     const where = { office_id: { [Op.in]: officeIds } };
 
-    // 1. Current Live Stock Summary
+    // --- Added: Opening Balance Logic ---
+    let openingBalance = 0;
+    let salesWhere = { ...where, status: 'Sold' };
+    let purchaseWhere = { ...where };
+
+    if (year && year !== 'all') {
+      const startDate = new Date(`${year}-01-01T00:00:00`);
+      const endDate = new Date(`${year}-12-31T23:59:59`);
+      
+      // Calculate Opening Balance (Everything BEFORE this year)
+      const prevSales = await Vehicle.findAll({
+        where: { ...where, status: 'Sold', sold_date: { [Op.lt]: startDate } },
+        attributes: [[sequelize.fn('SUM', sequelize.col('price')), 'total']],
+        raw: true
+      });
+      const prevPurchases = await Vehicle.findAll({
+        where: { ...where, entry_date: { [Op.lt]: startDate } },
+        attributes: [
+          [sequelize.fn('SUM', sequelize.col('purchase_price')), 'cost'],
+          [sequelize.fn('SUM', sequelize.col('service_cost')), 'service']
+        ],
+        raw: true
+      });
+      
+      openingBalance = Number(prevSales[0]?.total || 0) - (Number(prevPurchases[0]?.cost || 0) + Number(prevPurchases[0]?.service || 0));
+
+      // Update where clauses for cumulative metrics to only show this year
+      salesWhere.sold_date = { [Op.between]: [startDate, endDate] };
+      purchaseWhere.entry_date = { [Op.between]: [startDate, endDate] };
+    }
+
+    // 1. Current Live Stock Summary (Always all-time/current)
     const availableVehicles = await Vehicle.findAll({
       where: { ...where, status: 'Available' },
       attributes: ['brand', 'price', 'purchase_price', 'service_cost'],
@@ -438,11 +469,11 @@ exports.getBusinessAnalysisReport = async (req, res) => {
     const unitsPerBrand = Object.keys(brandDistribution).map(brand => ({
       brand,
       count: brandDistribution[brand]
-    })).sort((a, b) => b.count - a.count).slice(0, 10); // Limit to top 10 for better visualization
+    })).sort((a, b) => b.count - a.count).slice(0, 10); 
 
-    // 3. Monthly Trends (Last 6 Months)
+    // 3. Monthly Trends (Always last 6 months based on current date, unless requested otherwise)
     const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5); // Go back 5 months + current month = 6 months
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5); 
     sixMonthsAgo.setDate(1);
     sixMonthsAgo.setHours(0, 0, 0, 0);
 
@@ -481,9 +512,9 @@ exports.getBusinessAnalysisReport = async (req, res) => {
       raw: true
     });
 
-    // 4. Cumulative Metrics
+    // 4. Cumulative Metrics (Can be filtered by year)
     const cumulativeSales = await Vehicle.findAll({
-      where: { ...where, status: 'Sold' },
+      where: salesWhere,
       attributes: [
         [sequelize.fn('COUNT', sequelize.col('id')), 'total_units'],
         [sequelize.fn('SUM', sequelize.col('price')), 'total_revenue'],
@@ -493,7 +524,7 @@ exports.getBusinessAnalysisReport = async (req, res) => {
     });
 
     const cumulativePurchases = await Vehicle.findAll({
-      where,
+      where: purchaseWhere,
       attributes: [
         [sequelize.fn('COUNT', sequelize.col('id')), 'total_units'],
         [sequelize.fn('SUM', sequelize.col('purchase_price')), 'total_purchase_cost'],
@@ -502,7 +533,7 @@ exports.getBusinessAnalysisReport = async (req, res) => {
       raw: true
     });
 
-    // Create a merged cash flow trend for the 2-bar chart
+    // ... (trend merging logic)
     const allMonths = Array.from({length: 6}, (_, i) => {
         const d = new Date();
         d.setMonth(d.getMonth() - (5 - i));
@@ -553,6 +584,7 @@ exports.getBusinessAnalysisReport = async (req, res) => {
         units: unitTrend
       },
       overall: {
+        openingBalance,
         sales: {
           units: Number(cumulativeSales[0]?.total_units || 0),
           revenue: Number(cumulativeSales[0]?.total_revenue || 0),
@@ -565,6 +597,7 @@ exports.getBusinessAnalysisReport = async (req, res) => {
         }
       }
     });
+
 
   } catch (error) {
     console.error('Analysis Report Error:', error);

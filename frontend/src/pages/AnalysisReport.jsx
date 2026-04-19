@@ -18,6 +18,8 @@ const AnalysisReport = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedOffice, setSelectedOffice] = useState('');
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [isChangingYear, setIsChangingYear] = useState(false);
   const [offices, setOffices] = useState([]);
 
   // Robust check for Head Office / Super Admin permissions
@@ -45,7 +47,7 @@ const AnalysisReport = () => {
     setLoading(true);
     try {
       const res = await api.get('/reports/business-analysis', { 
-        params: { officeId: selectedOffice } 
+        params: { officeId: selectedOffice, year: selectedYear } 
       });
       setData(res.data);
     } catch (err) {
@@ -56,7 +58,7 @@ const AnalysisReport = () => {
 
   useEffect(() => {
     fetchData();
-  }, [selectedOffice]);
+  }, [selectedOffice, selectedYear]);
 
   const formatCurrency = (val) => new Intl.NumberFormat('id-ID', { 
     style: 'currency', 
@@ -153,97 +155,159 @@ const AnalysisReport = () => {
         />
       </div>
 
-      {/* Financial Summary Row */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Cumulative Sales Summary */}
-        <div className="card overflow-hidden">
-            <div className="h-1 bg-green-500" />
-            <div className="p-6">
-                <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
-                    <Briefcase size={16} className="text-green-500" /> Cumulative Sales Summary
-                </h3>
-                <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-1">
-                        <p className="text-[10px] font-black text-gray-400 uppercase">Total Units</p>
-                        <p className="text-xl font-black text-gray-900 dark:text-white">{data?.overall?.sales?.units}</p>
-                        <p className="text-[9px] font-bold text-gray-400">UNITS CLOSED</p>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-[10px] font-black text-gray-400 uppercase">Revenue</p>
-                        <p className="text-sm xl:text-base font-black text-blue-600 truncate">{formatCurrency(data?.overall?.sales?.revenue)}</p>
-                        <p className="text-[9px] font-bold text-gray-400">GROSS SALES</p>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-[10px] font-black text-gray-400 uppercase">Margin</p>
-                        <p className="text-sm xl:text-base font-black text-green-600 truncate">{formatCurrency(data?.overall?.sales?.margin)}</p>
-                        <p className="text-[9px] font-bold text-gray-400">NET PROFIT</p>
-                    </div>
-                </div>
+      {/* Financial Performance Summary Group */}
+      <div className="card p-6 border-2 border-gray-100 dark:border-gray-800">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div>
+            <h2 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
+              <BarChart2 size={18} className="text-blue-500" /> Financial Performance Summary
+            </h2>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mt-1">Accumulated data filtered by fiscal year</p>
+          </div>
+          
+          {!isChangingYear ? (
+            <button 
+              onClick={() => setIsChangingYear(true)}
+              className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 rounded-xl px-4 py-2 self-end shadow-sm hover:bg-blue-100 dark:hover:bg-blue-800/40 transition-all group"
+            >
+              <Calendar size={14} className="text-blue-500 group-hover:scale-110 transition-transform" />
+              <span className="text-[11px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
+                {selectedYear === 'all' ? 'All-Time Records' : `${selectedYear} Fiscal Year`}
+              </span>
+              <ArrowUpRight size={12} className="text-blue-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 bg-white dark:bg-gray-800 border-2 border-blue-400 rounded-xl px-3 py-1.5 self-end shadow-lg animate-in fade-in zoom-in duration-200">
+              <select
+                autoFocus
+                className="bg-transparent border-none text-[11px] font-black uppercase tracking-widest focus:ring-0 outline-none cursor-pointer text-gray-900 dark:text-white"
+                value={selectedYear}
+                onChange={(e) => {
+                  setSelectedYear(e.target.value);
+                  setIsChangingYear(false);
+                }}
+                onBlur={() => setIsChangingYear(false)}
+              >
+                <option value="all" className="dark:bg-gray-800">All-Time Records</option>
+                {Array.from({length: 5}, (_, i) => new Date().getFullYear() - i).map(y => (
+                  <option key={y} value={y} className="dark:bg-gray-800">{y} Fiscal Year</option>
+                ))}
+              </select>
             </div>
+          )}
         </div>
 
-        {/* Cumulative Purchase Summary */}
-        <div className="card overflow-hidden">
-            <div className="h-1 bg-blue-500" />
-            <div className="p-6">
-                <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
-                    <ShoppingCart size={16} className="text-blue-500" /> Cumulative Purchase Summary
-                </h3>
-                <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-1">
-                        <p className="text-[10px] font-black text-gray-400 uppercase">Total Units</p>
-                        <p className="text-xl font-black text-gray-900 dark:text-white">{data?.overall?.purchases?.units}</p>
-                        <p className="text-[9px] font-bold text-gray-400">INVENTORY IN</p>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-[10px] font-black text-gray-400 uppercase">Purchase Cost</p>
-                        <p className="text-sm xl:text-base font-black text-red-600 truncate">{formatCurrency(data?.overall?.purchases?.cost)}</p>
-                        <p className="text-[9px] font-bold text-gray-400">CAPITAL OUT</p>
-                    </div>
-                    <div className="space-y-1">
-                        <p className="text-[10px] font-black text-gray-400 uppercase">Service Cost</p>
-                        <p className="text-sm xl:text-base font-black text-orange-600 truncate">{formatCurrency(data?.overall?.purchases?.service)}</p>
-                        <p className="text-[9px] font-bold text-gray-400">PREP COSTS</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          {/* Cumulative Sales Summary */}
+          <div className="bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm">
+              <div className="h-1 bg-green-500" />
+              <div className="p-6">
+                  <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+                      <Briefcase size={16} className="text-green-500" /> Sales Summary
+                  </h3>
+                  <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                          <p className="text-[10px] font-black text-gray-400 uppercase">Total Units</p>
+                          <p className="text-xl font-black text-gray-900 dark:text-white">{data?.overall?.sales?.units}</p>
+                          <p className="text-[9px] font-bold text-gray-400 uppercase">Closed</p>
+                      </div>
+                      <div className="space-y-1">
+                          <p className="text-[10px] font-black text-gray-400 uppercase">Revenue</p>
+                          <p className="text-sm xl:text-base font-black text-blue-600 truncate">{formatCurrency(data?.overall?.sales?.revenue)}</p>
+                          <p className="text-[9px] font-bold text-gray-400 uppercase">Gross</p>
+                      </div>
+                      <div className="space-y-1">
+                          <p className="text-[10px] font-black text-gray-400 uppercase">Margin</p>
+                          <p className="text-sm xl:text-base font-black text-green-600 truncate">{formatCurrency(data?.overall?.sales?.margin)}</p>
+                          <p className="text-[9px] font-bold text-gray-400 uppercase">Profit</p>
+                      </div>
+                  </div>
+              </div>
+          </div>
 
-        {/* Cash Flow Balance Card */}
-        <div className="card overflow-hidden">
-            <div className="h-1 bg-purple-500" />
-            <div className="p-6">
-                <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
-                    <Wallet size={16} className="text-purple-500" /> All-Time Cash Flow Balance
-                </h3>
-                <div className="space-y-4">
-                    <div className="flex justify-between items-end">
-                        <div>
-                            <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Total Net Cash Balance</p>
-                            <p className={`text-2xl font-black ${
-                                (data?.overall?.sales?.revenue - (data?.overall?.purchases?.cost + data?.overall?.purchases?.service)) >= 0 
-                                ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                                {formatCurrency(data?.overall?.sales?.revenue - (data?.overall?.purchases?.cost + data?.overall?.purchases?.service))}
-                            </p>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Real-Time Account Value</p>
-                        </div>
-                    </div>
-                    <div className="w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
-                        <div 
-                            className="bg-purple-500 h-full" 
-                            style={{ 
-                                width: `${Math.min(100, (data?.overall?.sales?.revenue / Math.max(1, (data?.overall?.purchases?.cost + data?.overall?.purchases?.service))) * 100)}%` 
-                            }} 
-                        />
-                    </div>
-                    <p className="text-[9px] font-medium text-gray-400 italic">Calculation: Total Revenue - (Capital Out + Prep Costs)</p>
-                </div>
-            </div>
+          {/* Cumulative Purchase Summary */}
+          <div className="bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm">
+              <div className="h-1 bg-blue-500" />
+              <div className="p-6">
+                  <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+                      <ShoppingCart size={16} className="text-blue-500" /> Purchase Summary
+                  </h3>
+                  <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                          <p className="text-[10px] font-black text-gray-400 uppercase">Total Units</p>
+                          <p className="text-xl font-black text-gray-900 dark:text-white">{data?.overall?.purchases?.units}</p>
+                          <p className="text-[9px] font-bold text-gray-400 uppercase">Inventory In</p>
+                      </div>
+                      <div className="space-y-1">
+                          <p className="text-[10px] font-black text-gray-400 uppercase">Acquisition</p>
+                          <p className="text-sm xl:text-base font-black text-red-600 truncate">{formatCurrency(data?.overall?.purchases?.cost)}</p>
+                          <p className="text-[9px] font-bold text-gray-400 uppercase">Capital Out</p>
+                      </div>
+                      <div className="space-y-1">
+                          <p className="text-[10px] font-black text-gray-400 uppercase">Service Cost</p>
+                          <p className="text-sm xl:text-base font-black text-orange-600 truncate">{formatCurrency(data?.overall?.purchases?.service)}</p>
+                          <p className="text-[9px] font-bold text-gray-400 uppercase">Prep Costs</p>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          {/* Cash Flow Balance Card with Opening Balance */}
+          <div className="bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm">
+              <div className="h-1 bg-purple-500" />
+              <div className="p-6">
+                  <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+                      <Wallet size={16} className="text-purple-500" /> Cash Flow Balance
+                  </h3>
+                  <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-2 pb-2 border-b border-gray-100 dark:border-gray-700">
+                          <div>
+                              <p className="text-[9px] font-black text-gray-400 uppercase">Opening Balance</p>
+                              <p className={`text-xs font-bold ${data?.overall?.openingBalance >= 0 ? 'text-gray-600 dark:text-gray-300' : 'text-red-500'}`}>
+                                  {formatCurrency(data?.overall?.openingBalance || 0)}
+                              </p>
+                          </div>
+                          <div className="text-right">
+                              <p className="text-[9px] font-black text-gray-400 uppercase">Current Movement</p>
+                              <p className={`text-xs font-bold ${
+                                  (data?.overall?.sales?.revenue - (data?.overall?.purchases?.cost + data?.overall?.purchases?.service)) >= 0 
+                                  ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                  {formatCurrency(data?.overall?.sales?.revenue - (data?.overall?.purchases?.cost + data?.overall?.purchases?.service))}
+                              </p>
+                          </div>
+                      </div>
+
+                      <div className="flex justify-between items-end">
+                          <div>
+                              <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Closing Cash Balance</p>
+                              <p className={`text-2xl font-black ${
+                                  ((data?.overall?.openingBalance || 0) + (data?.overall?.sales?.revenue - (data?.overall?.purchases?.cost + data?.overall?.purchases?.service))) >= 0 
+                                  ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                  {formatCurrency((data?.overall?.openingBalance || 0) + (data?.overall?.sales?.revenue - (data?.overall?.purchases?.cost + data?.overall?.purchases?.service)))}
+                              </p>
+                          </div>
+                          <div className="text-right">
+                              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">
+                                {selectedYear === 'all' ? 'All-Time Account Value' : `End of ${selectedYear} Status`}
+                              </p>
+                          </div>
+                      </div>
+                      <div className="w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
+                          <div 
+                              className="bg-purple-500 h-full" 
+                              style={{ 
+                                  width: `${Math.min(100, (((data?.overall?.openingBalance || 0) + data?.overall?.sales?.revenue) / Math.max(1, (data?.overall?.purchases?.cost + data?.overall?.purchases?.service))) * 100)}%` 
+                              }} 
+                          />
+                      </div>
+                  </div>
+              </div>
+          </div>
         </div>
       </div>
+
 
 
       <div className="grid grid-cols-1 gap-6">
