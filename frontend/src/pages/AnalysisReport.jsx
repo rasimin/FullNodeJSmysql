@@ -7,7 +7,7 @@ import {
 import {
   TrendingUp, Package, DollarSign, ShoppingCart, 
   ArrowUpRight, BarChart2, PieChart as PieIcon,
-  Activity, Calendar, Filter, Download, Briefcase, Wallet
+  Activity, Calendar, Filter, Download, Briefcase, Wallet, Eye, EyeOff
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatOfficeHierarchy } from '../utils/hierarchy';
@@ -20,6 +20,7 @@ const AnalysisReport = () => {
   const [selectedOffice, setSelectedOffice] = useState('');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [isChangingYear, setIsChangingYear] = useState(false);
+  const [showFullAmount, setShowFullAmount] = useState(false);
   const [offices, setOffices] = useState([]);
 
   // Robust check for Head Office / Super Admin permissions
@@ -67,11 +68,15 @@ const AnalysisReport = () => {
   }).format(val);
 
   const formatShort = (val) => {
-    if (val >= 1000000000) return `${(val / 1000000000).toFixed(1).replace('.0', '')}m`;
-    if (val >= 1000000) return `${(val / 1000000).toFixed(0)}jt`;
-    if (val >= 1000) return `${(val / 1000).toFixed(0)}rb`;
-    return val;
+    const absVal = Math.abs(val);
+    const sign = val < 0 ? '-' : '';
+    if (absVal >= 1000000000000) return `${sign}Rp ${(absVal / 1000000000000).toFixed(2)}T`;
+    if (absVal >= 1000000000) return `${sign}Rp ${(absVal / 1000000000).toFixed(1).replace('.0', '')}M`;
+    if (absVal >= 1000000) return `${sign}Rp ${(absVal / 1000000).toFixed(1).replace('.0', '')}jt`;
+    return formatCurrency(val);
   };
+
+  const displayAmount = (val) => showFullAmount ? formatCurrency(val) : formatShort(val);
 
   if (loading && !data) return (
     <div className="flex items-center justify-center min-h-[400px]">
@@ -88,6 +93,18 @@ const AnalysisReport = () => {
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Live Inventory & Performance Metrics</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+            <button 
+              onClick={() => setShowFullAmount(!showFullAmount)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest ${
+                showFullAmount 
+                ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/30' 
+                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 hover:text-blue-500 hover:border-blue-500'
+              }`}
+            >
+              {showFullAmount ? <Eye size={14} /> : <EyeOff size={14} />}
+              {showFullAmount ? 'Full Amount' : 'Abbreviated'}
+            </button>
+
             {isHeadOffice && (
               <div className="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-1.5">
                 <Filter size={14} className="text-gray-400" />
@@ -134,21 +151,21 @@ const AnalysisReport = () => {
         />
         <MetricCard 
           title="Potential Cash Inflow" 
-          value={formatCurrency(data?.currentStock?.potentialRevenue)} 
+          value={displayAmount(data?.currentStock?.potentialRevenue)} 
           subValue="Total Asking Price of Stock" 
           icon={DollarSign} 
           color="green" 
         />
         <MetricCard 
           title="Potential Net Margin" 
-          value={formatCurrency(data?.currentStock?.potentialNetMargin)} 
+          value={displayAmount(data?.currentStock?.potentialNetMargin)} 
           subValue="Expected Profit from Stock" 
           icon={TrendingUp} 
           color="amber" 
         />
         <MetricCard 
           title="Avg. Potential Margin" 
-          value={formatCurrency(data?.currentStock?.totalUnits > 0 ? data?.currentStock?.potentialNetMargin / data?.currentStock?.totalUnits : 0)} 
+          value={displayAmount(data?.currentStock?.totalUnits > 0 ? data?.currentStock?.potentialNetMargin / data?.currentStock?.totalUnits : 0)} 
           subValue="Per Unit Profit Estimate" 
           icon={Activity} 
           color="purple" 
@@ -156,7 +173,7 @@ const AnalysisReport = () => {
       </div>
 
       {/* Financial Performance Summary Group */}
-      <div className="card p-6 border-2 border-gray-100 dark:border-gray-800">
+      <div className="card p-6 border border-gray-200 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-900/20 shadow-inner">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
             <h2 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
@@ -199,7 +216,7 @@ const AnalysisReport = () => {
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Cumulative Sales Summary */}
-          <div className="bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm">
+          <div className="bg-gradient-to-br from-green-50 to-white border border-green-100 dark:from-green-900/10 dark:to-gray-800 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm">
               <div className="h-1 bg-green-500" />
               <div className="p-6">
                   <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
@@ -213,12 +230,12 @@ const AnalysisReport = () => {
                       </div>
                       <div className="space-y-1">
                           <p className="text-[10px] font-black text-gray-400 uppercase">Revenue</p>
-                          <p className="text-sm xl:text-base font-black text-blue-600 truncate">{formatCurrency(data?.overall?.sales?.revenue)}</p>
+                          <p className="text-sm xl:text-base font-black text-blue-600 truncate">{displayAmount(data?.overall?.sales?.revenue)}</p>
                           <p className="text-[9px] font-bold text-gray-400 uppercase">Gross</p>
                       </div>
                       <div className="space-y-1">
                           <p className="text-[10px] font-black text-gray-400 uppercase">Margin</p>
-                          <p className="text-sm xl:text-base font-black text-green-600 truncate">{formatCurrency(data?.overall?.sales?.margin)}</p>
+                          <p className="text-sm xl:text-base font-black text-green-600 truncate">{displayAmount(data?.overall?.sales?.margin)}</p>
                           <p className="text-[9px] font-bold text-gray-400 uppercase">Profit</p>
                       </div>
                   </div>
@@ -226,7 +243,7 @@ const AnalysisReport = () => {
           </div>
 
           {/* Cumulative Purchase Summary */}
-          <div className="bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm">
+          <div className="bg-gradient-to-br from-blue-50 to-white border border-blue-100 dark:from-blue-900/10 dark:to-gray-800 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm">
               <div className="h-1 bg-blue-500" />
               <div className="p-6">
                   <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
@@ -240,12 +257,12 @@ const AnalysisReport = () => {
                       </div>
                       <div className="space-y-1">
                           <p className="text-[10px] font-black text-gray-400 uppercase">Acquisition</p>
-                          <p className="text-sm xl:text-base font-black text-red-600 truncate">{formatCurrency(data?.overall?.purchases?.cost)}</p>
+                          <p className="text-sm xl:text-base font-black text-red-600 truncate">{displayAmount(data?.overall?.purchases?.cost)}</p>
                           <p className="text-[9px] font-bold text-gray-400 uppercase">Capital Out</p>
                       </div>
                       <div className="space-y-1">
                           <p className="text-[10px] font-black text-gray-400 uppercase">Service Cost</p>
-                          <p className="text-sm xl:text-base font-black text-orange-600 truncate">{formatCurrency(data?.overall?.purchases?.service)}</p>
+                          <p className="text-sm xl:text-base font-black text-orange-600 truncate">{displayAmount(data?.overall?.purchases?.service)}</p>
                           <p className="text-[9px] font-bold text-gray-400 uppercase">Prep Costs</p>
                       </div>
                   </div>
@@ -253,7 +270,7 @@ const AnalysisReport = () => {
           </div>
 
           {/* Cash Flow Balance Card with Opening Balance */}
-          <div className="bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm">
+          <div className="bg-gradient-to-br from-purple-50 to-white border border-purple-100 dark:from-purple-900/10 dark:to-gray-800 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm">
               <div className="h-1 bg-purple-500" />
               <div className="p-6">
                   <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
@@ -264,7 +281,7 @@ const AnalysisReport = () => {
                           <div>
                               <p className="text-[9px] font-black text-gray-400 uppercase">Opening Balance</p>
                               <p className={`text-xs font-bold ${data?.overall?.openingBalance >= 0 ? 'text-gray-600 dark:text-gray-300' : 'text-red-500'}`}>
-                                  {formatCurrency(data?.overall?.openingBalance || 0)}
+                                  {displayAmount(data?.overall?.openingBalance || 0)}
                               </p>
                           </div>
                           <div className="text-right">
@@ -273,7 +290,7 @@ const AnalysisReport = () => {
                                   (data?.overall?.sales?.revenue - (data?.overall?.purchases?.cost + data?.overall?.purchases?.service)) >= 0 
                                   ? 'text-green-600' : 'text-red-600'
                               }`}>
-                                  {formatCurrency(data?.overall?.sales?.revenue - (data?.overall?.purchases?.cost + data?.overall?.purchases?.service))}
+                                  {displayAmount(data?.overall?.sales?.revenue - (data?.overall?.purchases?.cost + data?.overall?.purchases?.service))}
                               </p>
                           </div>
                       </div>
@@ -285,9 +302,10 @@ const AnalysisReport = () => {
                                   ((data?.overall?.openingBalance || 0) + (data?.overall?.sales?.revenue - (data?.overall?.purchases?.cost + data?.overall?.purchases?.service))) >= 0 
                                   ? 'text-green-600' : 'text-red-600'
                               }`}>
-                                  {formatCurrency((data?.overall?.openingBalance || 0) + (data?.overall?.sales?.revenue - (data?.overall?.purchases?.cost + data?.overall?.purchases?.service)))}
+                                  {displayAmount((data?.overall?.openingBalance || 0) + (data?.overall?.sales?.revenue - (data?.overall?.purchases?.cost + data?.overall?.purchases?.service)))}
                               </p>
                           </div>
+
                           <div className="text-right">
                               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">
                                 {selectedYear === 'all' ? 'All-Time Account Value' : `End of ${selectedYear} Status`}
@@ -496,17 +514,24 @@ const AnalysisReport = () => {
 
 const MetricCard = ({ title, value, subValue, icon: Icon, color }) => {
   const colorMap = {
-    blue: 'bg-blue-50 text-blue-600 dark:bg-blue-900/20',
-    green: 'bg-green-50 text-green-600 dark:bg-green-900/20',
-    amber: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20',
-    purple: 'bg-purple-50 text-purple-600 dark:bg-purple-900/20',
+    blue: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40',
+    green: 'bg-green-100 text-green-600 dark:bg-green-900/40',
+    amber: 'bg-amber-100 text-amber-600 dark:bg-amber-900/40',
+    purple: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40',
+  };
+
+  const bgMap = {
+    blue: 'bg-gradient-to-br from-blue-50 to-white border-blue-100/50 dark:from-blue-900/10 dark:to-gray-800 dark:border-gray-700',
+    green: 'bg-gradient-to-br from-green-50 to-white border-green-100/50 dark:from-green-900/10 dark:to-gray-800 dark:border-gray-700',
+    amber: 'bg-gradient-to-br from-amber-50 to-white border-amber-100/50 dark:from-amber-900/10 dark:to-gray-800 dark:border-gray-700',
+    purple: 'bg-gradient-to-br from-purple-50 to-white border-purple-100/50 dark:from-purple-900/10 dark:to-gray-800 dark:border-gray-700',
   };
 
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }} 
       animate={{ opacity: 1, y: 0 }}
-      className="card p-5"
+      className={`card p-5 border shadow-sm ${bgMap[color]}`}
     >
       <div className="flex justify-between items-start mb-4">
         <div className={`p-2.5 rounded-xl ${colorMap[color]}`}>
