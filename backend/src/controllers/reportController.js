@@ -560,6 +560,27 @@ exports.getBusinessAnalysisReport = async (req, res) => {
         };
     });
 
+    // 5. Sales Agent Leaderboard (Based on filtered salesWhere)
+    const salesLeaderboard = await Vehicle.findAll({
+      where: salesWhere,
+      attributes: [
+        'sales_agent_id',
+        [sequelize.fn('COUNT', sequelize.col('Vehicle.id')), 'units_sold'],
+        [sequelize.fn('SUM', sequelize.col('price')), 'sales_total']
+      ],
+      include: [{
+        model: SalesAgent,
+        as: 'salesAgent',
+        attributes: ['name', 'avatar_url']
+      }],
+      group: ['sales_agent_id', 'salesAgent.id'],
+      order: [[sequelize.literal('units_sold'), 'DESC']],
+      limit: 10,
+      raw: true,
+      nest: true
+    });
+
+
     res.json({
       currentStock: {
         totalUnits: liveStockCount,
@@ -578,13 +599,13 @@ exports.getBusinessAnalysisReport = async (req, res) => {
         purchases: purchaseTrendRaw.map(p => ({
             month: p.month,
             units: Number(p.units_purchased || 0),
-            cost: Number(p.purchase_cost || 0)
+            cost: Number(p.purchase_cost || 0),
+            service: Number(p.service_cost || 0)
         })),
         cashFlow: cashFlowTrend,
         units: unitTrend
       },
       overall: {
-        openingBalance,
         sales: {
           units: Number(cumulativeSales[0]?.total_units || 0),
           revenue: Number(cumulativeSales[0]?.total_revenue || 0),
@@ -594,8 +615,10 @@ exports.getBusinessAnalysisReport = async (req, res) => {
           units: Number(cumulativePurchases[0]?.total_units || 0),
           cost: Number(cumulativePurchases[0]?.total_purchase_cost || 0),
           service: Number(cumulativePurchases[0]?.total_service_cost || 0)
-        }
-      }
+        },
+        openingBalance
+      },
+      salesLeaderboard
     });
 
 
