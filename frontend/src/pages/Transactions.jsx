@@ -13,6 +13,7 @@ import DynamicIsland from '../components/DynamicIsland';
 import ViewSwitcher from '../components/ui/ViewSwitcher';
 import Pagination from '../components/ui/Pagination';
 import Modal from '../components/Modal';
+import PdfViewerModal from '../components/PdfViewerModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Transactions = () => {
@@ -29,6 +30,10 @@ const Transactions = () => {
   // Delete handling
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
+
+  // PDF Viewer handling
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const [pdfDocuments, setPdfDocuments] = useState([]);
 
   // Booking Edit handling
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
@@ -69,7 +74,7 @@ const Transactions = () => {
     fetchTransactions();
   }, [page, search, statusFilter]);
 
-  const handlePrintDoc = async (bookingId, type) => {
+  const handlePrintDoc = async (bookingId, type, openModal = true) => {
     notify('loading', `Preparing document...`);
     try {
       let url = '';
@@ -95,17 +100,18 @@ const Transactions = () => {
       }
 
       if (url) {
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', filename);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        notify('success', `${label} downloaded!`);
+        const docObj = { title: label, url, filename };
+        if (openModal) {
+          setPdfDocuments([docObj]);
+          setIsPdfModalOpen(true);
+          notify('success', `${label} ready!`);
+        }
+        return docObj;
       }
     } catch (e) {
       console.error('Print error:', e);
       notify('error', 'Failed to generate document');
+      return null;
     }
   };
 
@@ -124,8 +130,20 @@ const Transactions = () => {
       setIsBookingModalOpen(false);
       fetchTransactions();
 
-      if (printReceipt) handlePrintDoc(bookingData.id, 'receipt');
-      if (printInvoice) handlePrintDoc(bookingData.id, 'invoice');
+      const docsToOpen = [];
+      if (printReceipt) {
+        const d = await handlePrintDoc(bookingData.id, 'receipt', false);
+        if (d) docsToOpen.push(d);
+      }
+      if (printInvoice) {
+        const d = await handlePrintDoc(bookingData.id, 'invoice', false);
+        if (d) docsToOpen.push(d);
+      }
+
+      if (docsToOpen.length > 0) {
+        setPdfDocuments(docsToOpen);
+        setIsPdfModalOpen(true);
+      }
 
     } catch (err) {
       console.error('Booking Update Error:', err);
@@ -206,6 +224,11 @@ const Transactions = () => {
   return (
     <div className="space-y-6">
       <DynamicIsland status={notification.status} message={notification.message} />
+      <PdfViewerModal 
+        isOpen={isPdfModalOpen} 
+        onClose={() => setIsPdfModalOpen(false)} 
+        documents={pdfDocuments} 
+      />
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

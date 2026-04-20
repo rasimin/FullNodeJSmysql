@@ -12,6 +12,7 @@ import {
 import Modal from '../components/Modal';
 
 import DynamicIsland from '../components/DynamicIsland';
+import PdfViewerModal from '../components/PdfViewerModal';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import ViewSwitcher from '../components/ui/ViewSwitcher';
@@ -39,6 +40,10 @@ const Vehicles = () => {
   const [isConfirmActionModalOpen, setIsConfirmActionModalOpen] = useState(false);
   const [actionType, setActionType] = useState(''); // 'sold' or 'cancel'
   const [activeBooking, setActiveBooking] = useState(null);
+
+  // PDF Viewer handling
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const [pdfDocuments, setPdfDocuments] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [bookingData, setBookingData] = useState({
     vehicle_id: '', customer_name: '', customer_phone: '', id_number: '',
@@ -79,8 +84,8 @@ const Vehicles = () => {
     if (status !== 'loading' && status !== 'confirm') setTimeout(() => setNotification({ status: 'idle' }), delay);
   };
 
-  const handlePrintDoc = async (bookingId, type) => {
-    notify('loading', 'Preparing document for download...');
+  const handlePrintDoc = async (bookingId, type, openModal = true) => {
+    notify('loading', 'Preparing document preview...');
     try {
       let url = '';
       let filename = '';
@@ -103,17 +108,18 @@ const Vehicles = () => {
       }
 
       if (url) {
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', filename);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        notify('success', `${label} downloaded!`);
+        const docObj = { title: label, url, filename };
+        if (openModal) {
+          setPdfDocuments([docObj]);
+          setIsPdfModalOpen(true);
+          notify('success', `${label} ready!`);
+        }
+        return docObj;
       }
     } catch (e) {
       console.error('Download error:', e);
-      notify('error', 'Failed to download document');
+      notify('error', 'Failed to generate document');
+      return null;
     }
   };
 
@@ -345,12 +351,20 @@ const Vehicles = () => {
       fetchVehicles();
 
       // Conditional Print - Robust immediate opening
+      const docsToOpen = [];
       if (printReceipt) {
-        handlePrintDoc(bookingId, 'receipt');
+        const d = await handlePrintDoc(bookingId, 'receipt', false);
+        if (d) docsToOpen.push(d);
       }
       
       if (printInvoice) {
-        handlePrintDoc(bookingId, 'invoice');
+        const d = await handlePrintDoc(bookingId, 'invoice', false);
+        if (d) docsToOpen.push(d);
+      }
+
+      if (docsToOpen.length > 0) {
+        setPdfDocuments(docsToOpen);
+        setIsPdfModalOpen(true);
       }
 
       // No longer resetting to false, we keep the user preference
@@ -392,8 +406,11 @@ const Vehicles = () => {
       fetchVehicles();
 
       if (printDealProof) {
-        handlePrintDoc(res.data.id, 'deal-proof');
-        // No reset, keep preference
+        const d = await handlePrintDoc(res.data.id, 'deal-proof', false);
+        if (d) {
+          setPdfDocuments([d]);
+          setIsPdfModalOpen(true);
+        }
       }
     } catch (e) { 
       console.error('Sale error:', e);
@@ -477,6 +494,11 @@ const Vehicles = () => {
   return (
     <div className="space-y-6">
       <DynamicIsland status={confirmDeleteId ? 'confirm' : notification.status} message={confirmDeleteId ? 'Delete vehicle?' : notification.message} onConfirm={handleDelete} onCancel={() => setConfirmDeleteId(null)} />
+      <PdfViewerModal 
+        isOpen={isPdfModalOpen} 
+        onClose={() => setIsPdfModalOpen(false)} 
+        documents={pdfDocuments} 
+      />
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

@@ -231,41 +231,48 @@ const exportBookingPdf = async (req, res) => {
     
     const labelX = 50;
     const valueX = 125;
+    const rowHeight = 18; // Increased from 15 to prevent overlap
     
     doc.text(`Name`, labelX, startY + 25);
     doc.text(`:`, valueX - 10, startY + 25);
     doc.font('Helvetica-Bold').text(booking.customer_name || '-', valueX, startY + 25);
     
-    doc.font('Helvetica').text(`NIK (ID)`, labelX, startY + 40);
-    doc.text(`:`, valueX - 10, startY + 40);
-    doc.text(booking.nik || '-', valueX, startY + 40);
+    doc.font('Helvetica').text(`NIK (ID)`, labelX, startY + 25 + rowHeight);
+    doc.text(`:`, valueX - 10, startY + 25 + rowHeight);
+    doc.text(booking.nik || '-', valueX, startY + 25 + rowHeight);
     
-    doc.font('Helvetica').text(`Phone`, labelX, startY + 55);
-    doc.text(`:`, valueX - 10, startY + 55);
-    doc.text(booking.customer_phone || '-', valueX, startY + 55);
+    doc.font('Helvetica').text(`Phone`, labelX, startY + 25 + (rowHeight * 2));
+    doc.text(`:`, valueX - 10, startY + 25 + (rowHeight * 2));
+    doc.text(booking.customer_phone || '-', valueX, startY + 25 + (rowHeight * 2));
     
-    doc.font('Helvetica').text(`Booking`, labelX, startY + 70);
-    doc.text(`:`, valueX - 10, startY + 70);
-    doc.text(new Date(booking.booking_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }), valueX, startY + 70);
+    doc.font('Helvetica').text(`Booking`, labelX, startY + 25 + (rowHeight * 3));
+    doc.text(`:`, valueX - 10, startY + 25 + (rowHeight * 3));
+    doc.text(new Date(booking.booking_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }), valueX, startY + 25 + (rowHeight * 3));
 
     // Right Column: Vehicle
     const rightLabelX = 320;
     const rightValueX = 390;
+    const rightColWidth = 160; // Constraint width for value wrapping
+    
     doc.fontSize(10).font('Helvetica-Bold').fillColor('#1e40af').text('VEHICLE SPECIFICATIONS', rightLabelX, startY);
     doc.rect(320, startY + 12, 40, 2).fill('#1e40af'); // Underline accent
     doc.font('Helvetica').fontSize(10).fillColor('#000');
     
     doc.text(`Unit`, rightLabelX, startY + 25);
     doc.text(`:`, rightValueX - 10, startY + 25);
-    doc.font('Helvetica-Bold').text(`${booking.Vehicle?.brand || ''} ${booking.Vehicle?.model || ''}`, rightValueX, startY + 25);
+    doc.font('Helvetica-Bold').text(`${booking.Vehicle?.brand || ''} ${booking.Vehicle?.model || ''}`, rightValueX, startY + 25, { width: rightColWidth });
     
-    doc.text(`Year`, rightLabelX, startY + 40);
-    doc.text(`:`, rightValueX - 10, startY + 40);
-    doc.text(booking.Vehicle?.year || '-', rightValueX, startY + 40);
+    // We calculate next Y based on potential wrapping of Unit name
+    const unitTextHeight = doc.heightOfString(`${booking.Vehicle?.brand || ''} ${booking.Vehicle?.model || ''}`, { width: rightColWidth });
+    const nextY = startY + 25 + Math.max(unitTextHeight + 5, rowHeight + 5);
+
+    doc.font('Helvetica').text(`Year`, rightLabelX, nextY);
+    doc.text(`:`, rightValueX - 10, nextY);
+    doc.text(booking.Vehicle?.year || '-', rightValueX, nextY);
     
-    doc.text(`Plate`, rightLabelX, startY + 55);
-    doc.text(`:`, rightValueX - 10, startY + 55);
-    doc.text(booking.Vehicle?.plate_number || '-', rightValueX, startY + 55);
+    doc.text(`Plate`, rightLabelX, nextY + rowHeight);
+    doc.text(`:`, rightValueX - 10, nextY + rowHeight);
+    doc.text(booking.Vehicle?.plate_number || '-', rightValueX, nextY + rowHeight);
 
     doc.moveDown(5);
 
@@ -388,46 +395,54 @@ const exportSaleInvoicePdf = async (req, res) => {
     
     const labelX = 50;
     const valueX = 125;
+    const rowHeight = 18;
     
     doc.text(`Name`, labelX, startY + 25);
     doc.text(`:`, valueX - 10, startY + 25);
     doc.font('Helvetica-Bold').text(booking.customer_name || '-', valueX, startY + 25);
     
-    doc.font('Helvetica').text(`NIK (ID)`, labelX, startY + 40);
-    doc.text(`:`, valueX - 10, startY + 40);
-    doc.text(booking.nik || '-', valueX, startY + 40);
+    doc.font('Helvetica').text(`NIK (ID)`, labelX, startY + 25 + rowHeight);
+    doc.text(`:`, valueX - 10, startY + 25 + rowHeight);
+    doc.text(booking.nik || '-', valueX, startY + 25 + rowHeight);
     
-    doc.font('Helvetica').text(`Phone`, labelX, startY + 55);
-    doc.text(`:`, valueX - 10, startY + 55);
-    doc.text(booking.customer_phone || '-', valueX, startY + 55);
+    doc.font('Helvetica').text(`Phone`, labelX, startY + 25 + (rowHeight * 2));
+    doc.text(`:`, valueX - 10, startY + 25 + (rowHeight * 2));
+    doc.text(booking.customer_phone || '-', valueX, startY + 25 + (rowHeight * 2));
     
-    doc.font('Helvetica').text(`Booking`, labelX, startY + 70);
-    doc.text(`:`, valueX - 10, startY + 70);
-    doc.text(new Date(booking.booking_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }), valueX, startY + 70);
+    doc.font('Helvetica').text(`Booking`, labelX, startY + 25 + (rowHeight * 3));
+    doc.text(`:`, valueX - 10, startY + 25 + (rowHeight * 3));
+    doc.text(new Date(booking.booking_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }), valueX, startY + 25 + (rowHeight * 3));
 
     // Right Column: Vehicle Description
     const rightLabelX = 320;
     const rightValueX = 390;
+    const rightColWidth = 160;
+    
     doc.fontSize(10).font('Helvetica-Bold').fillColor('#1e40af').text('VEHICLE DESCRIPTION', rightLabelX, startY);
     doc.rect(320, startY + 12, 40, 2).fill('#1e40af'); // Underline accent
     doc.font('Helvetica').fontSize(10).fillColor('#000');
     
     doc.text(`Unit`, rightLabelX, startY + 25);
     doc.text(`:`, rightValueX - 10, startY + 25);
-    doc.font('Helvetica-Bold').text(`${booking.Vehicle?.brand || ''} ${booking.Vehicle?.model || ''}`, rightValueX, startY + 25);
+    doc.font('Helvetica-Bold').text(`${booking.Vehicle?.brand || ''} ${booking.Vehicle?.model || ''}`, rightValueX, startY + 25, { width: rightColWidth });
     
-    doc.text(`Plate`, rightLabelX, startY + 40);
-    doc.text(`:`, rightValueX - 10, startY + 40);
-    doc.text(booking.Vehicle?.plate_number || '-', rightValueX, startY + 40);
+    const unitTextHeight = doc.heightOfString(`${booking.Vehicle?.brand || ''} ${booking.Vehicle?.model || ''}`, { width: rightColWidth });
+    let nextY = startY + 25 + Math.max(unitTextHeight + 5, rowHeight + 5);
+
+    doc.text(`Plate`, rightLabelX, nextY);
+    doc.text(`:`, rightValueX - 10, nextY);
+    doc.text(booking.Vehicle?.plate_number || '-', rightValueX, nextY);
     
-    doc.text(`Odo`, rightLabelX, startY + 55);
-    doc.text(`:`, rightValueX - 10, startY + 55);
-    doc.text(`${booking.Vehicle?.odometer || 0} KM`, rightValueX, startY + 55);
+    nextY += rowHeight;
+    doc.text(`Odo`, rightLabelX, nextY);
+    doc.text(`:`, rightValueX - 10, nextY);
+    doc.text(`${booking.Vehicle?.odometer || 0} KM`, rightValueX, nextY);
     
     if (isProof === 'true' && booking.Vehicle?.sold_date) {
-      doc.font('Helvetica-Bold').fillColor('#b91c1c').text(`Sold Date`, rightLabelX, startY + 70);
-      doc.font('Helvetica').text(`:`, rightValueX - 10, startY + 70);
-      doc.font('Helvetica-Bold').text(new Date(booking.Vehicle.sold_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }), rightValueX, startY + 70);
+      nextY += rowHeight;
+      doc.font('Helvetica-Bold').fillColor('#b91c1c').text(`Sold Date`, rightLabelX, nextY);
+      doc.font('Helvetica').text(`:`, rightValueX - 10, nextY);
+      doc.font('Helvetica-Bold').text(new Date(booking.Vehicle.sold_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }), rightValueX, nextY);
     }
 
     doc.moveDown(5);
