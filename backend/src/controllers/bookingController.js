@@ -108,7 +108,7 @@ exports.getVehicleBooking = async (req, res) => {
 
 exports.getAllBookings = async (req, res) => {
   try {
-    const { page, size, search, status, officeId: filterOfficeId } = req.query;
+    const { page, size, search, status, officeId: filterOfficeId, startDate, endDate } = req.query;
     const { limit, offset } = getPagination(page, size);
     const user = req.user;
 
@@ -121,27 +121,30 @@ exports.getAllBookings = async (req, res) => {
       if (filterOfficeId) {
         officeIds = [filterOfficeId];
       } else {
-        // Super Admin sees all
         const allOffices = await Office.findAll({ attributes: ['id'] });
         officeIds = allOffices.map(o => o.id);
       }
     } else if (currentOffice && !currentOffice.parent_id) {
-      // Head Office: see self + all children
       const allowed = await Office.findAll({
-        where: { 
-          [Op.or]: [{ id: user.office_id }, { parent_id: user.office_id }] 
-        },
+        where: { [Op.or]: [{ id: user.office_id }, { parent_id: user.office_id }] },
         attributes: ['id']
       });
       const allowedIds = allowed.map(o => o.id);
       officeIds = (filterOfficeId && allowedIds.includes(parseInt(filterOfficeId))) ? [filterOfficeId] : allowedIds;
     } else {
-      // Branch Office or User with specific office: only see self
       officeIds = [user.office_id];
     }
 
     const condition = { office_id: { [Op.in]: officeIds } };
     if (status) condition.status = status;
+
+    if (startDate && endDate) {
+      condition.booking_date = { [Op.between]: [startDate, endDate] };
+    } else if (startDate) {
+      condition.booking_date = { [Op.gte]: startDate };
+    } else if (endDate) {
+      condition.booking_date = { [Op.lte]: endDate };
+    }
     
     if (search) {
       condition[Op.or] = [

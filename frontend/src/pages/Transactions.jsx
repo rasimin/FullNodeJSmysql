@@ -53,11 +53,20 @@ const Transactions = () => {
     if (status !== 'loading') setTimeout(() => setNotification({ status: 'idle' }), delay);
   };
 
+  const [dateRange, setDateRange] = useState({ start: '', end: '' });
+
   const fetchTransactions = async () => {
     setLoading(true);
     try {
       const r = await api.get('/bookings', {
-        params: { page, search, status: statusFilter, size: 8 }
+        params: { 
+          page, 
+          search, 
+          status: statusFilter, 
+          size: 8,
+          startDate: dateRange.start,
+          endDate: dateRange.end
+        }
       });
       const data = r.data.items || (Array.isArray(r.data) ? r.data : []);
       setTransactions(data);
@@ -72,7 +81,7 @@ const Transactions = () => {
 
   useEffect(() => {
     fetchTransactions();
-  }, [page, search, statusFilter]);
+  }, [page, search, statusFilter, dateRange]);
 
   const handlePrintDoc = async (bookingId, type, openModal = true) => {
     notify('loading', `Preparing document...`);
@@ -244,25 +253,70 @@ const Transactions = () => {
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text" placeholder="Search customer or unit..."
-            className="input pl-10 h-11"
-            value={search} onChange={(e) => setSearch(e.target.value)}
-          />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+        <div className="lg:col-span-4 relative">
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Search Transaction</label>
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text" placeholder="Search customer or unit..."
+              className="input pl-10 h-11 text-xs"
+              value={search} onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
         </div>
-        <select
-          className="input h-11 text-xs"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="">All Status</option>
-          <option value="Active">Active Booking</option>
-          <option value="Sold">Sold / Deal</option>
-          <option value="Cancelled">Cancelled</option>
-        </select>
+
+        <div className="lg:col-span-2">
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Status</label>
+          <select
+            className="input h-11 text-xs font-bold"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="">All Status</option>
+            <option value="Active">Active Booking</option>
+            <option value="Sold">Sold / Deal</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
+
+        <div className="lg:col-span-4 grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Start Date</label>
+            <div className="relative group">
+              <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-focus-within:text-blue-500 transition-colors" />
+              <input 
+                type="date" 
+                className="input pl-9 h-11 text-[11px] font-bold w-full cursor-pointer" 
+                value={dateRange.start}
+                onClick={(e) => e.target.showPicker?.()}
+                onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">End Date</label>
+            <div className="relative group">
+              <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-focus-within:text-blue-500 transition-colors" />
+              <input 
+                type="date" 
+                className="input pl-9 h-11 text-[11px] font-bold w-full cursor-pointer" 
+                value={dateRange.end}
+                onClick={(e) => e.target.showPicker?.()}
+                onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="lg:col-span-2">
+          <button 
+            onClick={() => setDateRange({ start: '', end: '' })}
+            className="w-full h-11 bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+          >
+            Clear Date
+          </button>
+        </div>
       </div>
 
       {/* Content */}
@@ -460,10 +514,17 @@ const Transactions = () => {
                           <Building2 size={12} className="text-gray-400" />
                           <p className="text-[10px] font-bold text-gray-500 uppercase">{t.Office?.name || 'Central Office'}</p>
                         </div>
-                        {t.salesAgent && (
-                          <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-50/50 dark:bg-blue-900/20 rounded-lg">
-                            <UserCheck size={10} className="text-blue-500" />
-                            <p className="text-[9px] font-black text-blue-600 uppercase tracking-tighter">{t.salesAgent?.name.split(' ')[0]}</p>
+                        {t.salesAgent ? (
+                          <div className="flex items-center gap-1.5 px-2 py-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-xl border border-blue-100 dark:border-blue-800/50 min-w-0">
+                            <UserCheck size={12} className="text-blue-500 shrink-0" />
+                            <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-tight truncate" title={t.salesAgent?.name}>
+                              {t.salesAgent?.name}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 px-2 py-1.5 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800/50">
+                            <User size={12} className="text-gray-400 shrink-0" />
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">No Sales Agent</p>
                           </div>
                         )}
                       </div>

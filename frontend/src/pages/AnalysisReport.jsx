@@ -526,12 +526,21 @@ const AnalysisReport = () => {
                             <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center overflow-hidden border border-blue-200 dark:border-blue-800">
                               {agent.salesAgent?.avatar_url ? (
                                 <img 
-                                  src={agent.salesAgent.avatar_url.startsWith('http') ? agent.salesAgent.avatar_url : `${IMAGE_BASE_URL}/${agent.salesAgent.avatar_url}`} 
-                                  alt="" 
+                                  src={agent.salesAgent.avatar_url.startsWith('http') 
+                                    ? agent.salesAgent.avatar_url 
+                                    : `${IMAGE_BASE_URL}${agent.salesAgent.avatar_url.startsWith('/') ? '' : '/'}${agent.salesAgent.avatar_url}`
+                                  } 
+                                  alt={agent.salesAgent?.name} 
                                   className="w-full h-full object-cover" 
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(agent.salesAgent?.name || 'SA');
+                                  }}
                                 />
                               ) : (
-                                <span className="text-[10px] font-black text-blue-600">{agent.salesAgent?.name?.substring(0, 2).toUpperCase()}</span>
+                                <span className="text-[10px] font-black text-blue-600">
+                                  {agent.salesAgent?.name?.substring(0, 2).toUpperCase() || 'SA'}
+                                </span>
                               )}
                             </div>
                             <div>

@@ -126,7 +126,7 @@ exports.getDashboardStats = async (req, res) => {
     // 6. Sales Agent Performance
     const agentPerformanceRaw = await SalesAgent.findAll({
       where: { office_id: { [Op.in]: officeIds } },
-      attributes: ['id', 'name', 'sales_code'],
+      attributes: ['id', 'name', 'sales_code', 'avatar_url'],
       include: [{
         model: Vehicle,
         as: 'soldVehicles',
@@ -139,6 +139,7 @@ exports.getDashboardStats = async (req, res) => {
     const agentPerformance = agentPerformanceRaw.map(agent => ({
       name: agent.name,
       sales_code: agent.sales_code,
+      avatar_url: agent.avatar_url,
       soldCount: agent.soldVehicles?.length || 0,
       totalRevenue: agent.soldVehicles?.reduce((acc, v) => acc + Number(v.price), 0) || 0
     })).sort((a, b) => b.soldCount - a.soldCount);
@@ -575,9 +576,7 @@ exports.getBusinessAnalysisReport = async (req, res) => {
       }],
       group: ['sales_agent_id', 'salesAgent.id'],
       order: [[sequelize.literal('units_sold'), 'DESC']],
-      limit: 10,
-      raw: true,
-      nest: true
+      limit: 10
     });
 
 

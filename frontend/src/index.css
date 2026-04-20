@@ -174,15 +174,18 @@
     box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
   }
 
-  /* Hide Native Date Icon */
+  /* Native Date Icon Styling */
   .input::-webkit-calendar-picker-indicator {
-    opacity: 0 !important;
-    position: absolute;
-    right: 0;
-    width: 30px;
-    height: 100%;
     cursor: pointer;
-    z-index: 10;
+    padding: 2px;
+    filter: invert(0.5);
+    transition: filter 0.2s ease;
+  }
+  .input::-webkit-calendar-picker-indicator:hover {
+    filter: invert(0.3);
+  }
+  .dark .input::-webkit-calendar-picker-indicator {
+    filter: invert(0.8);
   }
 
   /* ——— BUTTONS ——— */
