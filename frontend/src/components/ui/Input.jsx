@@ -26,7 +26,7 @@ const Input = ({ label, type = 'text', placeholder, value, onChange, required = 
               try { e.currentTarget.showPicker(); } catch (err) { }
             }
           }}
-          className={`input ${Icon ? 'pl-9' : ''} ${(isDate || isTime) ? 'pr-10' : ''} ${disabled || readOnly ? 'bg-gray-50 dark:bg-gray-900/50 cursor-not-allowed' : ''} ${isDate || isTime ? 'cursor-pointer' : ''} appearance-none custom-date-input`}
+          className={`input ${Icon ? 'pl-9' : ''} ${(isDate || isTime) ? 'pr-10' : ''} ${disabled || readOnly ? 'bg-gray-50 dark:bg-gray-900/50 cursor-not-allowed' : ''} ${isDate || isTime ? 'cursor-pointer' : ''} ${required && !value && !disabled && !readOnly ? 'border-red-500/50 bg-red-50/10 dark:bg-red-900/5' : ''} appearance-none custom-date-input`}
         />
         {(isDate || isTime) && (
           <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400 group-hover:text-blue-500 transition-colors">

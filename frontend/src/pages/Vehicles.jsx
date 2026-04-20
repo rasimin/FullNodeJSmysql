@@ -708,6 +708,7 @@ const Vehicles = () => {
                       { value: 'Mobil', label: 'Mobil' },
                       { value: 'Motor', label: 'Motor' }
                     ]}
+                    required
                     disabled={isViewOnly}
                   />
                   <Select label="Brand / Merk" value={formData.brand} onChange={e => setFormData({ ...formData, brand: e.target.value })} options={brands.map(b => ({ value: b.name, label: b.name }))} required disabled={isViewOnly} />

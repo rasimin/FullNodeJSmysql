@@ -5,7 +5,7 @@ import {
   Search, FileSpreadsheet, Printer, Eye, Calendar, User,
   Phone, Tag, Clock, CheckCircle, XCircle, MoreHorizontal,
   Building2, Hash, Wallet, UserCheck, Trash2, Edit, CheckCircle2,
-  PhoneCall, CreditCard as CardIcon
+  PhoneCall, CreditCard as CardIcon, ChevronRight
 } from 'lucide-react';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
