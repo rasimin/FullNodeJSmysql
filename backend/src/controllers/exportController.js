@@ -527,11 +527,248 @@ const exportDashboardPdf = async (req, res) => {
   }
 };
 
+const exportFinancialReportPdf = async (req, res) => {
+  try {
+    const { officeId, year } = req.query;
+    const user = req.user;
+    const isSuperAdmin = user.Role?.name === 'Super Admin';
+    let officeIds = [];
+    
+    if (isSuperAdmin) {
+      if (officeId) officeIds = [officeId];
+      else {
+        const all = await Office.findAll({ attributes: ['id'] });
+        officeIds = all.map(o => o.id);
+      }
+    } else {
+      const currentOffice = await Office.findByPk(user.office_id);
+      if (currentOffice && !currentOffice.parent_id) {
+        const mapping = await Office.findAll({
+          where: { [Op.or]: [{ id: user.office_id }, { parent_id: user.office_id }] },
+          attributes: ['id']
+        });
+        officeIds = mapping.map(o => o.id);
+      } else {
+        officeIds = [user.office_id];
+      }
+    }
+
+    const where = { office_id: { [Op.in]: officeIds } };
+    let salesWhere = { ...where, status: 'Sold' };
+    let purchaseWhere = { ...where };
+    let bookingWhere = { ...where, status: 'Cancelled' };
+    
+    if (year && year !== 'all') {
+      const startDate = new Date(`${year}-01-01T00:00:00`);
+      const endDate = new Date(`${year}-12-31T23:59:59`);
+      salesWhere.sold_date = { [Op.between]: [startDate, endDate] };
+      purchaseWhere.entry_date = { [Op.between]: [startDate, endDate] };
+      bookingWhere.booking_date = { [Op.between]: [startDate, endDate] };
+    }
+
+    // Fetch Data
+    const sales = await Vehicle.findAll({ where: salesWhere });
+    const purchases = await Vehicle.findAll({ where: purchaseWhere });
+    const cancellations = await Booking.findAll({ 
+      where: bookingWhere,
+      include: [{ model: Vehicle, attributes: ['type', 'brand', 'model'] }]
+    });
+
+    // Grouping Logic
+    const summary = {}; // { Category: { sales: [], purchases: [], cancellations: [] } }
+    const categories = [...new Set([...sales.map(v => v.type), ...purchases.map(v => v.type)])];
+
+    categories.forEach(cat => {
+      summary[cat] = {
+        sales: sales.filter(v => v.type === cat),
+        purchases: purchases.filter(v => v.type === cat),
+        cancellations: cancellations.filter(b => b.Vehicle?.type === cat)
+      };
+    });
+
+    const doc = new PDFDocument({ size: 'A4', margin: 40 });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=Financial_Report_${year}.pdf`);
+    doc.pipe(res);
+
+    // Header
+    doc.fontSize(18).font('Helvetica-Bold').fillColor('#1e40af').text('FINANCIAL PERFORMANCE DETAIL REPORT', { align: 'center' });
+    doc.fontSize(10).font('Helvetica').fillColor('#64748b').text(`Fiscal Period: ${year === 'all' ? 'All-Time' : year}`, { align: 'center' });
+    doc.moveDown(1);
+    doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor('#e2e8f0').stroke();
+    doc.moveDown(2);
+
+    const formatIDR = (val) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
+
+    // Render Categories
+    categories.forEach(cat => {
+      const data = summary[cat];
+      
+      // Category Header
+      doc.rect(40, doc.y, 515, 20).fill('#f8fafc');
+      doc.fillColor('#334155').font('Helvetica-Bold').fontSize(11).text(`CATEGORY: ${cat.toUpperCase()}`, 50, doc.y - 15);
+      doc.moveDown(1);
+
+      // --- Sales Section ---
+      doc.fontSize(9).font('Helvetica-Bold').fillColor('#16a34a').text('SALES (REVENUE)', 50);
+      doc.moveDown(0.5);
+      
+      let salesTotal = 0;
+      let marginTotal = 0;
+      
+      // Table Header
+      const tableX = [50, 200, 320, 420];
+      doc.fontSize(8).font('Helvetica-Bold').fillColor('#475569');
+      doc.text('Vehicle Description', tableX[0], doc.y);
+      doc.text('Sold Date', tableX[1], doc.y);
+      doc.text('Revenue', tableX[2], doc.y);
+      doc.text('Margin', tableX[3], doc.y);
+      doc.moveDown(0.5);
+      doc.moveTo(50, doc.y).lineTo(540, doc.y).strokeColor('#f1f5f9').stroke();
+      doc.moveDown(0.3);
+
+      doc.font('Helvetica').fillColor('#000');
+      data.sales.forEach(s => {
+        const margin = Number(s.price) - (Number(s.purchase_price) + Number(s.service_cost));
+        salesTotal += Number(s.price);
+        marginTotal += margin;
+
+        if (doc.y > 750) doc.addPage();
+        
+        doc.text(`${s.brand} ${s.model}`, tableX[0], doc.y, { width: 140 });
+        const textY = doc.y;
+        doc.text(s.sold_date || '-', tableX[1], textY);
+        doc.text(formatIDR(s.price), tableX[2], textY);
+        doc.text(formatIDR(margin), tableX[3], textY);
+        doc.moveDown(0.5);
+      });
+
+      // Sub-total Sales
+      doc.moveDown(0.5);
+      doc.font('Helvetica-Bold').fillColor('#16a34a');
+      doc.text(`Sub-total ${cat} Sales:`, tableX[1], doc.y);
+      doc.text(formatIDR(salesTotal), tableX[2], doc.y);
+      doc.text(formatIDR(marginTotal), tableX[3], doc.y);
+      doc.moveDown(2);
+
+      // --- Purchase Section ---
+      if (doc.y > 700) doc.addPage();
+      doc.fontSize(9).font('Helvetica-Bold').fillColor('#2563eb').text('PURCHASES (ACQUISITION)', 50);
+      doc.moveDown(0.5);
+      
+      let buyTotal = 0;
+      let serviceTotal = 0;
+      
+      doc.fontSize(8).font('Helvetica-Bold').fillColor('#475569');
+      doc.text('Vehicle Description', tableX[0], doc.y);
+      doc.text('Entry Date', tableX[1], doc.y);
+      doc.text('Acquisition', tableX[2], doc.y);
+      doc.text('Service Cost', tableX[3], doc.y);
+      doc.moveDown(0.5);
+      doc.moveTo(50, doc.y).lineTo(540, doc.y).strokeColor('#f1f5f9').stroke();
+      doc.moveDown(0.3);
+
+      doc.font('Helvetica').fillColor('#000');
+      data.purchases.forEach(p => {
+        buyTotal += Number(p.purchase_price);
+        serviceTotal += Number(p.service_cost);
+        
+        if (doc.y > 750) doc.addPage();
+        doc.text(`${p.brand} ${p.model}`, tableX[0], doc.y, { width: 140 });
+        const textY = doc.y;
+        doc.text(p.entry_date, tableX[1], textY);
+        doc.text(formatIDR(p.purchase_price), tableX[2], textY);
+        doc.text(formatIDR(p.service_cost), tableX[3], textY);
+        doc.moveDown(0.5);
+      });
+
+      doc.moveDown(0.5);
+      doc.font('Helvetica-Bold').fillColor('#2563eb');
+      doc.text(`Sub-total ${cat} Purchases:`, tableX[1], doc.y);
+      doc.text(formatIDR(buyTotal), tableX[2], doc.y);
+      doc.text(formatIDR(serviceTotal), tableX[3], doc.y);
+      doc.moveDown(2);
+
+      // --- Cancellation Section ---
+      if (data.cancellations.length > 0) {
+        if (doc.y > 700) doc.addPage();
+        doc.fontSize(9).font('Helvetica-Bold').fillColor('#ea580c').text('CANCELLATION REVENUE (NON-REFUNDABLE DP)', 50);
+        doc.moveDown(0.5);
+        
+        let cancelTotal = 0;
+        doc.fontSize(8).font('Helvetica-Bold').fillColor('#475569');
+        doc.text('Customer Name', tableX[0], doc.y);
+        doc.text('Vehicle', tableX[1], doc.y);
+        doc.text('DP Income', tableX[2], doc.y);
+        doc.moveDown(0.5);
+        doc.moveTo(50, doc.y).lineTo(540, doc.y).strokeColor('#f1f5f9').stroke();
+        doc.moveDown(0.3);
+
+        doc.font('Helvetica').fillColor('#000');
+        data.cancellations.forEach(c => {
+          cancelTotal += Number(c.down_payment);
+          if (doc.y > 750) doc.addPage();
+          doc.text(c.customer_name, tableX[0], doc.y);
+          const textY = doc.y;
+          doc.text(`${c.Vehicle?.brand} ${c.Vehicle?.model}`, tableX[1], textY);
+          doc.text(formatIDR(c.down_payment), tableX[2], textY);
+          doc.moveDown(0.5);
+        });
+        
+        doc.moveDown(0.5);
+        doc.font('Helvetica-Bold').fillColor('#ea580c');
+        doc.text(`Sub-total ${cat} Cancel Revenue:`, tableX[1], doc.y);
+        doc.text(formatIDR(cancelTotal), tableX[2], doc.y);
+        doc.moveDown(2);
+      }
+
+      doc.moveDown(1);
+      doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor('#e2e8f0').lineWidth(0.5).stroke();
+      doc.moveDown(2);
+    });
+
+    // Summary Page / Section
+    doc.addPage();
+    doc.fontSize(14).font('Helvetica-Bold').fillColor('#1e40af').text('EXECUTIVE FINANCIAL SUMMARY', { align: 'left' });
+    doc.moveDown(1);
+    
+    const grandSales = sales.reduce((sum, v) => sum + Number(v.price), 0);
+    const grandMargin = sales.reduce((sum, v) => sum + (Number(v.price) - (Number(v.purchase_price) + Number(v.service_cost))), 0);
+    const grandBuy = purchases.reduce((sum, v) => sum + Number(v.purchase_price), 0);
+    const grandService = purchases.reduce((sum, v) => sum + Number(v.service_cost), 0);
+    const grandCancel = cancellations.reduce((sum, b) => sum + Number(b.down_payment), 0);
+
+    const summaryData = [
+      { label: 'Total Sales Revenue', value: formatIDR(grandSales), color: '#16a34a' },
+      { label: 'Total Net Margin (Profit)', value: formatIDR(grandMargin), color: '#16a34a' },
+      { label: 'Total Capital Expenditure (Buying)', value: formatIDR(grandBuy), color: '#dc2626' },
+      { label: 'Total Service & Prep Costs', value: formatIDR(grandService), color: '#ea580c' },
+      { label: 'Total Cancellation Income', value: formatIDR(grandCancel), color: '#2563eb' },
+      { label: 'NET CASH MOVEMENT', value: formatIDR(grandSales + grandCancel - (grandBuy + grandService)), color: '#1e40af', bold: true }
+    ];
+
+    summaryData.forEach(item => {
+      doc.fontSize(10).font(item.bold ? 'Helvetica-Bold' : 'Helvetica').fillColor('#475569').text(item.label, 50);
+      doc.fillColor(item.color).text(item.value, 300, doc.y - 12, { align: 'right', width: 200 });
+      doc.moveDown(0.8);
+    });
+
+    // Footer
+    doc.fontSize(8).fillColor('#94a3b8').text(`Generated on: ${new Date().toLocaleString('id-ID')}`, 50, 780, { align: 'center' });
+
+    doc.end();
+  } catch (error) {
+    console.error('Export Financial PDF Error:', error);
+    if (!res.headersSent) res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   exportUsers,
   exportSalesAgents,
   exportVehicles,
   exportBookingPdf,
   exportSaleInvoicePdf,
-  exportDashboardPdf
+  exportDashboardPdf,
+  exportFinancialReportPdf
 };

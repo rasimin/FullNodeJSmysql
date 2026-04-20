@@ -7,8 +7,9 @@ import {
 import {
   TrendingUp, Package, DollarSign, ShoppingCart, 
   ArrowUpRight, BarChart2, PieChart as PieIcon,
-  Activity, Calendar, Filter, Download, Briefcase, Wallet, Eye, EyeOff, XCircle
+  Activity, Calendar, Filter, Download, Briefcase, Wallet, Eye, EyeOff, XCircle, FileText
 } from 'lucide-react';
+import PdfViewerModal from '../components/PdfViewerModal';
 import { motion } from 'framer-motion';
 import { formatOfficeHierarchy } from '../utils/hierarchy';
 import { API_URL, IMAGE_BASE_URL } from '../config';
@@ -25,10 +26,38 @@ const AnalysisReport = () => {
   const [showFullAmount, setShowFullAmount] = useState(false);
   const [offices, setOffices] = useState([]);
   const [notification, setNotification] = useState({ status: 'idle', message: '' });
+  
+  // PDF Modal State
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const [pdfDocuments, setPdfDocuments] = useState([]);
 
   const notify = (status, message, delay = 2000) => {
     setNotification({ status, message });
     if (status !== 'loading') setTimeout(() => setNotification({ status: 'idle' }), delay);
+  };
+
+  const handleGenerateDetailedReport = async () => {
+    notify('loading', 'Generating Detailed Financial Report...');
+    try {
+      const res = await api.get('/export/financial-report', {
+        params: { year: selectedYear, officeId: selectedOffice },
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const filename = `Financial_Report_${selectedYear}_${selectedOffice || 'All'}.pdf`;
+      
+      setPdfDocuments([{
+        title: `Financial Detail - ${selectedYear === 'all' ? 'All-Time' : selectedYear}`,
+        url,
+        filename
+      }]);
+      setIsPdfModalOpen(true);
+      notify('success', 'Report generated successfully!');
+    } catch (err) {
+      console.error('Failed to generate PDF report', err);
+      notify('error', 'Failed to generate PDF report');
+    }
   };
 
   // Robust check for Head Office / Super Admin permissions
@@ -147,6 +176,12 @@ const AnalysisReport = () => {
                 </select>
               </div>
             )}
+            <button 
+              onClick={handleGenerateDetailedReport}
+              className="px-4 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/25"
+            >
+                <FileText size={14} /> Financial PDF Report
+            </button>
             <button onClick={fetchData} className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
                 <Activity size={14} className="text-blue-500" /> Refresh Data
             </button>
@@ -235,98 +270,107 @@ const AnalysisReport = () => {
           )}
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Cumulative Sales Summary */}
-          <div className="bg-gradient-to-br from-green-50 to-white border border-green-100 dark:from-green-900/10 dark:to-gray-800 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm">
-              <div className="h-1 bg-green-500" />
-              <div className="p-6">
-                  <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
-                      <Briefcase size={16} className="text-green-500" /> Sales Summary
-                  </h3>
-                  <div className="grid grid-cols-3 gap-4">
-                      <div className="space-y-1">
-                          <p className="text-[10px] font-black text-gray-400 uppercase">Total Units</p>
-                          <p className="text-xl font-black text-gray-900 dark:text-white">{data?.overall?.sales?.units}</p>
-                          <p className="text-[9px] font-bold text-gray-400 uppercase">Closed</p>
+          <div className="bg-gradient-to-br from-green-50/50 to-white border border-green-100 dark:from-green-900/10 dark:to-gray-800 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm flex flex-col">
+              <div className="h-1.5 bg-green-500" />
+              <div className="p-6 flex-1">
+                  <div className="flex justify-between items-start mb-6">
+                    <h3 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-2">
+                        <div className="p-1.5 bg-green-100 dark:bg-green-900/40 rounded-lg"><Briefcase size={14} className="text-green-600" /></div> Sales Summary
+                    </h3>
+                    <span className="px-2 py-0.5 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-[8px] font-black rounded uppercase">Revenue Stream</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-6">
+                      <div className="space-y-1 border-r border-gray-100 dark:border-gray-700/50">
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Total Units</p>
+                          <p className="text-2xl font-black text-gray-900 dark:text-white leading-none">{data?.overall?.sales?.units}</p>
+                          <p className="text-[8px] font-bold text-gray-400 uppercase">Closed Deals</p>
+                      </div>
+                      <div className="space-y-1 border-r border-gray-100 dark:border-gray-700/50">
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Gross Revenue</p>
+                          <p className="text-lg font-black text-blue-600 leading-none">{displayAmount(data?.overall?.sales?.revenue)}</p>
+                          <p className="text-[8px] font-bold text-gray-400 uppercase">Total Value</p>
                       </div>
                       <div className="space-y-1">
-                          <p className="text-[10px] font-black text-gray-400 uppercase">Revenue</p>
-                          <p className="text-sm xl:text-base font-black text-blue-600 truncate">{displayAmount(data?.overall?.sales?.revenue)}</p>
-                          <p className="text-[9px] font-bold text-gray-400 uppercase">Gross</p>
-                      </div>
-                      <div className="space-y-1">
-                          <p className="text-[10px] font-black text-gray-400 uppercase">Margin</p>
-                          <p className="text-sm xl:text-base font-black text-green-600 truncate">{displayAmount(data?.overall?.sales?.margin)}</p>
-                          <p className="text-[9px] font-bold text-gray-400 uppercase">Profit</p>
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Net Margin</p>
+                          <p className="text-lg font-black text-green-600 leading-none">{displayAmount(data?.overall?.sales?.margin)}</p>
+                          <p className="text-[8px] font-bold text-gray-400 uppercase">Total Profit</p>
                       </div>
                   </div>
               </div>
           </div>
 
           {/* Cumulative Purchase Summary */}
-          <div className="bg-gradient-to-br from-blue-50 to-white border border-blue-100 dark:from-blue-900/10 dark:to-gray-800 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm">
-              <div className="h-1 bg-blue-500" />
-              <div className="p-6">
-                  <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
-                      <ShoppingCart size={16} className="text-blue-500" /> Purchase Summary
-                  </h3>
-                  <div className="grid grid-cols-3 gap-4">
-                      <div className="space-y-1">
-                          <p className="text-[10px] font-black text-gray-400 uppercase">Total Units</p>
-                          <p className="text-xl font-black text-gray-900 dark:text-white">{data?.overall?.purchases?.units}</p>
-                          <p className="text-[9px] font-bold text-gray-400 uppercase">Inventory In</p>
+          <div className="bg-gradient-to-br from-blue-50/50 to-white border border-blue-100 dark:from-blue-900/10 dark:to-gray-800 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm flex flex-col">
+              <div className="h-1.5 bg-blue-500" />
+              <div className="p-6 flex-1">
+                  <div className="flex justify-between items-start mb-6">
+                    <h3 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-2">
+                        <div className="p-1.5 bg-blue-100 dark:bg-blue-900/40 rounded-lg"><ShoppingCart size={14} className="text-blue-600" /></div> Purchase Summary
+                    </h3>
+                    <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[8px] font-black rounded uppercase">Capital Allocation</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-6">
+                      <div className="space-y-1 border-r border-gray-100 dark:border-gray-700/50">
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Stock In</p>
+                          <p className="text-2xl font-black text-gray-900 dark:text-white leading-none">{data?.overall?.purchases?.units}</p>
+                          <p className="text-[8px] font-bold text-gray-400 uppercase">New Units</p>
+                      </div>
+                      <div className="space-y-1 border-r border-gray-100 dark:border-gray-700/50">
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Acquisition</p>
+                          <p className="text-lg font-black text-red-600 leading-none">{displayAmount(data?.overall?.purchases?.cost)}</p>
+                          <p className="text-[8px] font-bold text-gray-400 uppercase">Capital Out</p>
                       </div>
                       <div className="space-y-1">
-                          <p className="text-[10px] font-black text-gray-400 uppercase">Acquisition</p>
-                          <p className="text-sm xl:text-base font-black text-red-600 truncate">{displayAmount(data?.overall?.purchases?.cost)}</p>
-                          <p className="text-[9px] font-bold text-gray-400 uppercase">Capital Out</p>
-                      </div>
-                      <div className="space-y-1">
-                          <p className="text-[10px] font-black text-gray-400 uppercase">Service Cost</p>
-                          <p className="text-sm xl:text-base font-black text-orange-600 truncate">{displayAmount(data?.overall?.purchases?.service)}</p>
-                          <p className="text-[9px] font-bold text-gray-400 uppercase">Prep Costs</p>
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Service/Prep</p>
+                          <p className="text-lg font-black text-orange-600 leading-none">{displayAmount(data?.overall?.purchases?.service)}</p>
+                          <p className="text-[8px] font-bold text-gray-400 uppercase">Total Costs</p>
                       </div>
                   </div>
               </div>
           </div>
 
           {/* Cancellation Income Card */}
-          <div className="bg-gradient-to-br from-orange-50 to-white border border-orange-100 dark:from-orange-900/10 dark:to-gray-800 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm">
-              <div className="h-1 bg-orange-500" />
-              <div className="p-6">
-                  <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
-                      <XCircle size={16} className="text-orange-500" /> Cancellation Revenue
+          <div className="bg-gradient-to-br from-orange-50/50 to-white border border-orange-100 dark:from-orange-900/10 dark:to-gray-800 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm flex flex-col">
+              <div className="h-1.5 bg-orange-500" />
+              <div className="p-6 flex-1">
+                  <h3 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                      <div className="p-1.5 bg-orange-100 dark:bg-orange-900/40 rounded-lg"><XCircle size={14} className="text-orange-600" /></div> Cancellation Revenue
                   </h3>
-                  <div className="flex items-end justify-between">
+                  <div className="flex items-center justify-between bg-white dark:bg-gray-800/50 p-4 rounded-xl border border-orange-100/50 dark:border-orange-900/20">
                       <div>
-                          <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Non-Refundable DP</p>
-                          <p className="text-2xl font-black text-orange-600">{displayAmount(data?.currentStock?.cancelledDPIncome)}</p>
+                          <p className="text-[9px] font-black text-gray-400 uppercase mb-1">Non-Refundable DP</p>
+                          <p className="text-3xl font-black text-orange-600 leading-none">{displayAmount(data?.currentStock?.cancelledDPIncome)}</p>
                       </div>
                       <div className="text-right">
-                          <p className="text-[9px] font-bold text-gray-400 uppercase leading-tight">Income from<br/>Cancelled Bookings</p>
+                          <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase leading-relaxed">
+                            Secured Revenue <br/>
+                            <span className="text-[8px] text-gray-400">From Cancelled Bookings</span>
+                          </p>
                       </div>
                   </div>
               </div>
           </div>
 
           {/* Cash Flow Balance Card with Opening Balance */}
-          <div className="bg-gradient-to-br from-purple-50 to-white border border-purple-100 dark:from-purple-900/10 dark:to-gray-800 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm">
-              <div className="h-1 bg-purple-500" />
-              <div className="p-6">
-                  <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
-                      <Wallet size={16} className="text-purple-500" /> Cash Flow Balance
+          <div className="bg-gradient-to-br from-purple-50/50 to-white border border-purple-100 dark:from-purple-900/10 dark:to-gray-800 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm flex flex-col">
+              <div className="h-1.5 bg-purple-500" />
+              <div className="p-6 flex-1">
+                  <h3 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                      <div className="p-1.5 bg-purple-100 dark:bg-purple-900/40 rounded-lg"><Wallet size={14} className="text-purple-600" /></div> Cash Flow Balance
                   </h3>
                   <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-2 pb-2 border-b border-gray-100 dark:border-gray-700">
+                      <div className="grid grid-cols-2 gap-4 pb-2 border-b border-gray-100 dark:border-gray-700/50">
                           <div>
                               <p className="text-[9px] font-black text-gray-400 uppercase">Opening Balance</p>
-                              <p className={`text-xs font-bold ${data?.overall?.openingBalance >= 0 ? 'text-gray-600 dark:text-gray-300' : 'text-red-500'}`}>
+                              <p className={`text-xs font-black ${data?.overall?.openingBalance >= 0 ? 'text-gray-900 dark:text-gray-200' : 'text-red-500'}`}>
                                   {displayAmount(data?.overall?.openingBalance || 0)}
                               </p>
                           </div>
-                          <div className="text-right">
-                              <p className="text-[9px] font-black text-gray-400 uppercase">Current Movement</p>
-                              <p className={`text-xs font-bold ${
+                          <div className="text-right border-l border-gray-100 dark:border-gray-700/50 pl-4">
+                              <p className="text-[9px] font-black text-gray-400 uppercase">Current Flow</p>
+                              <p className={`text-xs font-black ${
                                   (data?.overall?.sales?.revenue - (data?.overall?.purchases?.cost + data?.overall?.purchases?.service)) >= 0 
                                   ? 'text-green-600' : 'text-red-600'
                               }`}>
@@ -335,30 +379,21 @@ const AnalysisReport = () => {
                           </div>
                       </div>
 
-                      <div className="flex justify-between items-end">
+                      <div className="flex justify-between items-center">
                           <div>
-                              <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Closing Cash Balance</p>
-                              <p className={`text-2xl font-black ${
+                              <p className="text-[9px] font-black text-gray-400 uppercase mb-1">Final Cash Position</p>
+                              <p className={`text-3xl font-black leading-none ${
                                   ((data?.overall?.openingBalance || 0) + (data?.overall?.sales?.revenue - (data?.overall?.purchases?.cost + data?.overall?.purchases?.service))) >= 0 
                                   ? 'text-green-600' : 'text-red-600'
                               }`}>
                                   {displayAmount((data?.overall?.openingBalance || 0) + (data?.overall?.sales?.revenue - (data?.overall?.purchases?.cost + data?.overall?.purchases?.service)))}
                               </p>
                           </div>
-
                           <div className="text-right">
-                              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">
-                                {selectedYear === 'all' ? 'All-Time Account Value' : `End of ${selectedYear} Status`}
-                              </p>
+                              <div className="inline-block px-2 py-1 bg-purple-50 dark:bg-purple-900/20 rounded text-[8px] font-black text-purple-600 dark:text-purple-400 uppercase">
+                                {selectedYear === 'all' ? 'LIFETIME STATUS' : `${selectedYear} STATUS`}
+                              </div>
                           </div>
-                      </div>
-                      <div className="w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
-                          <div 
-                              className="bg-purple-500 h-full" 
-                              style={{ 
-                                  width: `${Math.min(100, (((data?.overall?.openingBalance || 0) + data?.overall?.sales?.revenue) / Math.max(1, (data?.overall?.purchases?.cost + data?.overall?.purchases?.service))) * 100)}%` 
-                              }} 
-                          />
                       </div>
                   </div>
               </div>
@@ -623,6 +658,12 @@ const AnalysisReport = () => {
           </div>
         </div>
       </div>
+
+      <PdfViewerModal 
+        isOpen={isPdfModalOpen} 
+        onClose={() => setIsPdfModalOpen(false)} 
+        documents={pdfDocuments} 
+      />
     </div>
   );
 };
