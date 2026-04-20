@@ -1,4 +1,4 @@
-const { Vehicle, Office, User, VehicleBrand, SalesAgent, VehicleImage, sequelize } = require('../models');
+const { Vehicle, Office, User, VehicleBrand, SalesAgent, VehicleImage, Booking, sequelize } = require('../models');
 const Location = require('../models/Location');
 const { Op } = require('sequelize');
 const sharp = require('sharp');
@@ -34,6 +34,12 @@ const getVehicleById = async (req, res) => {
         },
         { model: User, attributes: ['name'] },
         { model: SalesAgent, as: 'salesAgent', attributes: ['name', 'sales_code'] },
+        { 
+          model: Booking, 
+          limit: 1, 
+          order: [['created_at', 'DESC']],
+          attributes: ['id', 'status', 'cancellation_reason', 'notes', 'down_payment', 'customer_name']
+        },
         { model: VehicleImage, as: 'images', attributes: ['id', 'image_url', 'is_primary'] }
       ]
     });
@@ -145,7 +151,15 @@ const getVehicles = async (req, res) => {
           ]
         },
         { model: User, attributes: ['name'] },
-        { model: SalesAgent, as: 'salesAgent', attributes: ['name', 'sales_code'] },
+        { 
+          model: SalesAgent, as: 'salesAgent', attributes: ['name', 'sales_code'] 
+        },
+        { 
+          model: Booking, 
+          limit: 1, 
+          order: [['created_at', 'DESC']],
+          attributes: ['id', 'status', 'cancellation_reason', 'notes', 'down_payment', 'customer_name']
+        },
         { model: VehicleImage, as: 'images', attributes: ['id', 'image_url', 'is_primary'] }
       ],
       order: [['created_at', 'DESC']]
@@ -288,6 +302,17 @@ const updateVehicle = async (req, res) => {
       userId: user.id,
       individualHooks: true 
     });
+
+    // Update cancellation reason in the latest booking if provided
+    if (req.body.cancellation_reason !== undefined) {
+      const lastBooking = await Booking.findOne({
+        where: { vehicle_id: id },
+        order: [['created_at', 'DESC']]
+      });
+      if (lastBooking) {
+        await lastBooking.update({ cancellation_reason: req.body.cancellation_reason }, { userId: user.id });
+      }
+    }
 
     res.json({ message: 'Vehicle updated successfully' });
   } catch (error) {

@@ -29,7 +29,9 @@ const Transactions = () => {
 
   // Delete handling
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [cancellationReason, setCancellationReason] = useState('');
 
   // PDF Viewer handling
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
@@ -192,6 +194,27 @@ const Transactions = () => {
     return parseInt(val).toLocaleString('id-ID');
   };
 
+  const handleCancelBooking = async (type) => {
+    if (!cancellationReason.trim()) {
+        notify('error', 'Please provide a reason for cancellation');
+        return;
+    }
+    notify('loading', 'Processing cancellation...');
+    try {
+      await api.put(`/bookings/${selectedTransaction.id}/cancel`, { 
+        type,
+        remark: cancellationReason
+      });
+      notify('success', 'Booking cancelled successfully');
+      setIsCancelModalOpen(false);
+      setCancellationReason('');
+      fetchTransactions();
+    } catch (err) {
+      console.error('Cancel booking error:', err);
+      notify('error', err.response?.data?.message || 'Failed to cancel booking');
+    }
+  };
+
   const handleDelete = async () => {
     if (!selectedTransaction) return;
     notify('loading', 'Moving transaction to trash...');
@@ -216,9 +239,12 @@ const Transactions = () => {
       case 'sold':
         return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400 border border-green-100 dark:border-green-800">Sold / Deal</span>;
       case 'cancelled':
-        return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 border border-red-100 dark:border-red-800">Cancelled</span>;
+        return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 border border-red-100 dark:border-red-800">Cancelled (Income)</span>;
+      case 'refunded':
+      case 'refund':
+        return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400 border border-orange-100 dark:border-orange-800">Refunded</span>;
       default:
-        return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border border-gray-100 dark:border-gray-800">{status}</span>;
+        return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-gray-50 text-gray-400 dark:bg-gray-800 border border-gray-100 dark:border-gray-800">{status}</span>;
     }
   };
 
@@ -277,6 +303,7 @@ const Transactions = () => {
             <option value="Active">Active Booking</option>
             <option value="Sold">Sold / Deal</option>
             <option value="Cancelled">Cancelled</option>
+            <option value="Refunded">Refunded</option>
           </select>
         </div>
 
@@ -422,7 +449,14 @@ const Transactions = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 text-center">
-                          {getStatusBadge(t.status)}
+                          <div className="flex flex-col items-center">
+                            {getStatusBadge(t.status)}
+                            {(['cancelled', 'refunded', 'refund'].includes(t.status?.toLowerCase())) && t.cancellation_reason && (
+                              <p className="text-[9px] text-gray-400 font-bold italic mt-1 max-w-[120px] truncate" title={t.cancellation_reason}>
+                                "{t.cancellation_reason}"
+                              </p>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex justify-end gap-1.5">
@@ -430,6 +464,19 @@ const Transactions = () => {
                               <>
                                 <button onClick={() => handlePrintDoc(t.id, 'receipt')} className="btn-icon hover:text-indigo-600 hover:bg-indigo-50" title="Print Receipt"><Printer size={12} /></button>
                                 <button onClick={() => handlePrintDoc(t.id, 'sale-invoice')} className="btn-icon hover:text-amber-600 hover:bg-amber-50" title="Print Invoice"><FileSpreadsheet size={12} /></button>
+                                {s === 'active' && (
+                                  <button 
+                                    onClick={() => { 
+                                      setSelectedTransaction(t); 
+                                      setCancellationReason(''); // Reset
+                                      setIsCancelModalOpen(true); 
+                                    }}
+                                    className="btn-icon hover:text-red-600 hover:bg-red-50" 
+                                    title="Cancel Booking"
+                                  >
+                                    <XCircle size={12} />
+                                  </button>
+                                )}
                               </>
                             )}
                             {s === 'sold' && <button onClick={() => handlePrintDoc(t.id, 'deal-proof')} className="btn-icon hover:text-green-600 hover:bg-green-50" title="Print Bill of Sale"><CheckCircle size={12} /></button>}
@@ -528,12 +575,29 @@ const Transactions = () => {
                           </div>
                         )}
                       </div>
+
+                      {/* Cancellation Reason */}
+                      {(['cancelled', 'refunded', 'refund'].includes(t.status?.toLowerCase())) && t.cancellation_reason && (
+                        <div className="px-4 py-2 bg-red-50/50 dark:bg-red-900/10 border-t border-red-50 dark:border-red-900/20">
+                          <p className="text-[9px] font-black text-red-600 uppercase tracking-widest mb-0.5">Cancellation Remark</p>
+                          <p className="text-[11px] text-gray-700 dark:text-gray-300 italic">"{t.cancellation_reason}"</p>
+                        </div>
+                      )}
                     </div>
 
                     {/* Footer: All Actions */}
                     <div className="p-2.5 px-4 bg-gray-50 dark:bg-gray-800/20 border-t border-gray-50 dark:border-gray-800 flex justify-between items-center">
                       <div className="flex gap-1.5">
-                        {s === 'active' && <button onClick={() => openBookingModal(t)} className="btn-edit !bg-white dark:!bg-gray-800 !p-1.5 shadow-sm" title="Edit"><Edit size={14} /></button>}
+                        {s === 'active' && (
+                          <>
+                            <button onClick={() => openBookingModal(t)} className="btn-edit !bg-white dark:!bg-gray-800 !p-1.5 shadow-sm" title="Edit"><Edit size={14} /></button>
+                             <button onClick={() => { 
+                               setSelectedTransaction(t); 
+                               setCancellationReason(''); // Reset
+                               setIsCancelModalOpen(true); 
+                             }} className="btn-icon !bg-white dark:!bg-gray-800 !p-1.5 !text-red-500 hover:!bg-red-50 shadow-sm" title="Cancel Booking"><XCircle size={14} /></button>
+                          </>
+                        )}
                         <button onClick={() => { setSelectedTransaction(t); setIsDeleteModalOpen(true); }} className="btn-delete !bg-white dark:!bg-gray-800 !p-1.5 shadow-sm" title="Trash"><Trash2 size={14} /></button>
                       </div>
                       <div className="flex gap-1">
@@ -604,7 +668,98 @@ const Transactions = () => {
         </div>
       </Modal>
 
-      {/* Booking Edit Modal */}
+      {/* Cancel Confirmation Modal */}
+      <Modal
+        isOpen={isCancelModalOpen}
+        onClose={() => setIsCancelModalOpen(false)}
+        title="Transaction Cancellation"
+      >
+        <div className="space-y-6 pt-2">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center text-red-600 shadow-inner">
+              <XCircle size={32} />
+            </div>
+            <div className="w-full">
+              <p className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight mb-4">Transaction Verification</p>
+              
+              {/* Verification Card */}
+              <div className="p-5 bg-gray-50 dark:bg-gray-800/50 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-inner mb-6">
+                <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-left">
+                  <div className="space-y-0.5">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Plate Number</p>
+                    <p className="text-xs font-bold text-gray-900 dark:text-white uppercase">{selectedTransaction?.Vehicle?.plate_number}</p>
+                  </div>
+                  <div className="space-y-0.5">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Customer Name</p>
+                    <p className="text-xs font-bold text-gray-900 dark:text-white uppercase truncate">{selectedTransaction?.customer_name}</p>
+                  </div>
+                  <div className="space-y-0.5">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">NIK / ID Number</p>
+                    <p className="text-xs font-bold text-gray-900 dark:text-white">{selectedTransaction?.id_number || selectedTransaction?.nik || '-'}</p>
+                  </div>
+                  <div className="space-y-0.5">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Down Payment</p>
+                    <p className="text-sm font-black text-orange-600">{formatPrice(selectedTransaction?.down_payment || 0)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Input Area */}
+              <div className="space-y-2 mb-6 text-left px-1">
+                <div className="flex items-center gap-2">
+                  <Edit size={14} className="text-blue-500" />
+                  <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Cancellation Reason / Remark</label>
+                  <span className="text-[9px] font-bold text-red-500 ml-auto opacity-60">* REQUIRED</span>
+                </div>
+                <textarea 
+                  value={cancellationReason}
+                  onChange={(e) => setCancellationReason(e.target.value)}
+                  placeholder="Type the official reason for cancellation here..."
+                  className="w-full p-4 bg-white dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-2xl text-xs focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none min-h-[120px] resize-none shadow-sm transition-all"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-3">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Select Process Method</p>
+                <div className="grid grid-cols-1 gap-3">
+                  <button 
+                    onClick={() => handleCancelBooking('Cancelled')}
+                    className="p-5 bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 hover:border-red-500 rounded-2xl text-left transition-all group shadow-md active:bg-gray-100 dark:active:bg-gray-700 active:scale-[0.98] flex items-center justify-between"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <XCircle size={16} className="text-red-600" />
+                        <p className="text-sm font-black text-red-600 uppercase tracking-tight">Cancel (No Refund)</p>
+                      </div>
+                      <p className="text-[10px] text-gray-500 font-bold uppercase leading-relaxed max-w-[280px]">Dana DP hangus dan menjadi pendapatan kantor.</p>
+                    </div>
+                    <ChevronRight size={18} className="text-gray-300 group-hover:text-red-500 transition-colors ml-2" />
+                  </button>
+
+                  <button 
+                    onClick={() => handleCancelBooking('Refunded')}
+                    className="p-5 bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 rounded-2xl text-left transition-all group shadow-md active:bg-gray-100 dark:active:bg-gray-700 active:scale-[0.98] flex items-center justify-between"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <CheckCircle2 size={16} className="text-blue-600" />
+                        <p className="text-sm font-black text-blue-600 uppercase tracking-tight">Refund (Full Return)</p>
+                      </div>
+                      <p className="text-[10px] text-gray-500 font-bold uppercase leading-relaxed max-w-[280px]">Dana DP dikembalikan sepenuhnya ke customer.</p>
+                    </div>
+                    <ChevronRight size={18} className="text-gray-300 group-hover:text-blue-500 transition-colors ml-2" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button onClick={() => setIsCancelModalOpen(false)} className="w-full py-4 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-2xl font-black hover:bg-gray-200 dark:hover:bg-gray-700 transition-all uppercase text-[10px] tracking-[0.2em]">KEMBALI KE DAFTAR</button>
+        </div>
+      </Modal>
+
+      {/* Booking Form Modal */}
       <Modal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} title="Update Reservation Details">
         <form onSubmit={handleBookingSubmit} className="space-y-4">
           <Input label="Customer Name" value={bookingData.customer_name} onChange={e => setBookingData({ ...bookingData, customer_name: e.target.value })} required />

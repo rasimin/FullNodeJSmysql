@@ -7,7 +7,7 @@ import {
   ChevronRight, ChevronLeft, ArrowUpDown, Bookmark, Smartphone, User as UserIcon,
   CreditCard, XCircle, CheckCircle, Clock, Camera, Image as ImageIcon, X, Maximize2, Users,
   PlusCircle, TrendingUp, Download, FileSpreadsheet, Palette, Gauge, Wallet, Wrench, History,
-  ChevronsLeft, ChevronsRight
+  ChevronsLeft, ChevronsRight, Hash, CheckCircle2
 } from 'lucide-react';
 import Modal from '../components/Modal';
 
@@ -51,7 +51,8 @@ const Vehicles = () => {
   });
   const [printReceipt, setPrintReceipt] = useState(localStorage.getItem('pref_print_receipt') === 'true');
   const [printInvoice, setPrintInvoice] = useState(localStorage.getItem('pref_print_invoice') === 'true');
-  const [printDealProof, setPrintDealProof] = useState(localStorage.getItem('pref_print_deal') === 'true');
+  const [printDealProof, setPrintDealProof] = useState(() => localStorage.getItem('pref_print_deal') === 'true');
+  const [cancellationReason, setCancellationReason] = useState('');
 
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -187,6 +188,7 @@ const Vehicles = () => {
     if (vehicle) {
       setFormData({
         ...vehicle,
+        type: vehicle.type || '',
         year: vehicle.year?.toString() || '',
         entry_date: vehicle.entry_date?.split('T')[0] || '',
         sold_date: vehicle.sold_date ? vehicle.sold_date.split('T')[0] : '',
@@ -198,7 +200,8 @@ const Vehicles = () => {
         odometer: vehicle.odometer || '',
         description: vehicle.description || '',
         transmission: vehicle.transmission || 'Manual',
-        fuel_type: vehicle.fuel_type || 'Bensin'
+        fuel_type: vehicle.fuel_type || 'Bensin',
+        cancellation_reason: (vehicle.Bookings?.[0]?.cancellation_reason || vehicle.cancellation_reason) || ''
       });
       fetchBookingHistory(vehicle.id);
     } else {
@@ -208,7 +211,7 @@ const Vehicles = () => {
         purchase_price: '', service_cost: '', sold_date: '',
         entry_date: new Date().toISOString().split('T')[0],
         description: '', office_id: user?.office_id || '', sales_agent_id: '', color: '', odometer: '',
-        transmission: 'Manual', fuel_type: 'Bensin'
+        transmission: 'Manual', fuel_type: 'Bensin', cancellation_reason: ''
       });
       setBookingHistory([]);
     }
@@ -244,8 +247,8 @@ const Vehicles = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.brand || !formData.model || !formData.office_id) {
-      return notify('error', 'Brand, Model and Branch Office are required!');
+    if (!formData.type || !formData.brand || !formData.model || !formData.office_id) {
+      return notify('error', 'Category, Brand, Model and Branch Office are required!');
     }
     notify('loading', editingVehicle ? 'Updating...' : 'Adding...');
 
@@ -376,6 +379,7 @@ const Vehicles = () => {
 
   const preConfirmAction = (v, type) => {
     setEditingVehicle(v); setActionType(type);
+    setCancellationReason(''); // Reset remark
     fetchAgentsByOffice(v.office_id);
     api.get(`/bookings/vehicle/${v.id}`).then(r => {
       setActiveBooking(r.data);
@@ -418,12 +422,24 @@ const Vehicles = () => {
     }
   };
 
-  const handleCancelBooking = async () => {
-    notify('loading', 'Cancelling...');
+  const handleCancelBooking = async (type) => {
+    if (!cancellationReason.trim()) {
+        notify('error', 'Please provide a reason for cancellation');
+        return;
+    }
+    notify('loading', 'Processing cancellation...');
     try {
-      await api.put(`/bookings/vehicle/${editingVehicle.id}/cancel`);
-      notify('success', 'Booking cancelled'); setIsConfirmActionModalOpen(false); fetchVehicles();
-    } catch { notify('error', 'Cancel failed'); }
+      await api.put(`/bookings/vehicle/${editingVehicle.id}/cancel`, { 
+        type,
+        remark: cancellationReason 
+      });
+      notify('success', 'Booking status updated'); 
+      setIsConfirmActionModalOpen(false); 
+      setCancellationReason('');
+      fetchVehicles();
+    } catch (e) { 
+      notify('error', e.response?.data?.message || 'Action failed'); 
+    }
   };
 
 
@@ -662,8 +678,8 @@ const Vehicles = () => {
                   {v.status === 'Available' ? <button onClick={() => openBookingModal(v)} className="flex-1 py-2 bg-orange-600 text-white rounded-lg text-[9px] font-black uppercase shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer">Book Now</button> :
                     v.status === 'Booked' ? (
                       <div className="flex flex-1 gap-1.5">
-                        <button onClick={() => preConfirmAction(v, 'sold')} className="flex-1 py-2 bg-green-600 text-white rounded-lg text-[9px] font-black uppercase shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer">Close Deal</button>
-                        <button onClick={() => preConfirmAction(v, 'cancel')} className="flex-1 py-2 bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 rounded-lg text-[9px] font-black uppercase hover:bg-red-600 hover:text-white transition-all shadow-sm active:scale-95 cursor-pointer">Cancel</button>
+                        <button onClick={() => preConfirmAction(v, 'sold')} className="flex-1 py-2 bg-green-600 hover:bg-green-700 dark:bg-emerald-800 dark:hover:bg-emerald-700 text-white rounded-lg text-[9px] font-black uppercase shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer">Close Deal</button>
+                        <button onClick={() => preConfirmAction(v, 'cancel')} className="flex-1 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-800 dark:hover:bg-red-700 text-white rounded-lg text-[9px] font-black uppercase shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer">Cancel</button>
                       </div>
                     ) :
                       <div className="flex-1 py-2 text-center text-white text-[9px] font-black uppercase bg-gray-400 dark:bg-gray-800 rounded-lg">Vehicle Sold</div>}
@@ -729,6 +745,18 @@ const Vehicles = () => {
                   ) : <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[8px] text-gray-400 font-black uppercase">Current Branch</p><p className="text-[10px] font-bold">{user?.Office?.name}</p></div>}
                 </div>
                 <textarea className="input h-20 p-3 text-xs" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} placeholder="Notes..." readOnly={isViewOnly} />
+                {(formData.status === 'Available' && formData.cancellation_reason) && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-red-600 uppercase tracking-widest ml-1">Last Cancellation Remark</label>
+                    <textarea 
+                      className="input h-20 p-3 text-xs border-red-100 dark:border-red-900/30 bg-red-50/10" 
+                      value={formData.cancellation_reason} 
+                      onChange={e => setFormData({ ...formData, cancellation_reason: e.target.value })} 
+                      placeholder="Cancellation reason..." 
+                      readOnly={isViewOnly} 
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -834,7 +862,86 @@ const Vehicles = () => {
                 <button onClick={handleConfirmSale} className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-lg shadow-green-500/20 transition-all active:scale-95 uppercase text-xs tracking-widest">CLOSE DEAL NOW</button>
               </>
             )}
-            {actionType === 'cancel' && <button onClick={handleCancelBooking} className="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold shadow-lg shadow-red-500/20 transition-all active:scale-95 uppercase text-xs tracking-widest">CANCEL BOOKING NOW</button>}
+            {actionType === 'cancel' && (
+              <div className="space-y-4">
+                <div className="p-4 bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/30 rounded-2xl">
+                  {/* Verification Info */}
+                  <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
+                      <Hash size={14} className="text-orange-500" />
+                      <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Data Verification</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-y-4 gap-x-6">
+                      <div className="space-y-0.5">
+                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Plate Number</p>
+                        <p className="text-xs font-bold text-gray-900 dark:text-white uppercase">{editingVehicle?.plate_number}</p>
+                      </div>
+                      <div className="space-y-0.5">
+                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Customer Name</p>
+                        <p className="text-xs font-bold text-gray-900 dark:text-white uppercase truncate">{activeBooking?.customer_name || '-'}</p>
+                      </div>
+                      <div className="space-y-0.5">
+                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">NIK / ID Number</p>
+                        <p className="text-xs font-bold text-gray-900 dark:text-white">{activeBooking?.id_number || activeBooking?.nik || '-'}</p>
+                      </div>
+                      <div className="space-y-0.5">
+                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Total Down Payment</p>
+                        <p className="text-sm font-black text-orange-600">{formatPrice(activeBooking?.down_payment || 0)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Input Remark */}
+                  <div className="space-y-2 mb-6">
+                    <div className="flex items-center gap-2 ml-1">
+                      <Edit size={14} className="text-blue-500" />
+                      <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Cancellation Reason / Remark</label>
+                      <span className="text-[9px] font-bold text-red-500 ml-auto uppercase opacity-60">* Mandatory</span>
+                    </div>
+                    <textarea 
+                      value={cancellationReason}
+                      onChange={(e) => setCancellationReason(e.target.value)}
+                      placeholder="Type the reason why this booking is being cancelled..."
+                      className="w-full p-4 bg-white dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-2xl text-xs focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none min-h-[120px] resize-none shadow-sm transition-all placeholder:text-gray-300"
+                    />
+                  </div>
+
+                  {/* Action Selection */}
+                  <div className="space-y-3">
+                    <p className="text-[10px] font-black text-orange-600 uppercase text-center tracking-[0.2em] opacity-80">Select Final Outcome</p>
+                    <div className="grid grid-cols-1 gap-3">
+                      <button 
+                        onClick={() => handleCancelBooking('Cancelled')}
+                        className="p-5 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-red-500 rounded-2xl text-left transition-all group shadow-md active:bg-gray-100 dark:active:bg-gray-700 active:scale-[0.98] flex items-center justify-between"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <XCircle size={16} className="text-red-600" />
+                            <p className="text-sm font-black text-red-600 uppercase tracking-tight">Cancel (No Refund)</p>
+                          </div>
+                          <p className="text-[10px] text-gray-500 font-bold uppercase leading-relaxed max-w-[280px]">Dana DP hangus dan menjadi komponen pendapatan kantor.</p>
+                        </div>
+                        <ChevronRight size={18} className="text-gray-300 group-hover:text-red-500 transition-colors ml-2" />
+                      </button>
+
+                      <button 
+                        onClick={() => handleCancelBooking('Refunded')}
+                        className="p-5 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 rounded-2xl text-left transition-all group shadow-md active:bg-gray-100 dark:active:bg-gray-700 active:scale-[0.98] flex items-center justify-between"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <CheckCircle2 size={16} className="text-blue-600" />
+                            <p className="text-sm font-black text-blue-600 uppercase tracking-tight">Refund (Full Return)</p>
+                          </div>
+                          <p className="text-[10px] text-gray-500 font-bold uppercase leading-relaxed max-w-[280px]">Dana DP dikembalikan sepenuhnya kepada customer.</p>
+                        </div>
+                        <ChevronRight size={18} className="text-gray-300 group-hover:text-blue-500 transition-colors ml-2" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             <button onClick={() => setIsConfirmActionModalOpen(false)} className="w-full py-3 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all uppercase text-xs tracking-widest">BACK TO DASHBOARD</button>
           </div>
         </div>

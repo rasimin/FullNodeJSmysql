@@ -414,10 +414,12 @@ exports.getBusinessAnalysisReport = async (req, res) => {
     let openingBalance = 0;
     let salesWhere = { ...where, status: 'Sold' };
     let purchaseWhere = { ...where };
+    let startDate = null;
+    let endDate = null;
 
     if (year && year !== 'all') {
-      const startDate = new Date(`${year}-01-01T00:00:00`);
-      const endDate = new Date(`${year}-12-31T23:59:59`);
+      startDate = new Date(`${year}-01-01T00:00:00`);
+      endDate = new Date(`${year}-12-31T23:59:59`);
       
       // Calculate Opening Balance (Everything BEFORE this year)
       const prevSales = await Vehicle.findAll({
@@ -452,6 +454,18 @@ exports.getBusinessAnalysisReport = async (req, res) => {
     const bookedCount = await Vehicle.count({
       where: { ...where, status: 'Booked' }
     });
+
+    // Income from Cancelled Bookings (Non-refundable DP)
+    const cancelledDPIncomeRaw = await Booking.sum('down_payment', {
+        where: {
+            ...where,
+            status: 'Cancelled',
+            ...(startDate && endDate ? { booking_date: { [Op.between]: [startDate, endDate] } } : 
+               startDate ? { booking_date: { [Op.gte]: startDate } } : 
+               endDate ? { booking_date: { [Op.lte]: endDate } } : {})
+        }
+    });
+    const cancelledDPIncome = Number(cancelledDPIncomeRaw || 0);
 
     const potentialRevenue = availableVehicles.reduce((sum, v) => sum + Number(v.price || 0), 0);
     const potentialNetMargin = availableVehicles.reduce((sum, v) => {
@@ -574,7 +588,7 @@ exports.getBusinessAnalysisReport = async (req, res) => {
         as: 'salesAgent',
         attributes: ['name', 'avatar_url']
       }],
-      group: ['sales_agent_id', 'salesAgent.id'],
+      group: ['sales_agent_id', 'salesAgent.id', 'salesAgent.name', 'salesAgent.avatar_url'],
       order: [[sequelize.literal('units_sold'), 'DESC']],
       limit: 10
     });
@@ -586,6 +600,7 @@ exports.getBusinessAnalysisReport = async (req, res) => {
         bookedUnits: bookedCount,
         potentialRevenue,
         potentialNetMargin,
+        cancelledDPIncome,
         unitsPerBrand
       },
       trends: {

@@ -36,10 +36,14 @@ const Booking = sequelize.define('Booking', {
     defaultValue: 0
   },
   status: {
-    type: DataTypes.ENUM('Active', 'Converted', 'Cancelled', 'Expired', 'Sold'),
+    type: DataTypes.ENUM('Active', 'Converted', 'Cancelled', 'Expired', 'Sold', 'Refunded'),
     defaultValue: 'Active'
   },
   notes: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  cancellation_reason: {
     type: DataTypes.TEXT,
     allowNull: true
   },
@@ -49,6 +53,18 @@ const Booking = sequelize.define('Booking', {
   },
   booked_by_agent_id: {
     type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  office_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  vehicle_id: {
+    type: DataTypes.BIGINT,
+    allowNull: true
+  },
+  user_id: {
+    type: DataTypes.BIGINT,
     allowNull: true
   }
 }, {

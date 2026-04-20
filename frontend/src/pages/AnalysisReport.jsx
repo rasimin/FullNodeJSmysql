@@ -7,12 +7,13 @@ import {
 import {
   TrendingUp, Package, DollarSign, ShoppingCart, 
   ArrowUpRight, BarChart2, PieChart as PieIcon,
-  Activity, Calendar, Filter, Download, Briefcase, Wallet, Eye, EyeOff
+  Activity, Calendar, Filter, Download, Briefcase, Wallet, Eye, EyeOff, XCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatOfficeHierarchy } from '../utils/hierarchy';
 import { API_URL, IMAGE_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
+import DynamicIsland from '../components/DynamicIsland';
 
 const AnalysisReport = () => {
   const { user } = useAuth();
@@ -23,6 +24,12 @@ const AnalysisReport = () => {
   const [isChangingYear, setIsChangingYear] = useState(false);
   const [showFullAmount, setShowFullAmount] = useState(false);
   const [offices, setOffices] = useState([]);
+  const [notification, setNotification] = useState({ status: 'idle', message: '' });
+
+  const notify = (status, message, delay = 2000) => {
+    setNotification({ status, message });
+    if (status !== 'loading') setTimeout(() => setNotification({ status: 'idle' }), delay);
+  };
 
   // Robust check for Head Office / Super Admin permissions
   const isHeadOffice = 
@@ -51,9 +58,15 @@ const AnalysisReport = () => {
       const res = await api.get('/reports/business-analysis', { 
         params: { officeId: selectedOffice, year: selectedYear } 
       });
-      setData(res.data);
+      if (res.data && res.data.currentStock) {
+        setData(res.data);
+      } else {
+        console.error('Invalid report data received', res.data);
+        notify('error', 'Gagal memuat data laporan');
+      }
     } catch (err) {
       console.error('Failed to fetch analysis report', err);
+      notify('error', 'Kesalahan server saat memuat laporan');
     }
     setLoading(false);
   };
@@ -69,15 +82,21 @@ const AnalysisReport = () => {
   }).format(val);
 
   const formatShort = (val) => {
-    const absVal = Math.abs(val);
-    const sign = val < 0 ? '-' : '';
+    if (val === null || val === undefined || isNaN(Number(val))) return formatCurrency(0);
+    const num = Number(val);
+    const absVal = Math.abs(num);
+    const sign = num < 0 ? '-' : '';
     if (absVal >= 1000000000000) return `${sign}Rp ${(absVal / 1000000000000).toFixed(2)}T`;
     if (absVal >= 1000000000) return `${sign}Rp ${(absVal / 1000000000).toFixed(1).replace('.0', '')}M`;
     if (absVal >= 1000000) return `${sign}Rp ${(absVal / 1000000).toFixed(1).replace('.0', '')}jt`;
-    return formatCurrency(val);
+    return formatCurrency(num);
   };
 
-  const displayAmount = (val) => showFullAmount ? formatCurrency(val) : formatShort(val);
+  const displayAmount = (val) => {
+    const num = Number(val);
+    if (isNaN(num)) return formatCurrency(0);
+    return showFullAmount ? formatCurrency(num) : formatShort(num);
+  };
 
   if (loading && !data) return (
     <div className="flex items-center justify-center min-h-[400px]">
@@ -87,6 +106,7 @@ const AnalysisReport = () => {
 
   return (
     <div className="space-y-6 pb-10">
+      <DynamicIsland status={notification.status} message={notification.message} />
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -265,6 +285,25 @@ const AnalysisReport = () => {
                           <p className="text-[10px] font-black text-gray-400 uppercase">Service Cost</p>
                           <p className="text-sm xl:text-base font-black text-orange-600 truncate">{displayAmount(data?.overall?.purchases?.service)}</p>
                           <p className="text-[9px] font-bold text-gray-400 uppercase">Prep Costs</p>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          {/* Cancellation Income Card */}
+          <div className="bg-gradient-to-br from-orange-50 to-white border border-orange-100 dark:from-orange-900/10 dark:to-gray-800 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm">
+              <div className="h-1 bg-orange-500" />
+              <div className="p-6">
+                  <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+                      <XCircle size={16} className="text-orange-500" /> Cancellation Revenue
+                  </h3>
+                  <div className="flex items-end justify-between">
+                      <div>
+                          <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Non-Refundable DP</p>
+                          <p className="text-2xl font-black text-orange-600">{displayAmount(data?.currentStock?.cancelledDPIncome)}</p>
+                      </div>
+                      <div className="text-right">
+                          <p className="text-[9px] font-bold text-gray-400 uppercase leading-tight">Income from<br/>Cancelled Bookings</p>
                       </div>
                   </div>
               </div>

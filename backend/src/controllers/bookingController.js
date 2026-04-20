@@ -46,12 +46,21 @@ exports.createBooking = async (req, res) => {
 
 exports.cancelBooking = async (req, res) => {
   try {
+    const { type } = req.body; // 'Cancelled' or 'Refunded'
+    if (!['Cancelled', 'Refunded'].includes(type)) {
+      return res.status(400).json({ message: 'Cancellation type (Cancelled or Refunded) is mandatory' });
+    }
+
     const booking = await Booking.findByPk(req.params.id);
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
     
     if (booking.status !== 'Active') return res.status(400).json({ message: 'Only active bookings can be cancelled' });
 
-    await booking.update({ status: 'Cancelled' }, { userId: req.user.id });
+    await booking.update({ 
+      status: type,
+      cancellation_reason: req.body.remark || booking.cancellation_reason,
+      notes: req.body.notes || booking.notes 
+    }, { userId: req.user.id });
     
     const vehicle = await Vehicle.findByPk(booking.vehicle_id);
     if (vehicle) {
@@ -69,13 +78,22 @@ exports.cancelBooking = async (req, res) => {
 
 exports.cancelVehicleBooking = async (req, res) => {
   try {
+    const { type } = req.body;
+    if (!['Cancelled', 'Refunded'].includes(type)) {
+      return res.status(400).json({ message: 'Cancellation type (Cancelled or Refunded) is mandatory' });
+    }
+
     const booking = await Booking.findOne({
       where: { vehicle_id: req.params.vehicleId, status: 'Active' }
     });
     
     if (!booking) return res.status(404).json({ message: 'Active booking not found for this vehicle' });
 
-    await booking.update({ status: 'Cancelled' }, { userId: req.user.id });
+    await booking.update({ 
+      status: type,
+      cancellation_reason: req.body.remark || booking.cancellation_reason,
+      notes: req.body.notes || booking.notes 
+    }, { userId: req.user.id });
     
     const vehicle = await Vehicle.findByPk(req.params.vehicleId);
     if (vehicle) {
