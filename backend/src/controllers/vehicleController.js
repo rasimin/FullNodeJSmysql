@@ -52,7 +52,7 @@ const getVehicleById = async (req, res) => {
 
 const getVehicles = async (req, res) => {
   try {
-    const { page, size, search, officeId: filterOfficeId, type, status, minPrice, maxPrice, locationId } = req.query;
+    const { page, size, search, officeId: filterOfficeId, type, status, minPrice, maxPrice, locationId, brand, year } = req.query;
     const { limit, offset } = getPagination(page, size);
     const user = req.user;
     const isSuperAdmin = user.Role?.name === 'Super Admin';
@@ -139,6 +139,8 @@ const getVehicles = async (req, res) => {
 
     if (type) condition.type = type;
     if (status) condition.status = status;
+    if (brand) condition.brand = brand;
+    if (year) condition.year = year;
 
     if (minPrice || maxPrice) {
       condition.price = {};
