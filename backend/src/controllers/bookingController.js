@@ -1,6 +1,9 @@
 const { Booking, Vehicle, User, Office, SalesAgent, BookingArchive } = require('../models');
 const { Op } = require('sequelize');
 const { getPagination, getPagingData } = require('../utils/pagination');
+const sharp = require('sharp');
+const path = require('path');
+const fs = require('fs');
 
 exports.createBooking = async (req, res) => {
   try {
@@ -126,9 +129,14 @@ exports.getVehicleBooking = async (req, res) => {
 
 exports.getAllBookings = async (req, res) => {
   try {
-    const { page, size, search, status, officeId: filterOfficeId, startDate, endDate } = req.query;
+    const { page, size, search, status, officeId: filterOfficeId, startDate, endDate, sortBy = 'createdAt', sortOrder = 'DESC' } = req.query;
     const { limit, offset } = getPagination(page, size);
     const user = req.user;
+
+    // Validate sortBy to prevent SQL injection
+    const validSortFields = ['createdAt', 'updatedAt', 'booking_date', 'customer_name'];
+    const finalSortBy = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
+    const finalSortOrder = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
     // --- Office Filtering Logic ---
     const isSuperAdmin = user.Role?.name === 'Super Admin';
@@ -184,7 +192,7 @@ exports.getAllBookings = async (req, res) => {
         { model: Office, attributes: ['name'] },
         { model: SalesAgent, as: 'salesAgent', attributes: ['name'] }
       ],
-      order: [['createdAt', 'DESC']]
+      order: [[finalSortBy, finalSortOrder]]
     });
 
     res.json(getPagingData({ count, rows }, page, limit));
@@ -202,16 +210,36 @@ exports.confirmSale = async (req, res) => {
     const vehicle = await Vehicle.findByPk(vehicleId);
     if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
 
+    let deliveryPhotoPath = null;
+    if (req.file) {
+      const uploadDir = path.join(__dirname, '../../uploads/sales');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      const filename = `deal-${vehicleId}-${Date.now()}.webp`;
+      const filepath = path.join(uploadDir, filename);
+      
+      await sharp(req.file.buffer)
+        .resize({ width: 1200, height: 900, fit: 'inside' })
+        .webp({ quality: 80 })
+        .toFile(filepath);
+        
+      deliveryPhotoPath = `/uploads/sales/${filename}`;
+    }
+
     let booking = await Booking.findOne({
       where: { vehicle_id: vehicleId, status: 'Active' }
     });
     
     if (booking) {
       // Jika ada booking aktif, update menjadi Sold
-      await booking.update({ 
+      const updateData = { 
         status: 'Sold',
         sales_agent_id: sales_agent_id || booking.sales_agent_id 
-      }, { userId: req.user.id });
+      };
+      if (deliveryPhotoPath) updateData.delivery_photo = deliveryPhotoPath;
+      
+      await booking.update(updateData, { userId: req.user.id });
     } else {
       // Jika jual langsung (tanpa booking), buat record baru di tabel booking sebagai catatan transaksi
       booking = await Booking.create({
@@ -223,7 +251,8 @@ exports.confirmSale = async (req, res) => {
         status: 'Sold',
         sales_agent_id: sales_agent_id || null,
         user_id: req.user.id,
-        office_id: vehicle.office_id
+        office_id: vehicle.office_id,
+        delivery_photo: deliveryPhotoPath
       }, { userId: req.user.id });
     }
 

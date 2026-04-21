@@ -185,7 +185,7 @@ const exportBookingPdf = async (req, res) => {
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
 
     const doc = new PDFDocument({ size: 'A4', margin: 50 });
-    
+
     // Error handling for the PDF stream to prevent server crash
     doc.on('error', err => {
       console.error('PDF Stream Error:', err);
@@ -204,7 +204,7 @@ const exportBookingPdf = async (req, res) => {
     doc.fontSize(20).font('Helvetica-Bold').fillColor('#1e40af').text(title, { align: 'center' });
     doc.fontSize(9).font('Helvetica').fillColor('#64748b').text(`Document ID: REF-${shortId}`, { align: 'center' });
     doc.moveDown(0.5);
-    
+
     // Header Divider
     doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#e2e8f0').lineWidth(1).stroke();
     doc.moveDown(1);
@@ -223,28 +223,28 @@ const exportBookingPdf = async (req, res) => {
 
     // Info Grid (Purchaser & Vehicle)
     const startY = doc.y;
-    
+
     // Left Column: Purchaser
     doc.fontSize(10).font('Helvetica-Bold').fillColor('#1e40af').text('PURCHASER INFORMATION', 50, startY);
     doc.rect(50, startY + 12, 40, 2).fill('#1e40af'); // Underline accent
     doc.font('Helvetica').fontSize(10).fillColor('#000');
-    
+
     const labelX = 50;
     const valueX = 125;
     const rowHeight = 18; // Increased from 15 to prevent overlap
-    
+
     doc.text(`Name`, labelX, startY + 25);
     doc.text(`:`, valueX - 10, startY + 25);
     doc.font('Helvetica-Bold').text(booking.customer_name || '-', valueX, startY + 25);
-    
+
     doc.font('Helvetica').text(`NIK (ID)`, labelX, startY + 25 + rowHeight);
     doc.text(`:`, valueX - 10, startY + 25 + rowHeight);
     doc.text(booking.nik || '-', valueX, startY + 25 + rowHeight);
-    
+
     doc.font('Helvetica').text(`Phone`, labelX, startY + 25 + (rowHeight * 2));
     doc.text(`:`, valueX - 10, startY + 25 + (rowHeight * 2));
     doc.text(booking.customer_phone || '-', valueX, startY + 25 + (rowHeight * 2));
-    
+
     doc.font('Helvetica').text(`Booking`, labelX, startY + 25 + (rowHeight * 3));
     doc.text(`:`, valueX - 10, startY + 25 + (rowHeight * 3));
     doc.text(new Date(booking.booking_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }), valueX, startY + 25 + (rowHeight * 3));
@@ -253,15 +253,15 @@ const exportBookingPdf = async (req, res) => {
     const rightLabelX = 320;
     const rightValueX = 390;
     const rightColWidth = 160; // Constraint width for value wrapping
-    
+
     doc.fontSize(10).font('Helvetica-Bold').fillColor('#1e40af').text('VEHICLE SPECIFICATIONS', rightLabelX, startY);
     doc.rect(320, startY + 12, 40, 2).fill('#1e40af'); // Underline accent
     doc.font('Helvetica').fontSize(10).fillColor('#000');
-    
+
     doc.text(`Unit`, rightLabelX, startY + 25);
     doc.text(`:`, rightValueX - 10, startY + 25);
     doc.font('Helvetica-Bold').text(`${booking.Vehicle?.brand || ''} ${booking.Vehicle?.model || ''}`, rightValueX, startY + 25, { width: rightColWidth });
-    
+
     // We calculate next Y based on potential wrapping of Unit name
     const unitTextHeight = doc.heightOfString(`${booking.Vehicle?.brand || ''} ${booking.Vehicle?.model || ''}`, { width: rightColWidth });
     const nextY = startY + 25 + Math.max(unitTextHeight + 5, rowHeight + 5);
@@ -269,7 +269,7 @@ const exportBookingPdf = async (req, res) => {
     doc.font('Helvetica').text(`Year`, rightLabelX, nextY);
     doc.text(`:`, rightValueX - 10, nextY);
     doc.text(booking.Vehicle?.year || '-', rightValueX, nextY);
-    
+
     doc.text(`Plate`, rightLabelX, nextY + rowHeight);
     doc.text(`:`, rightValueX - 10, nextY + rowHeight);
     doc.text(booking.Vehicle?.plate_number || '-', rightValueX, nextY + rowHeight);
@@ -281,7 +281,7 @@ const exportBookingPdf = async (req, res) => {
     doc.rect(50, tableTop, 500, 22).fill('#1e40af');
     doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(10).text('TRANSACTION DESCRIPTION', 65, tableTop + 7);
     doc.text('AMOUNT (IDR)', 430, tableTop + 7);
-    
+
     doc.fillColor('#000').font('Helvetica').fontSize(10);
     if (isInvoice) {
       const price = parseFloat(booking.Vehicle?.price || 0);
@@ -295,11 +295,11 @@ const exportBookingPdf = async (req, res) => {
       doc.text(`- ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(dp)}`, 350, tableTop + 55, { align: 'right', width: 190 });
 
       doc.moveTo(350, tableTop + 75).lineTo(540, tableTop + 75).strokeColor('#cbd5e1').stroke();
-      
+
       doc.fontSize(11).font('Helvetica-Bold').fillColor('#b91c1c').text('REMAINING BALANCE PAYABLE', 65, tableTop + 85);
       doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(total), 350, tableTop + 85, { align: 'right', width: 190 });
     } else {
-      doc.text('Vehicle Down Payment / Booking Fee Reservation', 65, tableTop + 35);
+      doc.text('Vehicle Down Payment', 65, tableTop + 35);
       doc.fontSize(12).font('Helvetica-Bold').text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(booking.down_payment || 0), 350, tableTop + 35, { align: 'right', width: 190 });
     }
 
@@ -316,19 +316,19 @@ const exportBookingPdf = async (req, res) => {
     }
 
     // Disclaimer Note
-    const disclaimer = isInvoice 
+    const disclaimer = isInvoice
       ? 'This invoice is for the final settlement of the vehicle purchase. Please ensure payment is made before the delivery date.'
       : 'This document serves as a formal acknowledgement of the reservation payment. The unit is reserved for the client pending final settlement.';
-    
+
     doc.fontSize(8).font('Helvetica-Oblique').fillColor('#94a3b8').text(disclaimer, 50, doc.y, { align: 'center', width: 500 });
 
     // Footer Signature
     doc.moveDown(4);
     const footerY = doc.y;
-    
+
     // Standard Date and Sign area
     doc.fillColor('#4b5563').fontSize(10).font('Helvetica').text(`Issued Date: ${new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}`, 50, footerY);
-    
+
     doc.fillColor('#000').font('Helvetica-Bold').text('Authorized Signature,', 380, footerY);
     doc.moveDown(4);
     doc.text(`( ${booking.salesAgent?.name || 'Authorized Representative'} )`, 380);
@@ -368,7 +368,7 @@ const exportSaleInvoicePdf = async (req, res) => {
     doc.fontSize(20).font('Helvetica-Bold').fillColor('#1e40af').text(title, { align: 'center' });
     doc.fontSize(9).font('Helvetica').fillColor('#64748b').text(`Invoice Number: INV-${new Date().getFullYear()}-${shortId}`, { align: 'center' });
     doc.moveDown(0.5);
-    
+
     // Header Divider
     doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#e2e8f0').lineWidth(1).stroke();
     doc.moveDown(1);
@@ -387,28 +387,28 @@ const exportSaleInvoicePdf = async (req, res) => {
 
     // Info Grid (Purchaser & Vehicle)
     const startY = doc.y;
-    
+
     // Left Column: Bill To
     doc.fontSize(10).font('Helvetica-Bold').fillColor('#1e40af').text('BILL TO (PURCHASER)', 50, startY);
     doc.rect(50, startY + 12, 40, 2).fill('#1e40af'); // Underline accent
     doc.font('Helvetica').fontSize(10).fillColor('#000');
-    
+
     const labelX = 50;
     const valueX = 125;
     const rowHeight = 18;
-    
+
     doc.text(`Name`, labelX, startY + 25);
     doc.text(`:`, valueX - 10, startY + 25);
     doc.font('Helvetica-Bold').text(booking.customer_name || '-', valueX, startY + 25);
-    
+
     doc.font('Helvetica').text(`NIK (ID)`, labelX, startY + 25 + rowHeight);
     doc.text(`:`, valueX - 10, startY + 25 + rowHeight);
     doc.text(booking.nik || '-', valueX, startY + 25 + rowHeight);
-    
+
     doc.font('Helvetica').text(`Phone`, labelX, startY + 25 + (rowHeight * 2));
     doc.text(`:`, valueX - 10, startY + 25 + (rowHeight * 2));
     doc.text(booking.customer_phone || '-', valueX, startY + 25 + (rowHeight * 2));
-    
+
     doc.font('Helvetica').text(`Booking`, labelX, startY + 25 + (rowHeight * 3));
     doc.text(`:`, valueX - 10, startY + 25 + (rowHeight * 3));
     doc.text(new Date(booking.booking_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }), valueX, startY + 25 + (rowHeight * 3));
@@ -417,27 +417,27 @@ const exportSaleInvoicePdf = async (req, res) => {
     const rightLabelX = 320;
     const rightValueX = 390;
     const rightColWidth = 160;
-    
+
     doc.fontSize(10).font('Helvetica-Bold').fillColor('#1e40af').text('VEHICLE DESCRIPTION', rightLabelX, startY);
     doc.rect(320, startY + 12, 40, 2).fill('#1e40af'); // Underline accent
     doc.font('Helvetica').fontSize(10).fillColor('#000');
-    
+
     doc.text(`Unit`, rightLabelX, startY + 25);
     doc.text(`:`, rightValueX - 10, startY + 25);
     doc.font('Helvetica-Bold').text(`${booking.Vehicle?.brand || ''} ${booking.Vehicle?.model || ''}`, rightValueX, startY + 25, { width: rightColWidth });
-    
+
     const unitTextHeight = doc.heightOfString(`${booking.Vehicle?.brand || ''} ${booking.Vehicle?.model || ''}`, { width: rightColWidth });
     let nextY = startY + 25 + Math.max(unitTextHeight + 5, rowHeight + 5);
 
     doc.text(`Plate`, rightLabelX, nextY);
     doc.text(`:`, rightValueX - 10, nextY);
     doc.text(booking.Vehicle?.plate_number || '-', rightValueX, nextY);
-    
+
     nextY += rowHeight;
     doc.text(`Odo`, rightLabelX, nextY);
     doc.text(`:`, rightValueX - 10, nextY);
     doc.text(`${booking.Vehicle?.odometer || 0} KM`, rightValueX, nextY);
-    
+
     if (isProof === 'true' && booking.Vehicle?.sold_date) {
       nextY += rowHeight;
       doc.font('Helvetica-Bold').fillColor('#b91c1c').text(`Sold Date`, rightLabelX, nextY);
@@ -445,7 +445,7 @@ const exportSaleInvoicePdf = async (req, res) => {
       doc.font('Helvetica-Bold').text(new Date(booking.Vehicle.sold_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }), rightValueX, nextY);
     }
 
-    doc.moveDown(5);
+    doc.moveDown(1.5);
 
     // Financial Breakdown
     const price = parseFloat(booking.Vehicle?.price || 0);
@@ -456,57 +456,83 @@ const exportSaleInvoicePdf = async (req, res) => {
     doc.rect(50, tableTop, 500, 22).fill('#1e40af');
     doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(10).text('PAYMENT BREAKDOWN', 65, tableTop + 7);
     doc.text('AMOUNT (IDR)', 430, tableTop + 7);
-    
+
     doc.fillColor('#000').font('Helvetica').fontSize(10);
     doc.text('Vehicle Agreed Selling Price', 65, tableTop + 35);
     doc.font('Helvetica-Bold').text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(price), 350, tableTop + 35, { align: 'right', width: 190 });
 
-    doc.font('Helvetica').text('Less: Down Payment / Reservation Fee', 65, tableTop + 55);
+    doc.font('Helvetica').text('Less: Down Payment', 65, tableTop + 55);
     doc.text(`- ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(dp)}`, 350, tableTop + 55, { align: 'right', width: 190 });
 
     doc.moveTo(350, tableTop + 75).lineTo(540, tableTop + 75).strokeColor('#cbd5e1').stroke();
-    
+
     doc.fontSize(11).font('Helvetica-Bold').fillColor('#b91c1c').text('TOTAL SETTLEMENT AMOUNT', 65, tableTop + 85);
     doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(total), 350, tableTop + 85, { align: 'right', width: 190 });
 
-    doc.moveDown(4);
+    doc.moveDown(2);
 
     if (isProof === 'true') {
       doc.save(); // Save state for rotation
       const stampX = 300;
-      const stampY = doc.y + 40;
+      const stampY = doc.y + 35;
       doc.rotate(-10, { origin: [stampX, stampY] });
-      
+
       doc.rect(stampX - 100, stampY - 20, 200, 40).lineWidth(2).strokeColor('#10b981').stroke();
       doc.fontSize(14).font('Helvetica-Bold').fillColor('#10b981').text('PAID & CLOSED', stampX - 100, stampY - 8, { width: 200, align: 'center' });
-      
+
       doc.restore(); // Restore state (stop rotation)
-      doc.moveDown(6);
-      
-      doc.rect(50, doc.y, 500, 25).fill('#f0fdf4');
-      doc.fillColor('#166534').fontSize(9).font('Helvetica-Bold').text('OFFICIAL PROOF OF VEHICLE OWNERSHIP TRANSFER', 50, doc.y + 8, { align: 'center', width: 500 });
-      doc.moveDown(3);
+      doc.moveDown(4.5);
+
+      doc.rect(50, doc.y, 500, 22).fill('#f0fdf4');
+      doc.fillColor('#166534').fontSize(9).font('Helvetica-Bold').text('OFFICIAL PROOF OF VEHICLE OWNERSHIP TRANSFER', 50, doc.y + 6, { align: 'center', width: 500 });
+      doc.moveDown(1.5);
     } else {
-      doc.moveDown(5);
+      doc.moveDown(2);
     }
 
     // Disclaimer
-    const disclaimer = isProof === 'true' 
+    const disclaimer = isProof === 'true'
       ? 'This document serves as the final proof of transaction and vehicle ownership transfer. All payments have been verified.'
       : 'Please ensure the remaining balance is settled before the agreed delivery date to avoid reservation cancellation.';
-    
+
     doc.fontSize(8).font('Helvetica-Oblique').fillColor('#94a3b8').text(disclaimer, 50, doc.y, { align: 'center', width: 500 });
 
-    // Footer Signature
-    doc.moveDown(4);
+    // Footer Signature - Ensure block doesn't split
+    if (doc.y > 720) doc.addPage();
+    doc.moveDown(2);
     const footerY = doc.y;
-    
+
     doc.fillColor('#4b5563').fontSize(10).font('Helvetica').text(`Issued Date: ${new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}`, 50, footerY);
-    
+
     doc.fillColor('#000').font('Helvetica-Bold').text('Authorized Dealer Representative,', 340, footerY);
-    doc.moveDown(4);
+    doc.moveDown(3);
     doc.text(`( ${booking.salesAgent?.name || 'Authorized Representative'} )`, 340);
     doc.fontSize(8).font('Helvetica').text('Dealer Sales Manager / Representative', 340);
+
+    // Attachment: Proof of Delivery Photo (If exists)
+    if (booking.delivery_photo) {
+      try {
+        const photoPath = path.join(__dirname, '../../', booking.delivery_photo);
+        if (fs.existsSync(photoPath)) {
+          doc.addPage();
+          doc.fontSize(16).font('Helvetica-Bold').fillColor('#1e40af').text('ATTACHMENT: PROOF OF DELIVERY', { align: 'center' });
+          doc.moveDown(1);
+          doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor('#e2e8f0').lineWidth(1).stroke();
+          doc.moveDown(2);
+
+          doc.image(photoPath, {
+            fit: [500, 600],
+            align: 'center',
+            valign: 'center'
+          });
+
+          doc.moveDown(2);
+          doc.fontSize(9).font('Helvetica-Oblique').fillColor('#64748b').text('This photograph serves as formal visual confirmation of the vehicle handover process to the authorized purchaser.', { align: 'center', width: 400 });
+        }
+      } catch (imgErr) {
+        console.error('Error adding photo to PDF:', imgErr);
+      }
+    }
 
     doc.end();
   } catch (error) {
@@ -533,7 +559,7 @@ const exportFinancialReportPdf = async (req, res) => {
     const user = req.user;
     const isSuperAdmin = user.Role?.name === 'Super Admin';
     let officeIds = [];
-    
+
     if (isSuperAdmin) {
       if (officeId) officeIds = [officeId];
       else {
@@ -557,7 +583,7 @@ const exportFinancialReportPdf = async (req, res) => {
     let salesWhere = { ...where, status: 'Sold' };
     let purchaseWhere = { ...where };
     let bookingWhere = { ...where, status: 'Cancelled' };
-    
+
     if (year && year !== 'all') {
       const startDate = new Date(`${year}-01-01T00:00:00`);
       const endDate = new Date(`${year}-12-31T23:59:59`);
@@ -569,7 +595,7 @@ const exportFinancialReportPdf = async (req, res) => {
     // Fetch Data
     const sales = await Vehicle.findAll({ where: salesWhere });
     const purchases = await Vehicle.findAll({ where: purchaseWhere });
-    const cancellations = await Booking.findAll({ 
+    const cancellations = await Booking.findAll({
       where: bookingWhere,
       include: [{ model: Vehicle, attributes: ['type', 'brand', 'model'] }]
     });
@@ -604,7 +630,7 @@ const exportFinancialReportPdf = async (req, res) => {
     const drawTable = (headers, rows, widths, options = {}) => {
       const { align = [] } = options;
       const startX = 40;
-      
+
       // Draw Headers
       let maxHeaderHeight = 0;
       headers.forEach((h, i) => {
@@ -614,18 +640,18 @@ const exportFinancialReportPdf = async (req, res) => {
       const headerHeight = maxHeaderHeight + 10;
 
       if (doc.y + headerHeight > 780) doc.addPage();
-      
+
       let currentY = doc.y;
       doc.rect(startX, currentY, widths.reduce((a, b) => a + b, 0), headerHeight).fill('#f8fafc');
       doc.fontSize(8).font('Helvetica-Bold').fillColor('#475569');
-      
+
       let x = startX;
       headers.forEach((h, i) => {
         doc.text(h, x + 5, currentY + 5, { width: widths[i] - 10, align: align[i] || 'left' });
         doc.rect(x, currentY, widths[i], headerHeight).strokeColor('#cbd5e1').lineWidth(0.5).stroke();
         x += widths[i];
       });
-      
+
       doc.y = currentY + headerHeight;
 
       // Draw Rows
@@ -659,15 +685,15 @@ const exportFinancialReportPdf = async (req, res) => {
       const rowHeight = 18;
       if (doc.y + rowHeight > 780) doc.addPage();
       const currentY = doc.y;
-      
+
       const labelWidth = widths.slice(0, widths.length - values.length).reduce((a, b) => a + b, 0);
-      
+
       doc.rect(startX, currentY, widths.reduce((a, b) => a + b, 0), rowHeight).fill(bgColor);
       doc.fontSize(8).font('Helvetica-Bold').fillColor(color);
-      
+
       doc.text(label, startX + 5, currentY + 5, { width: labelWidth - 10, align: 'right' });
       doc.rect(startX, currentY, labelWidth, rowHeight).strokeColor('#cbd5e1').lineWidth(0.5).stroke();
-      
+
       let x = startX + labelWidth;
       values.forEach((val, i) => {
         const colIdx = widths.length - values.length + i;
@@ -681,7 +707,7 @@ const exportFinancialReportPdf = async (req, res) => {
     // 1. Initial Quick Summary Table (Cross-check)
     doc.fontSize(11).font('Helvetica-Bold').fillColor('#1e40af').text('QUICK SUMMARY BY CATEGORY', 40);
     doc.moveDown(0.5);
-    
+
     const quickSummaryWidths = [115, 100, 100, 100, 100];
     const quickSummaryRows = categories.map(cat => {
       const data = summary[cat];
@@ -690,7 +716,7 @@ const exportFinancialReportPdf = async (req, res) => {
       const serTotal = data.purchases.reduce((sum, v) => sum + Number(v.service_cost), 0);
       const cTotal = data.cancellations.reduce((sum, b) => sum + Number(b.down_payment), 0);
       const net = sTotal + cTotal - (pTotal + serTotal);
-      
+
       return [
         cat.toUpperCase(),
         formatIDR(sTotal),
@@ -732,7 +758,7 @@ const exportFinancialReportPdf = async (req, res) => {
     // --- Merged Sales Section ---
     doc.fontSize(10).font('Helvetica-Bold').fillColor('#16a34a').text('ALL SALES TRANSACTIONS', 40);
     doc.moveDown(0.5);
-    
+
     const salesWidths = [50, 160, 80, 110, 115];
     const salesRows = sales.map(s => {
       const margin = Number(s.price) - (Number(s.purchase_price) + Number(s.service_cost));
@@ -757,7 +783,7 @@ const exportFinancialReportPdf = async (req, res) => {
     // --- Merged Purchase Section ---
     doc.fontSize(10).font('Helvetica-Bold').fillColor('#2563eb').text('ALL PURCHASE & ACQUISITION TRANSACTIONS', 40);
     doc.moveDown(0.5);
-    
+
     const purchaseWidths = [50, 160, 80, 110, 115];
     const purchaseRows = purchases.map(p => {
       return [
@@ -782,7 +808,7 @@ const exportFinancialReportPdf = async (req, res) => {
     if (cancellations.length > 0) {
       doc.fontSize(10).font('Helvetica-Bold').fillColor('#ea580c').text('ALL CANCELLATION REVENUE', 40);
       doc.moveDown(0.5);
-      
+
       const cancelWidths = [50, 150, 170, 145];
       const cancelRows = cancellations.map(c => {
         return [
@@ -807,7 +833,7 @@ const exportFinancialReportPdf = async (req, res) => {
     doc.addPage();
     doc.fontSize(14).font('Helvetica-Bold').fillColor('#1e40af').text('EXECUTIVE FINANCIAL SUMMARY', { align: 'left' });
     doc.moveDown(1);
-    
+
     const grandSales = sales.reduce((sum, v) => sum + Number(v.price), 0);
     const grandMargin = sales.reduce((sum, v) => sum + (Number(v.price) - (Number(v.purchase_price) + Number(v.service_cost))), 0);
     const grandBuy = purchases.reduce((sum, v) => sum + Number(v.purchase_price), 0);

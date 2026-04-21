@@ -5,7 +5,7 @@ import {
   Search, FileSpreadsheet, Printer, Eye, Calendar, User,
   Phone, Tag, Clock, CheckCircle, XCircle, MoreHorizontal,
   Building2, Hash, Wallet, UserCheck, Trash2, Edit, CheckCircle2,
-  PhoneCall, CreditCard as CardIcon, ChevronRight
+  PhoneCall, CreditCard as CardIcon, ChevronRight, ArrowUpDown
 } from 'lucide-react';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
@@ -56,6 +56,7 @@ const Transactions = () => {
   };
 
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [sort, setSort] = useState({ column: 'updatedAt', direction: 'DESC' });
 
   const fetchTransactions = async () => {
     setLoading(true);
@@ -67,7 +68,9 @@ const Transactions = () => {
           status: statusFilter, 
           size: 8,
           startDate: dateRange.start,
-          endDate: dateRange.end
+          endDate: dateRange.end,
+          sortBy: sort.column,
+          sortOrder: sort.direction
         }
       });
       const data = r.data.items || (Array.isArray(r.data) ? r.data : []);
@@ -83,7 +86,14 @@ const Transactions = () => {
 
   useEffect(() => {
     fetchTransactions();
-  }, [page, search, statusFilter, dateRange]);
+  }, [page, search, statusFilter, dateRange, sort]);
+
+  const toggleSort = (column) => {
+    setSort(prev => ({
+      column,
+      direction: prev.column === column && prev.direction === 'DESC' ? 'ASC' : 'DESC'
+    }));
+  };
 
   const handlePrintDoc = async (bookingId, type, openModal = true) => {
     notify('loading', `Preparing document...`);
@@ -366,9 +376,21 @@ const Transactions = () => {
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
-                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Booking Date</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Processed Date</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Customer</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap cursor-pointer hover:text-blue-600 transition-colors group" onClick={() => toggleSort('booking_date')}>
+                      <div className="flex items-center gap-2">
+                        Booking Date <ArrowUpDown size={10} className={sort.column === 'booking_date' ? 'text-blue-500' : 'text-gray-300 opacity-0 group-hover:opacity-100'} />
+                      </div>
+                    </th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap cursor-pointer hover:text-blue-600 transition-colors group" onClick={() => toggleSort('updatedAt')}>
+                      <div className="flex items-center gap-2">
+                        Date Modif <ArrowUpDown size={10} className={sort.column === 'updatedAt' ? 'text-blue-500' : 'text-gray-300 opacity-0 group-hover:opacity-100'} />
+                      </div>
+                    </th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest cursor-pointer hover:text-blue-600 transition-colors group" onClick={() => toggleSort('customer_name')}>
+                      <div className="flex items-center gap-2">
+                        Customer <ArrowUpDown size={10} className={sort.column === 'customer_name' ? 'text-blue-500' : 'text-gray-300 opacity-0 group-hover:opacity-100'} />
+                      </div>
+                    </th>
                     <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Unit Detail</th>
                     <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Office / Sales</th>
                     <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Pricing</th>
@@ -394,19 +416,10 @@ const Transactions = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          {s === 'sold' ? (
-                            <div className="flex flex-col">
-                              <span className="text-[9px] font-black text-green-600 uppercase tracking-tighter">Sold On</span>
-                              <span className="text-xs font-bold text-green-700 dark:text-green-400">{new Date(t.updatedAt).toLocaleDateString('id-ID')}</span>
-                            </div>
-                          ) : s === 'cancelled' ? (
-                            <div className="flex flex-col">
-                              <span className="text-[9px] font-black text-red-600 uppercase tracking-tighter">Cancelled On</span>
-                              <span className="text-xs font-bold text-red-700 dark:text-red-400">{new Date(t.updatedAt).toLocaleDateString('id-ID')}</span>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-gray-300 italic font-medium">Pending...</span>
-                          )}
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold text-gray-900 dark:text-white">{new Date(t.updatedAt).toLocaleDateString('id-ID')}</span>
+                            <span className="text-[9px] text-gray-400 font-bold">{new Date(t.updatedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">

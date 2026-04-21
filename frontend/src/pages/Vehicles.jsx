@@ -53,6 +53,7 @@ const Vehicles = () => {
   const [printInvoice, setPrintInvoice] = useState(localStorage.getItem('pref_print_invoice') === 'true');
   const [printDealProof, setPrintDealProof] = useState(() => localStorage.getItem('pref_print_deal') === 'true');
   const [cancellationReason, setCancellationReason] = useState('');
+  const [dealPhoto, setDealPhoto] = useState(null);
 
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -378,8 +379,10 @@ const Vehicles = () => {
   };
 
   const preConfirmAction = (v, type) => {
-    setEditingVehicle(v); setActionType(type);
+    setEditingVehicle(v); 
+    setActionType(type);
     setCancellationReason(''); // Reset remark
+    setDealPhoto(null); // Reset photo for new action
     fetchAgentsByOffice(v.office_id);
     api.get(`/bookings/vehicle/${v.id}`).then(r => {
       setActiveBooking(r.data);
@@ -395,18 +398,30 @@ const Vehicles = () => {
   };
 
   const handleConfirmSale = async () => {
-    notify('loading', 'Selling unit...');
+    if (actionType === 'sold' && !bookingData.customer_name) {
+      return notify('error', 'Customer name is required!');
+    }
+
+    notify('loading', 'Closing deal...');
     try {
-      const res = await api.put(`/bookings/vehicle/${editingVehicle.id}/sold`, {
-        booking_id: activeBooking?.id,
-        customer_name: bookingData.customer_name,
-        customer_phone: bookingData.customer_phone,
-        sold_date: new Date().toISOString().split('T')[0],
-        sales_agent_id: bookingData.sales_agent_id
+      const formData = new FormData();
+      formData.append('booking_id', activeBooking?.id || '');
+      formData.append('customer_name', bookingData.customer_name);
+      formData.append('customer_phone', bookingData.customer_phone);
+      formData.append('sold_date', new Date().toISOString().split('T')[0]);
+      formData.append('sales_agent_id', bookingData.sales_agent_id);
+      
+      if (dealPhoto) {
+        formData.append('delivery_photo', dealPhoto);
+      }
+
+      const res = await api.put(`/bookings/vehicle/${editingVehicle.id}/sold`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
       
-      notify('success', 'Unit sold successfully!'); 
+      notify('success', 'Deal closed successfully!'); 
       setIsConfirmActionModalOpen(false); 
+      setDealPhoto(null);
       fetchVehicles();
 
       if (printDealProof) {
@@ -418,7 +433,7 @@ const Vehicles = () => {
       }
     } catch (e) { 
       console.error('Sale error:', e);
-      notify('error', 'Sale failed'); 
+      notify('error', e.response?.data?.message || 'Sale failed'); 
     }
   };
 
@@ -808,6 +823,19 @@ const Vehicles = () => {
                         </div>
                         <div className="flex flex-col items-end gap-3 shrink-0">
                           <p className="font-black text-blue-600 text-xs">{formatPrice(bh.down_payment)}</p>
+                          {bh.delivery_photo && (
+                            <div className="group/photo relative">
+                              <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden border-2 border-green-500/20 shadow-sm">
+                                <img 
+                                  src={`${IMAGE_BASE_URL}${bh.delivery_photo}`} 
+                                  className="w-full h-full object-cover cursor-zoom-in" 
+                                  alt="Deal Proof"
+                                  onClick={() => window.open(`${IMAGE_BASE_URL}${bh.delivery_photo}`, '_blank')}
+                                />
+                              </div>
+                              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 shadow-sm" title="Handover Photo Available"></div>
+                            </div>
+                          )}
                           {bh.status === 'Active' && (
                             <button
                               type="button"
@@ -829,39 +857,78 @@ const Vehicles = () => {
         </form>
       </Modal>
 
-      <Modal isOpen={isConfirmActionModalOpen} onClose={() => setIsConfirmActionModalOpen(false)} title="Transaction Confirmation">
+      <Modal isOpen={isConfirmActionModalOpen} onClose={() => { setIsConfirmActionModalOpen(false); setDealPhoto(null); }} title="Transaction Confirmation">
         <div className="space-y-6 pt-2">
           <p className="text-sm text-gray-600 dark:text-gray-300">Confirm {actionType === 'sold' ? 'Sale' : 'Cancellation'} for <strong className="text-gray-900 dark:text-white">{editingVehicle?.brand} {editingVehicle?.model}</strong>?</p>
-          <div className="space-y-3">
+          <div className="space-y-6">
             {actionType === 'sold' && (
-              <>
-                {!activeBooking && (
-                  <div className="space-y-3 mb-3 border-b border-gray-100 dark:border-gray-800 pb-3">
-                    <p className="text-[10px] font-black text-orange-600 uppercase">Direct Sale Info</p>
+              <div className="space-y-5">
+                {/* Vehicle Data Verification */}
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-2xl">
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-blue-100 dark:border-blue-900/20">
+                    <Hash size={14} className="text-blue-500" />
+                    <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Unit Verification</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+                    <div className="space-y-0.5">
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Plate Number</p>
+                      <p className="text-xs font-bold text-gray-900 dark:text-white uppercase">{editingVehicle?.plate_number}</p>
+                    </div>
+                    <div className="space-y-0.5 text-right">
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Selling Price</p>
+                      <p className="text-xs font-black text-blue-600 uppercase">{formatPrice(editingVehicle?.price || 0)}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {!activeBooking ? (
+                  <div className="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800">
+                    <p className="text-[10px] font-black text-orange-600 uppercase mb-2">Direct Sale Information</p>
                     <Input label="Customer Name" value={bookingData.customer_name} onChange={e => setBookingData({ ...bookingData, customer_name: e.target.value })} required />
                     <Input label="Phone Number" value={bookingData.customer_phone} onChange={e => setBookingData({ ...bookingData, customer_phone: sanitizePhone(e.target.value) })} required />
                   </div>
-                )}
-                {activeBooking && (
-                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl mb-3 border border-blue-100 dark:border-blue-800">
-                    <p className="text-[9px] font-black text-blue-600 uppercase mb-1">Selling to Customer:</p>
-                    <p className="text-sm font-black text-gray-900 dark:text-white uppercase">{activeBooking.customer_name}</p>
-                    <p className="text-xs text-gray-500 font-bold">{activeBooking.customer_phone}</p>
+                ) : (
+                  <div className="p-4 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-600/20">
+                    <p className="text-[9px] font-black text-blue-200 uppercase mb-1">Selling to Reserved Customer:</p>
+                    <p className="text-base font-black uppercase tracking-tight">{activeBooking.customer_name}</p>
+                    <p className="text-xs font-medium opacity-80">{activeBooking.customer_phone}</p>
                   </div>
                 )}
+                
                 <Select label="Sales Executive" value={bookingData.sales_agent_id} onChange={e => setBookingData({ ...bookingData, sales_agent_id: e.target.value })} options={salesAgents.map(a => ({ value: a.id, label: `${a.name} [${a.sales_code}] - ${a.Office?.name || 'Unknown'}` }))} required />
                 
+                {/* Delivery Photo Upload */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                    <Camera size={14} className="text-blue-500" /> Proof of Delivery Photo
+                  </label>
+                  <div className="relative group aspect-video bg-gray-100 dark:bg-gray-900 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 hover:border-blue-500 transition-all overflow-hidden flex items-center justify-center">
+                    {dealPhoto ? (
+                      <>
+                        <img src={URL.createObjectURL(dealPhoto)} className="w-full h-full object-cover" alt="Proof" />
+                        <button onClick={() => setDealPhoto(null)} className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-full shadow-lg"><X size={14} /></button>
+                      </>
+                    ) : (
+                      <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer">
+                        <ImageIcon size={32} className="text-gray-300 mb-2" />
+                        <p className="text-[10px] font-black text-gray-400 uppercase">Click to upload photo with customer</p>
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => setDealPhoto(e.target.files[0])} />
+                      </label>
+                    )}
+                  </div>
+                </div>
+
                 <div className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all cursor-pointer" onClick={() => {
                   const newVal = !printDealProof;
                   setPrintDealProof(newVal);
                   localStorage.setItem('pref_print_deal', newVal);
                 }}>
                   <input type="checkbox" checked={printDealProof} onChange={() => {}} className="w-4 h-4 rounded text-blue-600" />
-                  <span className="text-[10px] font-black text-gray-500 uppercase">Print Official Bill of Sale after save</span>
+                  <span className="text-[10px] font-black text-gray-400 uppercase">Print Bill of Sale after save</span>
                 </div>
 
-                <button onClick={handleConfirmSale} className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-lg shadow-green-500/20 transition-all active:scale-95 uppercase text-xs tracking-widest">CLOSE DEAL NOW</button>
-              </>
+                <button onClick={handleConfirmSale} className="w-full py-4 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-black shadow-xl shadow-green-500/20 transition-all active:scale-95 uppercase text-xs tracking-widest">CLOSE DEAL NOW</button>
+              </div>
             )}
             {actionType === 'cancel' && (
               <div className="space-y-4">

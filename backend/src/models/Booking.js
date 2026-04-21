@@ -66,6 +66,10 @@ const Booking = sequelize.define('Booking', {
   user_id: {
     type: DataTypes.BIGINT,
     allowNull: true
+  },
+  delivery_photo: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 }, {
   tableName: 'bookings',
