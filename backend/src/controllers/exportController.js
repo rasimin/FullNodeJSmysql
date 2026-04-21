@@ -600,132 +600,208 @@ const exportFinancialReportPdf = async (req, res) => {
 
     const formatIDR = (val) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
 
-    // Render Categories
-    categories.forEach(cat => {
-      const data = summary[cat];
+    // Helper for Table Rendering with Grid Lines
+    const drawTable = (headers, rows, widths, options = {}) => {
+      const { align = [] } = options;
+      const startX = 40;
       
-      // Category Header
-      doc.rect(40, doc.y, 515, 20).fill('#f8fafc');
-      doc.fillColor('#334155').font('Helvetica-Bold').fontSize(11).text(`CATEGORY: ${cat.toUpperCase()}`, 50, doc.y - 15);
-      doc.moveDown(1);
-
-      // --- Sales Section ---
-      doc.fontSize(9).font('Helvetica-Bold').fillColor('#16a34a').text('SALES (REVENUE)', 50);
-      doc.moveDown(0.5);
-      
-      let salesTotal = 0;
-      let marginTotal = 0;
-      
-      // Table Header
-      const tableX = [50, 200, 320, 420];
-      doc.fontSize(8).font('Helvetica-Bold').fillColor('#475569');
-      doc.text('Vehicle Description', tableX[0], doc.y);
-      doc.text('Sold Date', tableX[1], doc.y);
-      doc.text('Revenue', tableX[2], doc.y);
-      doc.text('Margin', tableX[3], doc.y);
-      doc.moveDown(0.5);
-      doc.moveTo(50, doc.y).lineTo(540, doc.y).strokeColor('#f1f5f9').stroke();
-      doc.moveDown(0.3);
-
-      doc.font('Helvetica').fillColor('#000');
-      data.sales.forEach(s => {
-        const margin = Number(s.price) - (Number(s.purchase_price) + Number(s.service_cost));
-        salesTotal += Number(s.price);
-        marginTotal += margin;
-
-        if (doc.y > 750) doc.addPage();
-        
-        doc.text(`${s.brand} ${s.model}`, tableX[0], doc.y, { width: 140 });
-        const textY = doc.y;
-        doc.text(s.sold_date || '-', tableX[1], textY);
-        doc.text(formatIDR(s.price), tableX[2], textY);
-        doc.text(formatIDR(margin), tableX[3], textY);
-        doc.moveDown(0.5);
+      // Draw Headers
+      let maxHeaderHeight = 0;
+      headers.forEach((h, i) => {
+        const height = doc.heightOfString(h, { width: widths[i] - 10 });
+        if (height > maxHeaderHeight) maxHeaderHeight = height;
       });
+      const headerHeight = maxHeaderHeight + 10;
 
-      // Sub-total Sales
-      doc.moveDown(0.5);
-      doc.font('Helvetica-Bold').fillColor('#16a34a');
-      doc.text(`Sub-total ${cat} Sales:`, tableX[1], doc.y);
-      doc.text(formatIDR(salesTotal), tableX[2], doc.y);
-      doc.text(formatIDR(marginTotal), tableX[3], doc.y);
-      doc.moveDown(2);
-
-      // --- Purchase Section ---
-      if (doc.y > 700) doc.addPage();
-      doc.fontSize(9).font('Helvetica-Bold').fillColor('#2563eb').text('PURCHASES (ACQUISITION)', 50);
-      doc.moveDown(0.5);
+      if (doc.y + headerHeight > 780) doc.addPage();
       
-      let buyTotal = 0;
-      let serviceTotal = 0;
-      
+      let currentY = doc.y;
+      doc.rect(startX, currentY, widths.reduce((a, b) => a + b, 0), headerHeight).fill('#f8fafc');
       doc.fontSize(8).font('Helvetica-Bold').fillColor('#475569');
-      doc.text('Vehicle Description', tableX[0], doc.y);
-      doc.text('Entry Date', tableX[1], doc.y);
-      doc.text('Acquisition', tableX[2], doc.y);
-      doc.text('Service Cost', tableX[3], doc.y);
-      doc.moveDown(0.5);
-      doc.moveTo(50, doc.y).lineTo(540, doc.y).strokeColor('#f1f5f9').stroke();
-      doc.moveDown(0.3);
-
-      doc.font('Helvetica').fillColor('#000');
-      data.purchases.forEach(p => {
-        buyTotal += Number(p.purchase_price);
-        serviceTotal += Number(p.service_cost);
-        
-        if (doc.y > 750) doc.addPage();
-        doc.text(`${p.brand} ${p.model}`, tableX[0], doc.y, { width: 140 });
-        const textY = doc.y;
-        doc.text(p.entry_date, tableX[1], textY);
-        doc.text(formatIDR(p.purchase_price), tableX[2], textY);
-        doc.text(formatIDR(p.service_cost), tableX[3], textY);
-        doc.moveDown(0.5);
+      
+      let x = startX;
+      headers.forEach((h, i) => {
+        doc.text(h, x + 5, currentY + 5, { width: widths[i] - 10, align: align[i] || 'left' });
+        doc.rect(x, currentY, widths[i], headerHeight).strokeColor('#cbd5e1').lineWidth(0.5).stroke();
+        x += widths[i];
       });
+      
+      doc.y = currentY + headerHeight;
 
-      doc.moveDown(0.5);
-      doc.font('Helvetica-Bold').fillColor('#2563eb');
-      doc.text(`Sub-total ${cat} Purchases:`, tableX[1], doc.y);
-      doc.text(formatIDR(buyTotal), tableX[2], doc.y);
-      doc.text(formatIDR(serviceTotal), tableX[3], doc.y);
-      doc.moveDown(2);
-
-      // --- Cancellation Section ---
-      if (data.cancellations.length > 0) {
-        if (doc.y > 700) doc.addPage();
-        doc.fontSize(9).font('Helvetica-Bold').fillColor('#ea580c').text('CANCELLATION REVENUE (NON-REFUNDABLE DP)', 50);
-        doc.moveDown(0.5);
-        
-        let cancelTotal = 0;
-        doc.fontSize(8).font('Helvetica-Bold').fillColor('#475569');
-        doc.text('Customer Name', tableX[0], doc.y);
-        doc.text('Vehicle', tableX[1], doc.y);
-        doc.text('DP Income', tableX[2], doc.y);
-        doc.moveDown(0.5);
-        doc.moveTo(50, doc.y).lineTo(540, doc.y).strokeColor('#f1f5f9').stroke();
-        doc.moveDown(0.3);
-
-        doc.font('Helvetica').fillColor('#000');
-        data.cancellations.forEach(c => {
-          cancelTotal += Number(c.down_payment);
-          if (doc.y > 750) doc.addPage();
-          doc.text(c.customer_name, tableX[0], doc.y);
-          const textY = doc.y;
-          doc.text(`${c.Vehicle?.brand} ${c.Vehicle?.model}`, tableX[1], textY);
-          doc.text(formatIDR(c.down_payment), tableX[2], textY);
-          doc.moveDown(0.5);
+      // Draw Rows
+      rows.forEach(row => {
+        let maxRowHeight = 0;
+        row.forEach((cell, i) => {
+          const height = doc.heightOfString(String(cell), { width: widths[i] - 10 });
+          if (height > maxRowHeight) maxRowHeight = height;
         });
-        
-        doc.moveDown(0.5);
-        doc.font('Helvetica-Bold').fillColor('#ea580c');
-        doc.text(`Sub-total ${cat} Cancel Revenue:`, tableX[1], doc.y);
-        doc.text(formatIDR(cancelTotal), tableX[2], doc.y);
-        doc.moveDown(2);
-      }
+        const rowHeight = maxRowHeight + 10;
 
-      doc.moveDown(1);
-      doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor('#e2e8f0').lineWidth(0.5).stroke();
-      doc.moveDown(2);
+        if (doc.y + rowHeight > 780) {
+          doc.addPage();
+        }
+
+        currentY = doc.y;
+        doc.fontSize(8).font('Helvetica').fillColor('#000');
+        x = startX;
+        row.forEach((cell, i) => {
+          doc.text(String(cell), x + 5, currentY + 5, { width: widths[i] - 10, align: align[i] || 'left' });
+          doc.rect(x, currentY, widths[i], rowHeight).strokeColor('#e2e8f0').lineWidth(0.5).stroke();
+          x += widths[i];
+        });
+        doc.y = currentY + rowHeight;
+      });
+    };
+
+    const drawSummaryRow = (label, values, widths, options = {}) => {
+      const { color = '#000', bgColor = '#f8fafc', align = [] } = options;
+      const startX = 40;
+      const rowHeight = 18;
+      if (doc.y + rowHeight > 780) doc.addPage();
+      const currentY = doc.y;
+      
+      const labelWidth = widths.slice(0, widths.length - values.length).reduce((a, b) => a + b, 0);
+      
+      doc.rect(startX, currentY, widths.reduce((a, b) => a + b, 0), rowHeight).fill(bgColor);
+      doc.fontSize(8).font('Helvetica-Bold').fillColor(color);
+      
+      doc.text(label, startX + 5, currentY + 5, { width: labelWidth - 10, align: 'right' });
+      doc.rect(startX, currentY, labelWidth, rowHeight).strokeColor('#cbd5e1').lineWidth(0.5).stroke();
+      
+      let x = startX + labelWidth;
+      values.forEach((val, i) => {
+        const colIdx = widths.length - values.length + i;
+        doc.text(val, x + 5, currentY + 5, { width: widths[colIdx] - 10, align: align[i] || 'right' });
+        doc.rect(x, currentY, widths[colIdx], rowHeight).strokeColor('#cbd5e1').lineWidth(0.5).stroke();
+        x += widths[colIdx];
+      });
+      doc.y = currentY + rowHeight;
+    };
+
+    // 1. Initial Quick Summary Table (Cross-check)
+    doc.fontSize(11).font('Helvetica-Bold').fillColor('#1e40af').text('QUICK SUMMARY BY CATEGORY', 40);
+    doc.moveDown(0.5);
+    
+    const quickSummaryWidths = [115, 100, 100, 100, 100];
+    const quickSummaryRows = categories.map(cat => {
+      const data = summary[cat];
+      const sTotal = data.sales.reduce((sum, v) => sum + Number(v.price), 0);
+      const pTotal = data.purchases.reduce((sum, v) => sum + Number(v.purchase_price), 0);
+      const serTotal = data.purchases.reduce((sum, v) => sum + Number(v.service_cost), 0);
+      const cTotal = data.cancellations.reduce((sum, b) => sum + Number(b.down_payment), 0);
+      const net = sTotal + cTotal - (pTotal + serTotal);
+      
+      return [
+        cat.toUpperCase(),
+        formatIDR(sTotal),
+        formatIDR(pTotal + serTotal),
+        formatIDR(cTotal),
+        formatIDR(net)
+      ];
     });
+
+    drawTable(
+      ['Category', 'Total Revenue', 'Total Expenses', 'Cancellation', 'Net Cash Flow'],
+      quickSummaryRows,
+      quickSummaryWidths,
+      { align: ['left', 'right', 'right', 'right', 'right'] }
+    );
+
+    // Grand Total Row for Quick Summary
+    const grandSalesSum = sales.reduce((sum, v) => sum + Number(v.price), 0);
+    const grandExpSum = purchases.reduce((sum, v) => sum + Number(v.purchase_price), 0) + purchases.reduce((sum, v) => sum + Number(v.service_cost), 0);
+    const grandCancelSum = cancellations.reduce((sum, b) => sum + Number(b.down_payment), 0);
+    const grandNetSum = grandSalesSum + grandCancelSum - grandExpSum;
+
+    drawSummaryRow(
+      'GRAND TOTAL:',
+      [formatIDR(grandSalesSum), formatIDR(grandExpSum), formatIDR(grandCancelSum), formatIDR(grandNetSum)],
+      quickSummaryWidths,
+      { color: '#1e40af', bgColor: '#f1f5f9' }
+    );
+
+    doc.moveDown(2);
+    doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor('#e2e8f0').lineWidth(1).stroke();
+    doc.moveDown(2);
+
+    // 2. Render Detailed Transaction Tables (Merged)
+    doc.addPage();
+    doc.fontSize(14).font('Helvetica-Bold').fillColor('#1e40af').text('DETAILED TRANSACTION LEDGER', 40);
+    doc.moveDown(1);
+
+    // --- Merged Sales Section ---
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#16a34a').text('ALL SALES TRANSACTIONS', 40);
+    doc.moveDown(0.5);
+    
+    const salesWidths = [50, 160, 80, 110, 115];
+    const salesRows = sales.map(s => {
+      const margin = Number(s.price) - (Number(s.purchase_price) + Number(s.service_cost));
+      return [
+        s.type === 'Mobil' ? 'MOBIL' : 'MOTOR',
+        `${s.brand} ${s.model}`,
+        s.sold_date || '-',
+        formatIDR(s.price),
+        formatIDR(margin)
+      ];
+    });
+
+    drawTable(
+      ['Type', 'Vehicle Description', 'Sold Date', 'Revenue', 'Margin'],
+      salesRows,
+      salesWidths,
+      { align: ['center', 'left', 'left', 'right', 'right'] }
+    );
+    drawSummaryRow('TOTAL SALES:', [formatIDR(grandSalesSum), formatIDR(sales.reduce((sum, s) => sum + (Number(s.price) - (Number(s.purchase_price) + Number(s.service_cost))), 0))], salesWidths, { color: '#16a34a' });
+    doc.moveDown(2);
+
+    // --- Merged Purchase Section ---
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#2563eb').text('ALL PURCHASE & ACQUISITION TRANSACTIONS', 40);
+    doc.moveDown(0.5);
+    
+    const purchaseWidths = [50, 160, 80, 110, 115];
+    const purchaseRows = purchases.map(p => {
+      return [
+        p.type === 'Mobil' ? 'MOBIL' : 'MOTOR',
+        `${p.brand} ${p.model}`,
+        p.entry_date || '-',
+        formatIDR(p.purchase_price),
+        formatIDR(p.service_cost)
+      ];
+    });
+
+    drawTable(
+      ['Type', 'Vehicle Description', 'Entry Date', 'Acquisition', 'Service Cost'],
+      purchaseRows,
+      purchaseWidths,
+      { align: ['center', 'left', 'left', 'right', 'right'] }
+    );
+    drawSummaryRow('TOTAL PURCHASES:', [formatIDR(purchases.reduce((sum, p) => sum + Number(p.purchase_price), 0)), formatIDR(purchases.reduce((sum, p) => sum + Number(p.service_cost), 0))], purchaseWidths, { color: '#2563eb' });
+    doc.moveDown(2);
+
+    // --- Merged Cancellation Section ---
+    if (cancellations.length > 0) {
+      doc.fontSize(10).font('Helvetica-Bold').fillColor('#ea580c').text('ALL CANCELLATION REVENUE', 40);
+      doc.moveDown(0.5);
+      
+      const cancelWidths = [50, 150, 170, 145];
+      const cancelRows = cancellations.map(c => {
+        return [
+          c.Vehicle?.type === 'Mobil' ? 'MOBIL' : 'MOTOR',
+          c.customer_name,
+          `${c.Vehicle?.brand} ${c.Vehicle?.model}`,
+          formatIDR(c.down_payment)
+        ];
+      });
+
+      drawTable(
+        ['Type', 'Customer Name', 'Vehicle Description', 'DP Income'],
+        cancelRows,
+        cancelWidths,
+        { align: ['center', 'left', 'left', 'right'] }
+      );
+      drawSummaryRow('TOTAL CANCELLATION:', [formatIDR(grandCancelSum)], cancelWidths, { color: '#ea580c' });
+      doc.moveDown(2);
+    }
 
     // Summary Page / Section
     doc.addPage();
