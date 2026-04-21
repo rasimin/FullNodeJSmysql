@@ -620,7 +620,7 @@ const Transactions = () => {
                             <button onClick={() => handlePrintDoc(t.id, 'sale-invoice')} className="p-1.5 bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 rounded-lg hover:bg-amber-600 dark:hover:bg-amber-600 hover:text-white transition-all shadow-sm" title="Print Final Invoice"><FileSpreadsheet size={14} /></button>
                           </>
                         )}
-                        {t.status === 'sold' && <button onClick={() => handlePrintDoc(t.id, 'deal-proof')} className="p-1.5 bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400 rounded-lg hover:bg-green-600 dark:hover:bg-green-600 hover:text-white transition-all shadow-sm" title="Print Bill of Sale"><CheckCircle2 size={14} /></button>}
+                        {s === 'sold' && <button onClick={() => handlePrintDoc(t.id, 'deal-proof')} className="p-1.5 bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400 rounded-lg hover:bg-green-600 dark:hover:bg-green-600 hover:text-white transition-all shadow-sm" title="Print Bill of Sale"><CheckCircle2 size={14} /></button>}
                       </div>
                     </div>
                   </motion.div>

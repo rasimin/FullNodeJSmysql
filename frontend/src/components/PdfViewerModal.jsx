@@ -4,10 +4,15 @@ import { Download, FileText, ExternalLink, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const PdfViewerModal = ({ isOpen, onClose, documents }) => {
+  const [isMobile, setIsMobile] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
 
-  // Reset active tab when documents change or modal reopens
   useEffect(() => {
+    const checkMobile = () => {
+      const ua = navigator.userAgent;
+      setIsMobile(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua));
+    };
+    checkMobile();
     if (isOpen) {
       setActiveTab(0);
     }
@@ -87,21 +92,40 @@ const PdfViewerModal = ({ isOpen, onClose, documents }) => {
         </div>
 
         {/* PDF Iframe Container */}
-        <div className="flex-1 bg-gray-900 rounded-[2rem] overflow-hidden relative border-4 border-gray-100 dark:border-gray-800 shadow-2xl">
+        <div className="flex-1 bg-gray-900 rounded-[2rem] overflow-hidden relative border-4 border-gray-100 dark:border-gray-800 shadow-2xl flex flex-col items-center justify-center">
           <AnimatePresence mode="wait">
             <motion.div
-              key={activeTab}
+              key={activeTab + (isMobile ? '-mob' : '-dt')}
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.02 }}
               transition={{ duration: 0.2 }}
               className="w-full h-full"
             >
-              <iframe
-                src={`${currentDoc.url}#toolbar=1&view=FitH&zoom=100`}
-                className="w-full h-full border-none"
-                title={currentDoc.title}
-              />
+              {isMobile ? (
+                <div className="flex flex-col items-center justify-center h-full p-8 text-center space-y-6">
+                  <div className="w-20 h-20 bg-blue-500/20 rounded-3xl flex items-center justify-center text-blue-400 animate-pulse">
+                    <FileText size={40} />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-black uppercase tracking-tight text-lg">Mobile Preview Limited</h3>
+                    <p className="text-gray-400 text-xs mt-2 max-w-[250px]">Chrome on Android cannot display PDF directly inside the app. Please download to view.</p>
+                  </div>
+                  <a
+                    href={currentDoc.url}
+                    download={currentDoc.filename}
+                    className="flex items-center gap-3 bg-blue-600 text-white px-8 py-4 rounded-2xl font-black uppercase text-xs shadow-xl shadow-blue-500/40 active:scale-95 transition-all"
+                  >
+                    <Download size={18} /> Download PDF Now
+                  </a>
+                </div>
+              ) : (
+                <iframe
+                  src={`${currentDoc.url}#toolbar=1&view=FitH&zoom=100`}
+                  className="w-full h-full border-none"
+                  title={currentDoc.title}
+                />
+              )}
             </motion.div>
           </AnimatePresence>
         </div>
