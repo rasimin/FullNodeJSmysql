@@ -1,5 +1,4 @@
-const { Vehicle, Office, User, VehicleBrand, SalesAgent, VehicleImage, Booking, sequelize } = require('../models');
-const Location = require('../models/Location');
+const { Vehicle, Office, User, VehicleBrand, SalesAgent, VehicleImage, Booking, Location, sequelize } = require('../models');
 const { Op } = require('sequelize');
 const sharp = require('sharp');
 const path = require('path');
@@ -53,7 +52,7 @@ const getVehicleById = async (req, res) => {
 
 const getVehicles = async (req, res) => {
   try {
-    const { page, size, search, officeId: filterOfficeId, type, status, minPrice, maxPrice } = req.query;
+    const { page, size, search, officeId: filterOfficeId, type, status, minPrice, maxPrice, locationId } = req.query;
     const { limit, offset } = getPagination(page, size);
     const user = req.user;
     const isSuperAdmin = user.Role?.name === 'Super Admin';
@@ -102,6 +101,29 @@ const getVehicles = async (req, res) => {
       // Kantor Cabang: Hanya bisa melihat datanya sendiri
       officeIds = [user.office_id];
     }
+    
+    // --- Added: Hierarchical Location Filter ---
+    let regionCodes = [];
+    if (locationId) {
+      const allResultIds = new Set([parseInt(locationId)]);
+      let currentBatch = [parseInt(locationId)];
+      while (currentBatch.length > 0) {
+        const children = await Location.findAll({
+          where: { parent_id: { [Op.in]: currentBatch } },
+          attributes: ['id']
+        });
+        if (children.length === 0) break;
+        const newIds = children.map(c => c.id);
+        newIds.forEach(id => allResultIds.add(id));
+        currentBatch = newIds;
+      }
+      
+      const locations = await Location.findAll({
+        where: { id: { [Op.in]: [...allResultIds] } },
+        attributes: ['region_code']
+      });
+      regionCodes = locations.map(l => l.region_code).filter(Boolean);
+    }
 
     const condition = {
       office_id: { [Op.in]: officeIds }
@@ -124,32 +146,40 @@ const getVehicles = async (req, res) => {
       if (maxPrice) condition.price[Op.lte] = parseFloat(maxPrice);
     }
 
+    const officeIncludeCondition = { 
+      model: Office, 
+      attributes: ['id', 'name', 'parent_id', 'address', 'region_code'],
+      include: [
+        {
+          model: Location, as: 'location',
+          include: [
+            {
+              model: Location, as: 'parent',
+              include: [
+                {
+                  model: Location, as: 'parent',
+                  include: [{ model: Location, as: 'parent' }]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    };
+
+    if (regionCodes.length > 0) {
+      officeIncludeCondition.where = {
+        region_code: { [Op.in]: regionCodes }
+      };
+    }
+
     const { count, rows: vehicles } = await Vehicle.findAndCountAll({
       where: condition,
       limit,
       offset,
       distinct: true,
       include: [
-        { 
-          model: Office, 
-          attributes: ['id', 'name', 'parent_id', 'address', 'region_code'],
-          include: [
-            {
-              model: Location, as: 'location',
-              include: [
-                {
-                  model: Location, as: 'parent',
-                  include: [
-                    {
-                      model: Location, as: 'parent',
-                      include: [{ model: Location, as: 'parent' }]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
+        officeIncludeCondition,
         { model: User, attributes: ['name'] },
         { 
           model: SalesAgent, as: 'salesAgent', attributes: ['name', 'sales_code'] 

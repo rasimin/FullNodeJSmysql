@@ -56,6 +56,10 @@ const Catalog = () => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [filterOptions, setFilterOptions] = useState({ brands: [], years: [] });
+  const [locationSearch, setLocationSearch] = useState('');
+  const [locationSuggestions, setLocationSuggestions] = useState([]);
+  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [showLocSuggestions, setShowLocSuggestions] = useState(false);
 
   // Refs for sliding pill indicator
   const filterContainerRef = useRef(null);
@@ -117,9 +121,40 @@ const Catalog = () => {
     fetchFilterOptions();
   }, []);
 
+  // Location suggestions fetch
+  useEffect(() => {
+    const fetchLocations = async () => {
+      if (!locationSearch || locationSearch.length < 2) {
+        setLocationSuggestions([]);
+        return;
+      }
+      try {
+        const res = await api.get('/locations', { params: { search: locationSearch } });
+        // Format names to show hierarchy
+        const formatted = res.data.map(loc => {
+          // Since the API returns a flat list of matched nodes + their ancestors,
+          // we can try to find the full path if available in the res.data
+          const parent = res.data.find(p => p.id === loc.parent_id);
+          const grandParent = parent ? res.data.find(gp => gp.id === parent.parent_id) : null;
+          return {
+            ...loc,
+            displayName: [loc.name, parent?.name, grandParent?.name].filter(Boolean).join(', ')
+          };
+        }).filter(loc => loc.name.toLowerCase().includes(locationSearch.toLowerCase()));
+        
+        setLocationSuggestions(formatted.slice(0, 8));
+      } catch (err) {
+        console.error('Error fetching locations:', err);
+      }
+    };
+
+    const timer = setTimeout(fetchLocations, 300);
+    return () => clearTimeout(timer);
+  }, [locationSearch]);
+
   useEffect(() => {
     fetchVehicles();
-  }, [page, finalSearchTerm, filterType, filters]);
+  }, [page, finalSearchTerm, filterType, filters, selectedLocation]);
 
   const handleManualSearch = () => {
     setFinalSearchTerm(localSearch);
@@ -143,7 +178,8 @@ const Catalog = () => {
           brand: filters.brand,
           year: filters.year,
           minPrice: filters.minPrice,
-          maxPrice: filters.maxPrice
+          maxPrice: filters.maxPrice,
+          locationId: selectedLocation?.id
         }
       });
 
@@ -299,14 +335,92 @@ const Catalog = () => {
             </div>
           )}
           <div className="relative z-10 bg-white/95 dark:bg-[#12141c]/95 border border-gray-200 dark:border-white/10 p-2 md:p-2.5 rounded-[32px] md:rounded-[36px] shadow-2xl transition-all backdrop-blur-md">
-            <div className="flex flex-wrap md:flex-nowrap items-center gap-x-2 gap-y-3">
-              {/* 1. Search */}
-              <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <div className="flex flex-wrap md:flex-nowrap items-center gap-x-2 gap-y-2">
+              {/* Minimalist Location Selector - Row 1 on Mobile */}
+              <div className="relative w-full md:w-auto">
+                <button
+                  onClick={() => setShowLocSuggestions(!showLocSuggestions)}
+                  className={`flex items-center gap-2.5 px-4 h-11 md:h-12 w-full md:w-auto rounded-full transition-all duration-300 border ${showLocSuggestions ? 'bg-white dark:bg-white/10 border-blue-500 shadow-lg' : 'bg-gray-100 dark:bg-white/5 border-transparent hover:border-gray-300 dark:hover:border-white/10'}`}
+                >
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${selectedLocation ? 'bg-blue-500 text-white shadow-md shadow-blue-500/20' : 'bg-gray-200 dark:bg-white/10 text-gray-500'}`}>
+                    <MapPin size={14} />
+                  </div>
+                  <div className="text-left flex-1 min-w-0">
+                    <p className="text-[7px] font-black text-gray-400 uppercase tracking-[0.2em] leading-none mb-1">Lokasi</p>
+                    <p className="text-[10px] font-extrabold text-gray-900 dark:text-white truncate max-w-[150px] md:max-w-[90px] leading-none">
+                      {selectedLocation ? selectedLocation.name : 'Semua Lokasi'}
+                    </p>
+                  </div>
+                  <ChevronRight size={10} className={`text-gray-400 transition-transform duration-300 ${showLocSuggestions ? 'rotate-90' : ''}`} />
+                </button>
+
+                {/* Location Suggestions Popover */}
+                <AnimatePresence>
+                  {showLocSuggestions && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute top-full left-0 mt-3 w-[280px] bg-white dark:bg-[#12141c] border border-gray-100 dark:border-white/10 rounded-[28px] shadow-2xl overflow-hidden z-50 p-3"
+                    >
+                      <div className="relative mb-2">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                        <input
+                          autoFocus
+                          type="text"
+                          placeholder="Cari lokasi..."
+                          className="w-full h-10 bg-gray-50 dark:bg-white/5 border-none rounded-full pl-10 pr-4 text-xs font-bold text-gray-900 dark:text-white outline-none focus:ring-1 focus:ring-blue-500"
+                          value={locationSearch}
+                          onChange={(e) => setLocationSearch(e.target.value)}
+                        />
+                      </div>
+
+                      <div className="max-h-[300px] overflow-y-auto no-scrollbar space-y-1">
+                        {selectedLocation && (
+                          <button
+                            onClick={() => { setSelectedLocation(null); setLocationSearch(''); setShowLocSuggestions(false); setPage(1); }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl transition-colors text-red-500"
+                          >
+                            <X size={14} />
+                            <span className="text-[10px] font-bold uppercase tracking-wider">Hapus Filter Lokasi</span>
+                          </button>
+                        )}
+                        
+                        {locationSuggestions.length > 0 ? (
+                          locationSuggestions.map((loc) => (
+                            <button
+                              key={loc.id}
+                              onClick={() => {
+                                setSelectedLocation(loc);
+                                setLocationSearch('');
+                                setShowLocSuggestions(false);
+                                setPage(1);
+                              }}
+                              className="w-full text-left px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl transition-all group"
+                            >
+                              <p className="text-[11px] font-bold text-gray-900 dark:text-white group-hover:text-blue-500">{loc.name}</p>
+                              <p className="text-[8px] text-gray-400 font-medium truncate uppercase tracking-widest mt-0.5">{loc.displayName}</p>
+                            </button>
+                          ))
+                        ) : locationSearch.length >= 2 ? (
+                          <p className="text-center py-4 text-[10px] text-gray-400 font-bold uppercase tracking-widest">Tidak ada hasil</p>
+                        ) : (
+                          <p className="text-center py-4 text-[10px] text-gray-400 font-bold uppercase tracking-widest">Ketik minimal 2 huruf...</p>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                {showLocSuggestions && <div className="fixed inset-0 z-40" onClick={() => setShowLocSuggestions(false)} />}
+              </div>
+
+              {/* 1. Search - Row 2 on Mobile */}
+              <div className="relative w-full md:flex-1 min-w-0 md:min-w-[200px]">
+                <Search className="absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-gray-400 md:w-4 md:h-4" size={14} />
                 <input
                   type="text"
-                  placeholder="Search by brand, model, or plate number..."
-                  className="w-full h-12 bg-gray-100 dark:bg-white/5 border-none rounded-[24px] pl-12 pr-12 text-sm text-gray-900 dark:text-white placeholder:text-gray-500 focus:ring-1 focus:ring-gray-300 dark:focus:ring-white/20 transition-all outline-none"
+                  placeholder="Cari unit (Brand, Model, No Plat)..."
+                  className="w-full h-11 md:h-12 bg-gray-100 dark:bg-white/5 border-none rounded-full pl-10 md:pl-12 pr-11 md:pr-12 text-[11px] md:text-sm text-gray-900 dark:text-white placeholder:text-gray-500 focus:ring-1 focus:ring-gray-300 dark:focus:ring-white/20 transition-all outline-none"
                   value={localSearch}
                   onChange={(e) => { setLocalSearch(e.target.value); setShowSuggestions(true); }}
                   onKeyDown={(e) => e.key === 'Enter' && handleManualSearch()}
@@ -339,14 +453,16 @@ const Catalog = () => {
 
                 <button
                   onClick={handleManualSearch}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-gray-900 dark:bg-white text-white dark:text-gray-950 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 md:w-8 md:h-8 bg-gray-900 dark:bg-white text-white dark:text-gray-950 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
                 >
-                  <Search size={14} strokeWidth={3} />
+                  <Search size={12} className="md:w-[14px] md:h-[14px]" strokeWidth={3} />
                 </button>
               </div>
 
-              {/* 2. Filters (Pills with sliding indicator) */}
-              <div className="flex items-center justify-between gap-2 w-full md:w-auto mt-1 md:mt-0 order-last md:order-none">
+              {/* Row 3 on Mobile: Types, Filter, Theme, Profile */}
+              <div className="flex items-center justify-between gap-2 w-full md:w-auto mt-0.5 md:mt-0">
+
+                {/* 2. Filters */}
                 <div
                   ref={filterContainerRef}
                   className="relative flex-1 md:flex-none flex items-center gap-1 p-1 bg-gray-100 dark:bg-black/20 rounded-full overflow-x-auto no-scrollbar"
@@ -386,17 +502,16 @@ const Catalog = () => {
                   <Filter size={14} />
                   <span className="md:hidden">{showAdvanced ? 'Hide' : 'Filter'}</span>
                 </button>
-              </div>
 
-              {/* 3. Theme & Profile (pushed to far right) */}
-              <div className="flex items-center gap-1.5 flex-shrink-0 md:ml-auto order-none md:order-last">
-                <button onClick={toggleTheme} className="w-10 h-10 rounded-full flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10 md:bg-gray-100 md:dark:bg-white/5 transition-colors">
-                  {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+                {/* 3. Theme & Profile */}
+                <div className="flex items-center gap-1 md:gap-1.5 flex-shrink-0">
+                  <button onClick={toggleTheme} className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10 bg-gray-100 dark:bg-white/5 transition-colors">
+                  {theme === 'dark' ? <Sun size={12} className="md:w-[14px] md:h-[14px]" /> : <Moon size={12} className="md:w-[14px] md:h-[14px]" />}
                 </button>
                 <div className="relative">
                   <button
                     onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center text-gray-500 dark:text-gray-400 font-bold text-[10px] overflow-hidden border border-transparent hover:ring-2 hover:ring-gray-200 dark:hover:ring-white/10 transition-all"
+                    className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center text-gray-500 dark:text-gray-400 font-bold text-[9px] md:text-[10px] overflow-hidden border border-transparent hover:ring-2 hover:ring-gray-200 dark:hover:ring-white/10 transition-all"
                   >
                     {user?.avatar ? <img src={`${IMAGE_BASE_URL}${user.avatar}`} alt="" className="w-full h-full object-cover" /> : (user?.name?.charAt(0)?.toUpperCase() || 'U')}
                   </button>
@@ -427,8 +542,9 @@ const Catalog = () => {
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Advanced Filters Panel (Integrated) */}
+          {/* Advanced Filters Panel (Integrated) */}
             <AnimatePresence>
               {showAdvanced && (
                 <motion.div
