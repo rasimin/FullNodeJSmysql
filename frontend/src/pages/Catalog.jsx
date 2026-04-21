@@ -47,7 +47,8 @@ const Catalog = () => {
     brand: '',
     year: '',
     minPrice: '',
-    maxPrice: ''
+    maxPrice: '',
+    officeId: ''
   });
   const [showContactModal, setShowContactModal] = useState(false);
   const [contactAgents, setContactAgents] = useState([]);
@@ -56,6 +57,7 @@ const Catalog = () => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [filterOptions, setFilterOptions] = useState({ brands: [], years: [] });
+  const [offices, setOffices] = useState([]);
   const [locationSearch, setLocationSearch] = useState('');
   const [locationSuggestions, setLocationSuggestions] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState(null);
@@ -118,7 +120,16 @@ const Catalog = () => {
         console.error('Error fetching filter options:', err);
       }
     };
+    const fetchOffices = async () => {
+      try {
+        const res = await api.get('/offices');
+        setOffices(res.data);
+      } catch (err) {
+        console.error('Error fetching offices:', err);
+      }
+    };
     fetchFilterOptions();
+    fetchOffices();
   }, []);
 
   // Location suggestions fetch
@@ -179,7 +190,8 @@ const Catalog = () => {
           year: filters.year,
           minPrice: filters.minPrice,
           maxPrice: filters.maxPrice,
-          locationId: selectedLocation?.id
+          locationId: selectedLocation?.id,
+          officeId: filters.officeId
         }
       });
 
@@ -213,13 +225,41 @@ const Catalog = () => {
       const matchesYear = filters.year ? v.year.toString() === filters.year : true;
       const matchesMinPrice = filters.minPrice ? v.price >= parseInt(filters.minPrice) : true;
       const matchesMaxPrice = filters.maxPrice ? v.price <= parseInt(filters.maxPrice) : true;
+      const matchesOffice = filters.officeId ? v.office_id.toString() === filters.officeId.toString() : true;
 
-      return matchesSearch && matchesType && matchesBrand && matchesYear && matchesMinPrice && matchesMaxPrice;
+      return matchesSearch && matchesType && matchesBrand && matchesYear && matchesMinPrice && matchesMaxPrice && matchesOffice;
     });
   }, [vehicles, finalSearchTerm, filterType, filters]);
 
   const uniqueBrands = useMemo(() => filterOptions.brands, [filterOptions.brands]);
   const uniqueYears = useMemo(() => filterOptions.years, [filterOptions.years]);
+
+  const hierarchicalOffices = useMemo(() => {
+    if (!offices || offices.length === 0) return [];
+    
+    // Sort offices: Head Offices first, then their branches
+    const headOffices = offices.filter(o => o.type === 'HEAD_OFFICE' || !o.parent_id);
+    const result = [];
+    
+    headOffices.forEach(head => {
+      result.push({ ...head, displayLabel: head.name });
+      // Find branches for this head office
+      const branches = offices.filter(o => o.parent_id === head.id);
+      branches.forEach(branch => {
+        result.push({ ...branch, displayLabel: `\u00A0\u00A0\u00A0└── ${branch.name}` });
+      });
+    });
+
+    // Catch any offices that might not fit the simple 1-level hierarchy (e.g. if type is BRANCH but parent is missing)
+    const addedIds = new Set(result.map(r => r.id));
+    offices.forEach(o => {
+      if (!addedIds.has(o.id)) {
+        result.push({ ...o, displayLabel: o.name });
+      }
+    });
+
+    return result;
+  }, [offices]);
 
   const suggestions = useMemo(() => {
     if (!localSearch) return [];
@@ -557,8 +597,8 @@ const Catalog = () => {
                   <div className="pt-4 pb-2 px-4 border-t border-gray-100 dark:border-white/5 mt-4">
                     {/* All Filters in One Row on Desktop */}
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-5 md:items-start">
-                      {/* Brand - 3 cols */}
-                      <div className="md:col-span-3 flex items-center md:block gap-3">
+                      {/* Brand - 2 cols */}
+                      <div className="md:col-span-2 flex items-center md:block gap-3">
                         <label className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] shrink-0 w-10 md:w-auto md:mb-2 md:block md:px-1">Brand</label>
                         <select
                           value={filters.brand}
@@ -572,8 +612,8 @@ const Catalog = () => {
                         </select>
                       </div>
 
-                      {/* Year - 3 cols */}
-                      <div className="md:col-span-3 flex items-center md:block gap-3">
+                      {/* Year - 2 cols */}
+                      <div className="md:col-span-2 flex items-center md:block gap-3">
                         <label className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] shrink-0 w-10 md:w-auto md:mb-2 md:block md:px-1">Year</label>
                         <select
                           value={filters.year}
@@ -587,8 +627,23 @@ const Catalog = () => {
                         </select>
                       </div>
 
-                      {/* Price Range - 6 cols */}
-                      <div className="md:col-span-6 space-y-2">
+                      {/* Branch - 3 cols */}
+                      <div className="md:col-span-3 flex items-center md:block gap-3">
+                        <label className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] shrink-0 w-10 md:w-auto md:mb-2 md:block md:px-1">Branch</label>
+                        <select
+                          value={filters.officeId}
+                          onChange={(e) => { setFilters({ ...filters, officeId: e.target.value }); setPage(1); }}
+                          className="flex-1 md:w-full h-9 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-3 text-[11px] font-bold text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-white/20 transition-all cursor-pointer"
+                        >
+                          <option value="">All Branches</option>
+                          {hierarchicalOffices.map(o => (
+                            <option key={o.id} value={o.id}>{o.displayLabel}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Price Range - 5 cols */}
+                      <div className="md:col-span-5 space-y-2">
                         <label className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] px-1 block">Price Range</label>
                         <div className="grid grid-cols-2 gap-2">
                           <input
@@ -650,7 +705,7 @@ const Catalog = () => {
                     <div className="pt-3 mt-3 border-t border-gray-50 dark:border-white/5 flex justify-between items-center">
                       <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Found <span className="text-gray-900 dark:text-white">{filteredVehicles.length} Units</span></p>
                       <button
-                        onClick={() => setFilters({ brand: '', year: '', minPrice: priceRange.min.toString(), maxPrice: priceRange.max.toString() })}
+                        onClick={() => setFilters({ brand: '', year: '', minPrice: priceRange.min.toString(), maxPrice: priceRange.max.toString(), officeId: '' })}
                         className="text-[9px] font-black text-gray-400 hover:text-red-500 uppercase tracking-[0.15em] px-3 py-1.5 rounded-lg transition-colors"
                       >
                         Reset Filters
@@ -843,7 +898,7 @@ const Catalog = () => {
                   </button>
                 </div>
 
-                <div className="flex-1 space-y-3 min-h-0">
+                <div className="flex-1 space-y-3 min-h-0 overflow-y-auto pr-2 custom-scrollbar">
                   <div>
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className="px-2 py-0.5 bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white text-[8px] font-bold rounded-full uppercase tracking-widest">{selectedVehicle.type}</span>
@@ -892,6 +947,19 @@ const Catalog = () => {
                       </p>
                     </div>
                   </div>
+
+                  {/* Notes / Description */}
+                  {(selectedVehicle.description || selectedVehicle.notes || selectedVehicle.note) && (
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800/40 border border-gray-100 dark:border-white/5 rounded-[16px] space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <Info size={12} className="text-blue-500" />
+                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Catatan Tambahan</p>
+                      </div>
+                      <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed italic">
+                        "{selectedVehicle.description || selectedVehicle.notes || selectedVehicle.note}"
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-auto pt-4 border-t border-gray-50 dark:border-white/5">
