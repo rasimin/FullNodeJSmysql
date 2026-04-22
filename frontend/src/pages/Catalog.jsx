@@ -220,7 +220,7 @@ const Catalog = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 5000000000 });
+  const [priceRange, setPriceRange] = useState({ min: 0, max: 500000000 });
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [filters, setFilters] = useState({ brand: '', year: '', minPrice: '', maxPrice: '', officeId: '' });
 
@@ -381,8 +381,8 @@ const Catalog = () => {
   };
 
   return (
-    <div className={`relative min-h-screen bg-slate-50 dark:bg-[#0a0b0f] transition-all duration-500 overflow-x-hidden overflow-y-scroll px-5 md:px-10 lg:px-14 pb-10 ${finalSearchTerm ? 'pt-4 md:pt-6' : 'pt-5 md:p-10 lg:p-14'}`}>
-      <div className={`relative z-10 w-full max-w-5xl mx-auto transition-all duration-500 ${finalSearchTerm ? 'space-y-10' : 'space-y-12'}`}>
+    <div className={`relative min-h-screen bg-slate-50 dark:bg-[#0a0b0f] transition-colors duration-500 overflow-x-hidden overflow-y-scroll px-5 md:px-10 lg:px-14 pb-10 ${finalSearchTerm ? 'pt-4 md:pt-6' : 'pt-5 md:p-10 lg:p-14'}`}>
+      <div className={`relative z-10 w-full max-w-5xl mx-auto ${finalSearchTerm ? 'space-y-10' : 'space-y-12'}`}>
         {!finalSearchTerm && (
           <header className="flex flex-col gap-3 pt-8 px-2 md:items-center md:text-center mb-12 animate-in fade-in duration-500">
             <h1 className="text-5xl md:text-7xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-none">
@@ -394,7 +394,7 @@ const Catalog = () => {
           </header>
         )}
 
-        <div className={`sticky ${finalSearchTerm ? 'top-1 md:top-2' : 'top-4 md:top-8'} z-40 transition-all duration-300`}>
+        <div className={`sticky ${finalSearchTerm ? 'top-1 md:top-2' : 'top-4 md:top-8'} z-40 transition-[top] duration-300`}>
           {finalSearchTerm && (
             <div className="flex justify-center -mb-5 relative z-0 animate-in fade-in slide-in-from-top-4 duration-500">
               <div className="bg-gray-100 dark:bg-[#1a1c26] border border-gray-200 dark:border-white/5 px-10 pt-2 pb-6 rounded-t-[24px]">
@@ -431,7 +431,7 @@ const Catalog = () => {
                 </div>
                 <button
                   onClick={() => setShowAdvanced(!showAdvanced)}
-                  className={`h-9 px-5 md:px-6 rounded-full text-[11px] font-extrabold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 flex-shrink-0 ${showAdvanced ? 'bg-gray-950 text-white dark:bg-white dark:text-gray-950' : 'bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'}`}
+                  className={`h-9 w-[80px] md:w-auto px-0 md:px-6 rounded-full text-[11px] font-extrabold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 flex-shrink-0 ${showAdvanced ? 'bg-gray-950 text-white dark:bg-white dark:text-gray-950' : 'bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'}`}
                 >
                   <Filter size={14} /> <span className="md:hidden">{showAdvanced ? 'Hide' : 'Filter'}</span>
                 </button>
@@ -465,50 +465,61 @@ const Catalog = () => {
           <AnimatePresence>
             {showAdvanced && (
               <motion.div 
-                initial={{ opacity: 0, height: 0, y: -20 }} 
-                animate={{ opacity: 1, height: 'auto', y: 0 }} 
-                exit={{ opacity: 0, height: 0, y: -20 }} 
-                className="overflow-hidden bg-white/80 dark:bg-[#12141c]/80 backdrop-blur-xl rounded-b-[40px] mt-[-24px] pt-10 pb-6 px-8 border-x border-b border-gray-200 dark:border-white/5 shadow-2xl relative z-0"
+                initial={{ opacity: 0, height: 0, marginTop: 0 }} 
+                animate={{ opacity: 1, height: 'auto', marginTop: -24 }} 
+                exit={{ opacity: 0, height: 0, marginTop: 0 }} 
+                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                className="overflow-hidden bg-white/80 dark:bg-[#12141c]/80 backdrop-blur-xl rounded-b-[40px] border-x border-b border-gray-200 dark:border-white/5 shadow-2xl relative z-0"
               >
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
-                  <div className="md:col-span-3">
+                <div className="pt-10 pb-6 px-8">
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
+                  <div className="md:col-span-3 relative">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block px-1">Merk / Brand</label>
-                    <select 
-                      value={filters.brand} 
-                      onChange={(e) => { setFilters({ ...filters, brand: e.target.value }); setPage(1); }} 
-                      className="w-full h-11 bg-gray-100 dark:bg-white/5 border-none rounded-2xl px-4 text-xs font-bold text-gray-900 dark:text-white outline-none ring-1 ring-gray-200 dark:ring-white/10 focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer"
-                    >
-                      <option value="">Semua Merk</option>
-                      {uniqueBrands.map(b => <option key={b} value={b}>{b}</option>)}
-                    </select>
+                    <div className="relative">
+                      <select 
+                        value={filters.brand} 
+                        onChange={(e) => { setFilters({ ...filters, brand: e.target.value }); setPage(1); }} 
+                        className="w-full h-11 bg-gray-100 dark:bg-[#1a1c26] border-none rounded-2xl px-4 text-xs font-bold text-gray-900 dark:text-white outline-none ring-1 ring-gray-200 dark:ring-white/10 focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer [&>option]:dark:bg-[#1a1c26] [&>option]:dark:text-white"
+                      >
+                        <option value="" className="dark:bg-[#1a1c26]">Semua Merk</option>
+                        {uniqueBrands.map(b => <option key={b} value={b} className="dark:bg-[#1a1c26]">{b}</option>)}
+                      </select>
+                      <ChevronRight size={14} className="absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-gray-400 pointer-events-none" />
+                    </div>
                   </div>
 
                   <div className="md:col-span-2">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block px-1">Tahun</label>
-                    <select 
-                      value={filters.year} 
-                      onChange={(e) => { setFilters({ ...filters, year: e.target.value }); setPage(1); }} 
-                      className="w-full h-11 bg-gray-100 dark:bg-white/5 border-none rounded-2xl px-4 text-xs font-bold text-gray-900 dark:text-white outline-none ring-1 ring-gray-200 dark:ring-white/10 focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer"
-                    >
-                      <option value="">Semua Tahun</option>
-                      {uniqueYears.map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
+                    <div className="relative">
+                      <select 
+                        value={filters.year} 
+                        onChange={(e) => { setFilters({ ...filters, year: e.target.value }); setPage(1); }} 
+                        className="w-full h-11 bg-gray-100 dark:bg-[#1a1c26] border-none rounded-2xl px-4 text-xs font-bold text-gray-900 dark:text-white outline-none ring-1 ring-gray-200 dark:ring-white/10 focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer [&>option]:dark:bg-[#1a1c26] [&>option]:dark:text-white"
+                      >
+                        <option value="" className="dark:bg-[#1a1c26]">Semua Tahun</option>
+                        {uniqueYears.map(y => <option key={y} value={y} className="dark:bg-[#1a1c26]">{y}</option>)}
+                      </select>
+                      <ChevronRight size={14} className="absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-gray-400 pointer-events-none" />
+                    </div>
                   </div>
 
                   <div className="md:col-span-3">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block px-1">Kantor Cabang</label>
-                    <select 
-                      value={filters.officeId} 
-                      onChange={(e) => { setFilters({ ...filters, officeId: e.target.value }); setPage(1); }} 
-                      className="w-full h-11 bg-gray-100 dark:bg-white/5 border-none rounded-2xl px-4 text-xs font-bold text-gray-900 dark:text-white outline-none ring-1 ring-gray-200 dark:ring-white/10 focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer"
-                    >
-                      <option value="">Semua Cabang</option>
-                      {hierarchicalOffices.map(o => (
-                        <option key={o.id} value={o.id} className={o.type === 'HEAD_OFFICE' ? 'font-bold' : ''}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <select 
+                        value={filters.officeId} 
+                        onChange={(e) => { setFilters({ ...filters, officeId: e.target.value }); setPage(1); }} 
+                        className="w-full h-11 bg-gray-100 dark:bg-[#1a1c26] border-none rounded-2xl px-4 text-xs font-bold text-gray-900 dark:text-white outline-none ring-1 ring-gray-200 dark:ring-white/10 focus:ring-2 focus:ring-blue-500 transition-all appearance-none cursor-pointer [&>option]:dark:bg-[#1a1c26] [&>option]:dark:text-white"
+                      >
+                        <option value="" className="dark:bg-[#1a1c26]">Semua Cabang</option>
+                        {hierarchicalOffices.map(o => (
+                          <option key={o.id} value={o.id} className={`dark:bg-[#1a1c26] ${o.type === 'HEAD_OFFICE' ? 'font-bold' : ''}`}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronRight size={14} className="absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-gray-400 pointer-events-none" />
+                    </div>
                   </div>
 
                   <div className="md:col-span-4">
@@ -544,36 +555,36 @@ const Catalog = () => {
                         <div 
                           className="absolute h-full bg-blue-500"
                           style={{ 
-                            left: `${(filters.minPrice / 5000000000) * 100}%`, 
-                            right: `${100 - (filters.maxPrice / 5000000000) * 100}%` 
+                            left: `${(filters.minPrice / 500000000) * 100}%`, 
+                            right: `${100 - (filters.maxPrice / 500000000) * 100}%` 
                           }}
                         />
                       </div>
                       <input 
                         type="range" 
                         min="0" 
-                        max="5000000000" 
+                        max="500000000" 
                         step="1000000"
                         value={filters.minPrice || 0}
                         onChange={(e) => {
-                          const val = Math.min(parseInt(e.target.value), (filters.maxPrice || 5000000000) - 10000000);
+                          const val = Math.min(parseInt(e.target.value), (filters.maxPrice || 500000000) - 10000000);
                           setFilters({ ...filters, minPrice: val });
                           setPage(1);
                         }}
-                        className="absolute left-0 w-full h-2 appearance-none bg-transparent pointer-events-none z-20 [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg"
+                        className="absolute left-0 w-full h-2 appearance-none bg-transparent pointer-events-none z-20 [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:cursor-pointer"
                       />
                       <input 
                         type="range" 
                         min="0" 
-                        max="5000000000" 
+                        max="500000000" 
                         step="1000000"
-                        value={filters.maxPrice || 5000000000}
+                        value={filters.maxPrice || 500000000}
                         onChange={(e) => {
                           const val = Math.max(parseInt(e.target.value), (parseInt(filters.minPrice) || 0) + 10000000);
                           setFilters({ ...filters, maxPrice: val });
                           setPage(1);
                         }}
-                        className="absolute left-0 w-full h-2 appearance-none bg-transparent pointer-events-none z-20 [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg"
+                        className="absolute left-0 w-full h-2 appearance-none bg-transparent pointer-events-none z-20 [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:cursor-pointer"
                       />
                     </div>
                   </div>
@@ -591,10 +602,11 @@ const Catalog = () => {
                   </button>
                   <button 
                     onClick={() => { setShowAdvanced(false); fetchVehicles(); }}
-                    className="h-9 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 active:scale-95 transition-all"
+                    className="h-9 px-8 bg-gray-900 hover:bg-black text-white dark:bg-white dark:hover:bg-gray-100 dark:text-gray-950 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all"
                   >
                     Terapkan Filter
                   </button>
+                </div>
                 </div>
               </motion.div>
             )}
@@ -665,7 +677,7 @@ const Catalog = () => {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.98, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
-                className="relative w-full max-w-6xl bg-white dark:bg-[#0a0b0f] rounded-[48px] overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.5)] border border-gray-200 dark:border-white/10 flex flex-col md:flex-row h-[90vh] md:h-[85vh]"
+                className="relative w-full max-w-6xl bg-white dark:bg-[#0a0b0f] rounded-[24px] overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.5)] border border-gray-200 dark:border-white/10 flex flex-col md:flex-row h-[90vh] md:h-[85vh]"
               >
                 <div className="w-full md:w-[60%] h-[35vh] md:h-full relative bg-gray-100 dark:bg-gray-950 flex items-center justify-center overflow-hidden border-r border-gray-200 dark:border-white/5 shrink-0">
                   {selectedVehicle.images?.[activeImageIndex] ? (
@@ -717,19 +729,16 @@ const Catalog = () => {
                   {/* Scrollable Content Area */}
                   <div className="flex-1 overflow-y-auto no-scrollbar pr-1">
                     <div className="mb-6">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="px-2 py-0.5 bg-blue-500 text-white text-[9px] font-black uppercase tracking-widest rounded">Verified</span>
-                        <span className="px-2 py-0.5 bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest rounded">Ready</span>
-                      </div>
+
                       <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.4em] mb-1">{selectedVehicle.brand} • {selectedVehicle.year}</p>
                       <h2 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight mb-4 leading-tight">{selectedVehicle.model}</h2>
                       <div className="text-2xl font-black text-blue-600 dark:text-blue-400 font-mono tracking-tighter">{formatPrice(selectedVehicle.price)}</div>
                     </div>
 
                     {/* Unified Vehicle Info Box */}
-                    <div className="p-5 bg-gray-50 dark:bg-white/5 rounded-[32px] border border-gray-100 dark:border-white/5 mb-6">
+                    <div className="p-4 md:p-5 bg-gray-50 dark:bg-white/5 rounded-[16px] md:rounded-[20px] border border-gray-100 dark:border-white/5 mb-4 md:mb-6">
                       {/* Compact Specs Grid */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-y-3 gap-x-4 md:gap-4 mb-4 md:mb-5">
                         {[
                           { label: 'Odometer', val: `${parseInt(selectedVehicle.odometer || 0).toLocaleString()} KM` },
                           { label: 'Transmission', val: selectedVehicle.transmission || '-' },
@@ -737,28 +746,28 @@ const Catalog = () => {
                           { label: 'Color', val: selectedVehicle.color || '-' }
                         ].map((spec, i) => (
                           <div key={i}>
-                            <p className="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">{spec.label}</p>
-                            <p className="text-[11px] font-bold text-gray-900 dark:text-white uppercase truncate">{spec.val}</p>
+                            <p className="text-[7px] md:text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 md:mb-1">{spec.label}</p>
+                            <p className="text-[10px] md:text-[11px] font-bold text-gray-900 dark:text-white uppercase truncate">{spec.val}</p>
                           </div>
                         ))}
                       </div>
 
                       {/* Divider */}
-                      <div className="h-px bg-gray-200 dark:bg-white/10 mb-5" />
+                      <div className="h-px bg-gray-200 dark:bg-white/10 mb-4 md:mb-5" />
 
                       {/* Location Info */}
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-blue-600/10 text-blue-600 flex items-center justify-center shrink-0"> <MapPin size={18} /> </div>
+                      <div className="flex items-center gap-3 md:gap-4">
+                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-blue-600/10 text-blue-600 flex items-center justify-center shrink-0"> <MapPin size={16} className="md:w-[18px] md:h-[18px]" /> </div>
                         <div className="min-w-0">
-                          <p className="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5">Location</p>
-                          <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{selectedVehicle.Office?.name}</p>
-                          <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">{selectedVehicle.Office?.location?.name || selectedVehicle.Office?.address}</p>
+                          <p className="text-[7px] md:text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5">Location</p>
+                          <p className="text-xs md:text-sm font-bold text-gray-900 dark:text-white truncate">{selectedVehicle.Office?.name}</p>
+                          <p className="text-[9px] md:text-[10px] text-gray-500 dark:text-gray-400 truncate">{selectedVehicle.Office?.location?.name || selectedVehicle.Office?.address}</p>
                         </div>
                       </div>
                     </div>
 
                       {(selectedVehicle.description || selectedVehicle.notes || selectedVehicle.note) && (
-                        <div className="p-5 bg-blue-500/5 rounded-[24px] border border-blue-500/10">
+                        <div className="p-5 bg-blue-500/5 rounded-[16px] border border-blue-500/10">
                           <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                             <Info size={12} /> Unit Description
                           </p>
@@ -768,14 +777,13 @@ const Catalog = () => {
                     </div>
 
                   {/* Fixed Footer with Contact Button */}
-                  <div className="pt-6 mt-auto border-t border-gray-100 dark:border-white/10">
+                  <div className="pt-2 md:pt-4 pb-4 md:pb-6 mt-auto border-t border-gray-100 dark:border-white/10">
                     <button
                       onClick={() => handleContact(selectedVehicle.office_id)}
-                      className="w-full h-14 bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-blue-600 dark:hover:bg-blue-50 transition-all rounded-[20px] font-black text-sm flex items-center justify-center gap-3 active:scale-95 shadow-2xl uppercase tracking-widest"
+                      className="w-full h-12 md:h-14 bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-blue-600 dark:hover:bg-blue-50 transition-all rounded-xl md:rounded-[20px] font-black text-sm flex items-center justify-center gap-3 active:scale-95 shadow-2xl uppercase tracking-widest"
                     >
                       <MessageCircle size={20} /> <span>Contact Sales</span>
                     </button>
-                    <p className="text-center text-[9px] text-gray-500 font-bold uppercase tracking-widest mt-4">Verified by Antigravity Systems</p>
                   </div>
                 </div>
               </motion.div>
