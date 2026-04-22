@@ -451,13 +451,30 @@ const Vehicles = () => {
     fetchAgentsByOffice(v.office_id);
     api.get(`/bookings/vehicle/${v.id}`).then(r => {
       setActiveBooking(r.data);
-      setBookingData({ 
-        ...bookingData, 
-        id: r.data?.id || '',
-        customer_name: r.data?.customer_name || '',
-        customer_phone: r.data?.customer_phone || '',
-        sales_agent_id: r.data?.sales_agent_id || '' 
-      });
+      if (r.data) {
+        setBookingData({ 
+          ...bookingData, 
+          id: r.data.id,
+          customer_name: r.data.customer_name || '',
+          customer_phone: r.data.customer_phone || '',
+          nik: r.data.nik || '',
+          id_number: r.data.id_number || '',
+          notes: r.data.notes || '',
+          sales_agent_id: r.data.sales_agent_id || '' 
+        });
+      } else {
+        // Clear data for Direct Deal
+        setBookingData({
+          id: '',
+          vehicle_id: v.id,
+          customer_name: '',
+          customer_phone: '',
+          nik: '',
+          id_number: '',
+          notes: '',
+          sales_agent_id: user?.sales_agent_id || '' // Default to current user's agent if applicable
+        });
+      }
       setIsConfirmActionModalOpen(true);
     });
   };
@@ -473,6 +490,9 @@ const Vehicles = () => {
       formData.append('booking_id', activeBooking?.id || '');
       formData.append('customer_name', bookingData.customer_name);
       formData.append('customer_phone', bookingData.customer_phone);
+      formData.append('nik', bookingData.nik || '');
+      formData.append('id_number', bookingData.id_number || '');
+      formData.append('notes', bookingData.notes || '');
       formData.append('sold_date', new Date().toISOString().split('T')[0]);
       formData.append('sales_agent_id', bookingData.sales_agent_id);
       
@@ -678,10 +698,15 @@ const Vehicles = () => {
                     <td className="px-6 py-4 font-black text-blue-600 dark:text-gray-200">{formatPrice(v.price)}</td>
                     <td className="px-6 py-4"><span className={`badge ${v.status === 'Available' ? 'badge-green' : v.status === 'Sold' ? 'badge-red' : 'badge-yellow'}`}>{v.status}</span></td>
                     <td className="px-6 py-4"><div className="flex justify-center gap-2">
-                      {v.status === 'Available' && <button onClick={() => openBookingModal(v)} className="flex items-center gap-1.5 px-4 py-2 bg-orange-600 hover:bg-orange-700 dark:bg-orange-800 dark:hover:bg-orange-700 text-white text-[10px] font-black uppercase rounded-xl shadow-md shadow-orange-500/10 transition-all active:scale-95 cursor-pointer"><Bookmark size={12} /> Book Now</button>}
+                      {v.status === 'Available' && (
+                        <div className="flex gap-1">
+                          <button onClick={() => openBookingModal(v)} className="flex items-center gap-1.5 px-3 py-2 bg-orange-600 hover:bg-orange-700 dark:bg-orange-600 dark:hover:bg-orange-500 text-white text-[10px] font-black uppercase rounded-xl transition-all active:scale-95 cursor-pointer"><Bookmark size={12} /> Book Now</button>
+                          <button onClick={() => preConfirmAction(v, 'sold')} className="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500 text-white text-[10px] font-black uppercase rounded-xl transition-all active:scale-95 cursor-pointer"><CheckCircle2 size={12} /> Direct Deal</button>
+                        </div>
+                      )}
                       {v.status === 'Booked' && (
                         <div className="flex gap-1">
-                          <button onClick={() => preConfirmAction(v, 'sold')} className="flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 dark:bg-emerald-800 dark:hover:bg-emerald-700 text-white text-[10px] font-black uppercase rounded-xl shadow-md shadow-green-500/10 transition-all active:scale-95 cursor-pointer"><CheckCircle size={12} /> Close Deal</button>
+                          <button onClick={() => preConfirmAction(v, 'sold')} className="flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500 text-white text-[10px] font-black uppercase rounded-xl transition-all active:scale-95 cursor-pointer"><CheckCircle size={12} /> Close Deal</button>
                           <button onClick={() => preConfirmAction(v, 'cancel')} className="flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-800 dark:hover:bg-red-700 text-white text-[10px] font-black uppercase rounded-xl shadow-md shadow-red-500/10 transition-all active:scale-95 cursor-pointer" title="Cancel Booking">Cancel</button>
                         </div>
                       )}
@@ -755,10 +780,14 @@ const Vehicles = () => {
                   </div>
                 </div>
                 <div className="flex gap-1.5 pt-2 border-t border-gray-100 dark:border-gray-800" onClick={e => e.stopPropagation()}>
-                  {v.status === 'Available' ? <button onClick={() => openBookingModal(v)} className="flex-1 py-2 bg-orange-600 text-white rounded-lg text-[9px] font-black uppercase shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer">Book Now</button> :
+                  {v.status === 'Available' ? (
+                    <div className="flex flex-1 gap-1.5">
+                      <button onClick={() => openBookingModal(v)} className="flex-1 py-2 bg-orange-600 hover:bg-orange-700 dark:bg-orange-600 dark:hover:bg-orange-500 text-white rounded-lg text-[9px] font-black uppercase transition-all active:scale-95 cursor-pointer">Book Now</button>
+                      <button onClick={() => preConfirmAction(v, 'sold')} className="flex-1 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500 text-white rounded-lg text-[9px] font-black uppercase transition-all active:scale-95 cursor-pointer">Direct Deal</button>
+                    </div>
+                  ) :
                     v.status === 'Booked' ? (
                       <div className="flex flex-1 gap-1.5">
-                        <button onClick={() => preConfirmAction(v, 'sold')} className="flex-1 py-2 bg-green-600 hover:bg-green-700 dark:bg-emerald-800 dark:hover:bg-emerald-700 text-white rounded-lg text-[9px] font-black uppercase shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer">Close Deal</button>
                         <button onClick={() => preConfirmAction(v, 'cancel')} className="flex-1 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-800 dark:hover:bg-red-700 text-white rounded-lg text-[9px] font-black uppercase shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer">Cancel</button>
                       </div>
                     ) :
@@ -1066,10 +1095,22 @@ const Vehicles = () => {
                 </div>
 
                 {!activeBooking ? (
-                  <div className="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800">
-                    <p className="text-[10px] font-black text-orange-600 uppercase mb-2">Direct Sale Information</p>
+                  <div className="space-y-4 p-5 bg-gray-50/80 dark:bg-gray-800/60 rounded-[32px] border-2 border-dashed border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-2 mb-1">
+                      <UserIcon size={14} className="text-orange-500" />
+                      <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest">Direct Sale Customer Data</p>
+                    </div>
                     <Input label="Customer Name" value={bookingData.customer_name} onChange={e => setBookingData({ ...bookingData, customer_name: e.target.value })} required />
-                    <Input label="Phone Number" value={bookingData.customer_phone} onChange={e => setBookingData({ ...bookingData, customer_phone: sanitizePhone(e.target.value) })} required />
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input label="NIK (ID Number)" value={bookingData.nik} onChange={e => setBookingData({ ...bookingData, nik: e.target.value.replace(/\D/g, '').slice(0, 16) })} required />
+                      <Input label="Phone Number" value={bookingData.customer_phone} onChange={e => setBookingData({ ...bookingData, customer_phone: sanitizePhone(e.target.value) })} required />
+                    </div>
+                    <textarea 
+                      className="input min-h-[80px] p-3 text-xs" 
+                      placeholder="Additional transaction notes..." 
+                      value={bookingData.notes} 
+                      onChange={e => setBookingData({ ...bookingData, notes: e.target.value })} 
+                    />
                   </div>
                 ) : (
                   <div className="p-4 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-600/20">
@@ -1111,7 +1152,7 @@ const Vehicles = () => {
                   <span className="text-[10px] font-black text-gray-400 uppercase">Print Sales Receipt after save</span>
                 </div>
 
-                <button onClick={handleConfirmSale} className="w-full py-4 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-black shadow-xl shadow-green-500/20 transition-all active:scale-95 uppercase text-xs tracking-widest">CLOSE DEAL NOW</button>
+                <button onClick={handleConfirmSale} className="w-full py-4 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500 text-white rounded-2xl font-black transition-all active:scale-95 uppercase text-xs tracking-widest">CLOSE DEAL NOW</button>
               </div>
             )}
             {actionType === 'cancel' && (

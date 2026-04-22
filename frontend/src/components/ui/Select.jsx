@@ -16,11 +16,11 @@ const Select = ({ label, value, onChange, options, required = false, placeholder
       )}
       <select
         value={value} onChange={onChange} required={required} disabled={disabled}
-        className={`input appearance-none cursor-pointer pr-8 ${Icon ? 'pl-9' : ''} ${disabled ? 'bg-gray-50 dark:bg-gray-900/50 cursor-not-allowed' : ''} ${required && !value && !disabled ? 'border-red-500/50 bg-red-50/10 dark:bg-red-900/5' : ''}`}
+        className={`input appearance-none cursor-pointer pr-8 dark:bg-gray-800 dark:text-gray-100 ${Icon ? 'pl-9' : ''} ${disabled ? 'bg-gray-50 dark:bg-gray-900/50 cursor-not-allowed' : ''} ${required && !value && !disabled ? 'border-red-500/50 bg-red-50/10 dark:bg-red-900/5' : ''}`}
       >
-        <option value="" disabled>{placeholder}</option>
+        <option value="" disabled className="dark:bg-gray-800 text-gray-400">{placeholder}</option>
         {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
+          <option key={opt.value} value={opt.value} className="dark:bg-gray-800 dark:text-gray-100">{opt.label}</option>
         ))}
       </select>
       <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
