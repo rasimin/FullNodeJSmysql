@@ -665,9 +665,9 @@ const Catalog = () => {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.98, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
-                className="relative w-full max-w-6xl bg-white dark:bg-[#0a0b0f] rounded-[48px] overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.5)] border border-white/10 flex flex-col md:flex-row h-[90vh] md:h-[85vh]"
+                className="relative w-full max-w-6xl bg-white dark:bg-[#0a0b0f] rounded-[48px] overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.5)] border border-gray-200 dark:border-white/10 flex flex-col md:flex-row h-[90vh] md:h-[85vh]"
               >
-                <div className="w-full md:w-[60%] relative bg-gray-950 flex items-center justify-center overflow-hidden border-r border-white/5">
+                <div className="w-full md:w-[60%] h-[35vh] md:h-full relative bg-gray-100 dark:bg-gray-950 flex items-center justify-center overflow-hidden border-r border-gray-200 dark:border-white/5 shrink-0">
                   {selectedVehicle.images?.[activeImageIndex] ? (
                     <>
                       {/* Cinematic Blurred Backdrop */}
@@ -689,13 +689,13 @@ const Catalog = () => {
 
                   {/* Navigation Thumbnails */}
                   {selectedVehicle.images?.length > 1 && (
-                    <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-3 px-6 overflow-x-auto no-scrollbar z-20">
-                      <div className="flex gap-3 p-2.5 bg-black/40 backdrop-blur-2xl rounded-[28px] border border-white/10 shadow-2xl">
+                    <div className="absolute bottom-4 md:bottom-8 left-0 right-0 flex justify-center gap-3 px-6 overflow-x-auto no-scrollbar z-20">
+                      <div className="flex gap-2 md:gap-3 p-1.5 md:p-2.5 bg-black/40 backdrop-blur-2xl rounded-[20px] md:rounded-[28px] border border-white/10 shadow-2xl">
                         {selectedVehicle.images.map((img, idx) => (
                           <button
                             key={idx}
                             onClick={() => setActiveImageIndex(idx)}
-                            className={`w-14 h-14 md:w-16 md:h-16 rounded-[20px] overflow-hidden border-2 transition-all shrink-0 ${activeImageIndex === idx ? 'border-white scale-110 shadow-xl' : 'border-transparent opacity-40 hover:opacity-100 hover:scale-105'}`}
+                            className={`w-10 h-10 md:w-16 md:h-16 rounded-[12px] md:rounded-[20px] overflow-hidden border-2 transition-all shrink-0 ${activeImageIndex === idx ? 'border-white scale-110 shadow-xl' : 'border-transparent opacity-40 hover:opacity-100 hover:scale-105'}`}
                           >
                             <img src={`${IMAGE_BASE_URL}${img.image_url}`} className="w-full h-full object-cover" alt="" />
                           </button>
@@ -707,13 +707,13 @@ const Catalog = () => {
                   {/* Close Button Mobile Header */}
                   <button
                     onClick={() => setSelectedVehicle(null)}
-                    className="absolute top-8 left-8 w-12 h-12 bg-black/40 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-black/60 transition-all z-30 shadow-2xl"
+                    className="absolute top-4 left-4 md:top-8 md:left-8 w-10 h-10 md:w-12 md:h-12 bg-black/40 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-black/60 transition-all z-30 shadow-2xl"
                   >
                     <X size={24} />
                   </button>
                 </div>
 
-                <div className="w-full md:w-[40%] p-6 md:p-8 flex flex-col overflow-hidden bg-[#0a0b0f]">
+                <div className="w-full md:w-[40%] p-6 md:p-8 flex flex-col overflow-hidden bg-white dark:bg-[#0a0b0f]">
                   {/* Scrollable Content Area */}
                   <div className="flex-1 overflow-y-auto no-scrollbar pr-1">
                     <div className="mb-6">
@@ -721,52 +721,57 @@ const Catalog = () => {
                         <span className="px-2 py-0.5 bg-blue-500 text-white text-[9px] font-black uppercase tracking-widest rounded">Verified</span>
                         <span className="px-2 py-0.5 bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest rounded">Ready</span>
                       </div>
-                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.4em] mb-1">{selectedVehicle.brand} • {selectedVehicle.year}</p>
-                      <h2 className="text-3xl font-black text-white uppercase tracking-tight mb-4 leading-tight">{selectedVehicle.model}</h2>
-                      <div className="text-2xl font-black text-blue-400 font-mono tracking-tighter">{formatPrice(selectedVehicle.price)}</div>
+                      <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.4em] mb-1">{selectedVehicle.brand} • {selectedVehicle.year}</p>
+                      <h2 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight mb-4 leading-tight">{selectedVehicle.model}</h2>
+                      <div className="text-2xl font-black text-blue-600 dark:text-blue-400 font-mono tracking-tighter">{formatPrice(selectedVehicle.price)}</div>
                     </div>
 
-                    {/* Compact Vehicle Specs Grid */}
-                    <div className="grid grid-cols-2 gap-3 mb-6">
-                      {[
-                        { label: 'Odometer', val: `${parseInt(selectedVehicle.odometer || 0).toLocaleString()} KM` },
-                        { label: 'Transmission', val: selectedVehicle.transmission || '-' },
-                        { label: 'Fuel Type', val: selectedVehicle.fuel_type || '-' },
-                        { label: 'Color', val: selectedVehicle.color || '-' }
-                      ].map((spec, i) => (
-                        <div key={i} className="p-3 bg-white/5 rounded-[20px] border border-white/5 flex flex-col justify-center">
-                          <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">{spec.label}</p>
-                          <p className="text-[11px] font-bold text-white uppercase truncate">{spec.val}</p>
-                        </div>
-                      ))}
-                    </div>
+                    {/* Unified Vehicle Info Box */}
+                    <div className="p-5 bg-gray-50 dark:bg-white/5 rounded-[32px] border border-gray-100 dark:border-white/5 mb-6">
+                      {/* Compact Specs Grid */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+                        {[
+                          { label: 'Odometer', val: `${parseInt(selectedVehicle.odometer || 0).toLocaleString()} KM` },
+                          { label: 'Transmission', val: selectedVehicle.transmission || '-' },
+                          { label: 'Fuel Type', val: selectedVehicle.fuel_type || '-' },
+                          { label: 'Color', val: selectedVehicle.color || '-' }
+                        ].map((spec, i) => (
+                          <div key={i}>
+                            <p className="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">{spec.label}</p>
+                            <p className="text-[11px] font-bold text-gray-900 dark:text-white uppercase truncate">{spec.val}</p>
+                          </div>
+                        ))}
+                      </div>
 
-                    <div className="space-y-4 mb-6">
-                      <div className="p-4 bg-white/5 rounded-[24px] flex items-center gap-4 border border-white/5">
-                        <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0"> <MapPin size={18} /> </div>
+                      {/* Divider */}
+                      <div className="h-px bg-gray-200 dark:bg-white/10 mb-5" />
+
+                      {/* Location Info */}
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-blue-600/10 text-blue-600 flex items-center justify-center shrink-0"> <MapPin size={18} /> </div>
                         <div className="min-w-0">
-                          <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest mb-0.5">Location</p>
-                          <p className="text-sm font-bold text-white truncate">{selectedVehicle.Office?.name}</p>
-                          <p className="text-[10px] text-gray-500 truncate">{selectedVehicle.Office?.location?.name || selectedVehicle.Office?.address}</p>
+                          <p className="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5">Location</p>
+                          <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{selectedVehicle.Office?.name}</p>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">{selectedVehicle.Office?.location?.name || selectedVehicle.Office?.address}</p>
                         </div>
                       </div>
+                    </div>
 
                       {(selectedVehicle.description || selectedVehicle.notes || selectedVehicle.note) && (
                         <div className="p-5 bg-blue-500/5 rounded-[24px] border border-blue-500/10">
                           <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                             <Info size={12} /> Unit Description
                           </p>
-                          <p className="text-[12px] text-gray-300 italic leading-relaxed"> "{selectedVehicle.description || selectedVehicle.notes || selectedVehicle.note}" </p>
+                          <p className="text-[12px] text-gray-600 dark:text-gray-300 italic leading-relaxed"> "{selectedVehicle.description || selectedVehicle.notes || selectedVehicle.note}" </p>
                         </div>
                       )}
                     </div>
-                  </div>
 
                   {/* Fixed Footer with Contact Button */}
-                  <div className="pt-6 mt-auto border-t border-white/10">
+                  <div className="pt-6 mt-auto border-t border-gray-100 dark:border-white/10">
                     <button
                       onClick={() => handleContact(selectedVehicle.office_id)}
-                      className="w-full h-14 bg-white text-black hover:bg-blue-50 transition-all rounded-[20px] font-black text-sm flex items-center justify-center gap-3 active:scale-95 shadow-2xl uppercase tracking-widest"
+                      className="w-full h-14 bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-blue-600 dark:hover:bg-blue-50 transition-all rounded-[20px] font-black text-sm flex items-center justify-center gap-3 active:scale-95 shadow-2xl uppercase tracking-widest"
                     >
                       <MessageCircle size={20} /> <span>Contact Sales</span>
                     </button>
