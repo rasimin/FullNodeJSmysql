@@ -13,7 +13,7 @@ const safeDate = (str) => {
   if (isNaN(d.getTime())) return str;
   
   // Format lebih cantik: 12 Apr, 14:30
-  return d.toLocaleString('en-GB', { 
+  return d.toLocaleString('id-ID', { 
     day: '2-digit', 
     month: 'short', 
     hour: '2-digit', 
@@ -49,9 +49,9 @@ const Dashboard = () => {
 
 
   const statCards = [
-    { title: 'Total Users',   value: stats.totalUsers,   icon: Users,       iconClass: 'icon-box icon-blue'   },
-    { title: 'Total Roles',   value: stats.totalRoles,   icon: ShieldCheck, iconClass: 'icon-box icon-purple' },
-    { title: 'Total Offices', value: stats.totalOffices, icon: Building2,   iconClass: 'icon-box icon-orange' },
+    { title: 'Total Pengguna',   value: stats.totalUsers,   icon: Users,       iconClass: 'icon-box icon-blue'   },
+    { title: 'Total Peran',   value: stats.totalRoles,   icon: ShieldCheck, iconClass: 'icon-box icon-purple' },
+    { title: 'Total Kantor', value: stats.totalOffices, icon: Building2,   iconClass: 'icon-box icon-orange' },
   ];
 
   return (
@@ -65,16 +65,16 @@ const Dashboard = () => {
       >
         <div>
           <h1 className="text-base font-bold text-gray-900 dark:text-white">
-            Welcome back, {user?.name}! 👋
+            Selamat datang kembali, {user?.name}! 👋
           </h1>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5">
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Role: <span className="font-semibold text-blue-600 dark:text-blue-400">{userRole || '—'}</span>
+              Peran: <span className="font-semibold text-blue-600 dark:text-blue-400">{userRole || '—'}</span>
             </p>
             <div className="h-3 w-px bg-gray-200 dark:bg-gray-800 hidden sm:block"></div>
             <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
               <Building2 size={14} className="text-blue-500" />
-              {user?.Office?.name || 'Main Panel'}
+              {user?.Office?.name || 'Panel Utama'}
               {user?.Office?.Parent?.name && (
                 <span className="text-xs text-gray-400">
                    (Branch of <span className="font-medium text-gray-700 dark:text-gray-300">{user.Office.Parent.name}</span>)
@@ -118,18 +118,18 @@ const Dashboard = () => {
         {/* Card Header */}
         <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2 bg-gray-50 dark:bg-gray-900">
           <Activity size={16} className="text-blue-500" />
-          <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">Recent Activities</span>
+          <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">Aktivitas Terbaru</span>
         </div>
 
         {/* Rows */}
         {loading ? (
           <div className="p-10 text-center">
             <div className="inline-block w-6 h-6 border-2 border-blue-600/20 border-t-blue-600 rounded-full animate-spin mb-2" />
-            <p className="text-xs text-gray-400">Fetching activities...</p>
+            <p className="text-xs text-gray-400">Mengambil aktivitas...</p>
           </div>
         ) : stats.recentActivities.length === 0 ? (
           <div className="p-10 text-center">
-            <p className="text-sm text-gray-400">No recent activities log yet.</p>
+            <p className="text-sm text-gray-400">Belum ada log aktivitas terbaru.</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -173,7 +173,7 @@ const Dashboard = () => {
                   {/* Profile Indicator */}
                   <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
                     <UserCircle size={12} className="text-gray-400" />
-                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tight">System Log</span>
+                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tight">Log Sistem</span>
                   </div>
                 </motion.div>
               );

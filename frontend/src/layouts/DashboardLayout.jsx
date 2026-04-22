@@ -54,46 +54,46 @@ const DashboardLayout = () => {
   const getMenuGroups = () => {
     const groups = [
       {
-        title: 'DATA INSIGHTS',
+        title: 'WAWASAN DATA',
         items: [
-          { to: '/', icon: Activity, label: 'Main Dashboard' },
-          { to: '/standard-reports', icon: BarChart2, label: 'Standard Reports' },
-          { to: '/sales-report', icon: BarChart3, label: 'Sales Performance' },
+          { to: '/', icon: Activity, label: 'Dashboard Utama' },
+          { to: '/standard-reports', icon: BarChart2, label: 'Laporan Standar' },
+          { to: '/sales-report', icon: BarChart3, label: 'Performa Penjualan' },
         ]
       },
       {
-        title: 'MANAGEMENT',
+        title: 'MANAJEMEN',
         items: [
-          { to: '/brands', icon: Tags, label: 'Brand Management' },
-          { to: '/vehicles', icon: Car, label: 'Vehicles' },
-          { to: '/transactions', icon: FileText, label: 'Transactions' },
-          { to: '/offices', icon: Building2, label: 'Office Management' },
-          { to: '/sales-agents', icon: Users, label: 'Sales Agent' },
-          { to: '/locations', icon: MapPin, label: 'Regional Data' },
-          { to: '/catalog', icon: LayoutDashboard, label: 'Product Catalog', target: '_blank' },
+          { to: '/brands', icon: Tags, label: 'Manajemen Merk' },
+          { to: '/vehicles', icon: Car, label: 'Kendaraan' },
+          { to: '/transactions', icon: FileText, label: 'Transaksi' },
+          { to: '/offices', icon: Building2, label: 'Manajemen Kantor' },
+          { to: '/sales-agents', icon: Users, label: 'Agen Sales' },
+          { to: '/locations', icon: MapPin, label: 'Data Wilayah' },
+          { to: '/catalog', icon: LayoutDashboard, label: 'Katalog Produk', target: '_blank' },
         ]
       },
       {
-        title: 'SYSTEM & SECURITY',
+        title: 'SISTEM & KEAMANAN',
         items: []
       }
     ];
 
     // Add Security items based on role
     const securityItems = groups[2].items;
-    securityItems.push({ to: '/users', icon: Users, label: 'User Management' });
+    securityItems.push({ to: '/users', icon: Users, label: 'Manajemen Pengguna' });
     
     if (userRole === 'Super Admin' || userRole === 'Admin Pusat') {
       securityItems.push(
-        { to: '/security-settings', icon: Shield, label: 'Security Configuration' },
-        { to: '/admin-sessions', icon: Users, label: 'Active Sessions Monitor' },
-        { to: '/roles', icon: ShieldCheck, label: 'Role Management' },
-        { to: '/activities', icon: FileText, label: 'Activity Logs' },
-        { to: '/audit-trails', icon: History, label: 'Audit Trails' }
+        { to: '/security-settings', icon: Shield, label: 'Konfigurasi Keamanan' },
+        { to: '/admin-sessions', icon: Users, label: 'Monitor Sesi Aktif' },
+        { to: '/roles', icon: ShieldCheck, label: 'Manajemen Peran' },
+        { to: '/activities', icon: FileText, label: 'Log Aktivitas' },
+        { to: '/audit-trails', icon: History, label: 'Audit Trail' }
       );
     } else {
       securityItems.push(
-        { to: '/activities', icon: FileText, label: 'My Activities' }
+        { to: '/activities', icon: FileText, label: 'Aktivitas Saya' }
       );
     }
     
@@ -160,7 +160,7 @@ const DashboardLayout = () => {
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within/search:text-blue-500 transition-colors" />
                 <input
                   type="text"
-                  placeholder="Search menu..."
+                  placeholder="Cari menu..."
                   className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 rounded-xl py-2 pl-9 pr-3 text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -201,7 +201,7 @@ const DashboardLayout = () => {
           
           {searchQuery && menuGroups.every(g => g.items.filter(i => i.label.toLowerCase().includes(searchQuery.toLowerCase())).length === 0) && (
             <div className="px-4 py-8 text-center text-xs text-gray-400">
-              No menu found
+              Menu tidak ditemukan
             </div>
           )}
           {/* Landing Page Link at Bottom */}
@@ -209,7 +209,7 @@ const DashboardLayout = () => {
              <SidebarItem 
                to="/landing-page" 
                icon={Rocket} 
-               label="Landing Page (Showroom)" 
+               label="Halaman Depan (Showroom)" 
                onClick={() => setSidebarOpen(false)}
                collapsed={isCollapsed}
                target="_blank"
@@ -242,7 +242,7 @@ const DashboardLayout = () => {
                 )}
                 <div>
                   <p className="text-sm leading-tight text-gray-500 dark:text-gray-400">
-                    Welcome back, <span className="font-bold text-gray-900 dark:text-white">{user?.name?.split(' ')[0]}</span>
+                    Selamat datang kembali, <span className="font-bold text-gray-900 dark:text-white">{user?.name?.split(' ')[0]}</span>
                   </p>
                   <p className="text-[10px] text-gray-400 dark:text-gray-500 flex items-center gap-1 font-medium mt-0.5">
                     <Building2 size={10} className="text-blue-500" />
@@ -297,17 +297,17 @@ const DashboardLayout = () => {
                       <NavLink to="/profile" onClick={() => setShowUserMenu(false)}
                         className="flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                       >
-                        <UserCircle size={14} /> Profile
+                        <UserCircle size={14} /> Profil
                       </NavLink>
                       <NavLink to="/sessions" onClick={() => setShowUserMenu(false)}
                         className="flex items-center gap-2 px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                       >
-                        <ShieldCheck size={14} /> My Sessions
+                        <ShieldCheck size={14} /> Sesi Saya
                       </NavLink>
                       <button onClick={() => { handleLogout(); setShowUserMenu(false); }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950"
                       >
-                        <LogOut size={14} /> Logout
+                        <LogOut size={14} /> Keluar
                       </button>
                     </motion.div>
                     

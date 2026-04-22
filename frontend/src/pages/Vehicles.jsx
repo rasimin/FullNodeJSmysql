@@ -98,7 +98,7 @@ const Vehicles = () => {
   };
 
   const handlePrintDoc = async (bookingId, type, openModal = true) => {
-    notify('loading', 'Preparing document preview...');
+    notify('loading', 'Menyiapkan pratinjau dokumen...');
     try {
       let url = '';
       let filename = '';
@@ -108,13 +108,13 @@ const Vehicles = () => {
 
       if (type === 'receipt' || type === 'invoice') {
         const docType = type === 'receipt' ? 'receipt' : 'dp-invoice';
-        label = type === 'receipt' ? 'Reservation Receipt' : 'Settlement Invoice';
+        label = type === 'receipt' ? 'Kwitansi Reservasi' : 'Invoice Pelunasan';
         filename = type === 'receipt' ? `Reservation_Receipt${customerSuffix}.pdf` : `Settlement_Invoice${customerSuffix}.pdf`;
         
         const res = await api.get(`/export/bookings/${bookingId}?type=${docType}`, { responseType: 'blob' });
         url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
       } else if (type === 'deal-proof') {
-        label = 'Sales Receipt';
+        label = 'Kwitansi Penjualan';
         filename = `Sales_Receipt${customerSuffix}.pdf`;
         const res = await api.get(`/export/sales/${bookingId}/invoice?isProof=true`, { responseType: 'blob' });
         url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
@@ -125,13 +125,13 @@ const Vehicles = () => {
         if (openModal) {
           setPdfDocuments([docObj]);
           setIsPdfModalOpen(true);
-          notify('success', `${label} ready!`);
+          notify('success', `${label} siap!`);
         }
         return docObj;
       }
     } catch (e) {
       console.error('Download error:', e);
-      notify('error', 'Failed to generate document');
+      notify('error', 'Gagal membuat dokumen');
       return null;
     }
   };
@@ -186,7 +186,7 @@ const Vehicles = () => {
   const handleUploadDocument = async (vehicleId, typeId, file) => {
     if (!file) return;
     setIsUploadingDoc(true);
-    notify('loading', 'Uploading document...');
+    notify('loading', 'Mengunggah dokumen...');
     try {
       const formData = new FormData();
       formData.append('document', file);
@@ -194,11 +194,11 @@ const Vehicles = () => {
       await api.post(`/documents/vehicle/${vehicleId}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      notify('success', 'Document uploaded successfully');
+      notify('success', 'Dokumen berhasil diunggah');
       fetchVehicleDocuments(vehicleId);
     } catch (err) {
       console.error('Upload doc error:', err);
-      notify('error', 'Failed to upload document');
+      notify('error', 'Gagal mengunggah dokumen');
     } finally {
       setIsUploadingDoc(false);
     }
@@ -206,14 +206,14 @@ const Vehicles = () => {
 
   const handleDeleteDocument = async (vehicleId, docId) => {
     if (!window.confirm('Hapus dokumen ini?')) return;
-    notify('loading', 'Deleting document...');
+    notify('loading', 'Menghapus dokumen...');
     try {
       await api.delete(`/documents/vehicle/${vehicleId}/${docId}`);
-      notify('success', 'Document deleted');
+      notify('success', 'Dokumen dihapus');
       fetchVehicleDocuments(vehicleId);
     } catch (err) {
       console.error('Delete doc error:', err);
-      notify('error', 'Failed to delete document');
+      notify('error', 'Gagal menghapus dokumen');
     }
   };
 
@@ -344,9 +344,9 @@ const Vehicles = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.type || !formData.brand || !formData.model || !formData.office_id) {
-      return notify('error', 'Category, Brand, Model and Branch Office are required!');
+      return notify('error', 'Kategori, Merk, Model dan Kantor Cabang wajib diisi!');
     }
-    notify('loading', editingVehicle ? 'Updating...' : 'Adding...');
+    notify('loading', editingVehicle ? 'Memperbarui...' : 'Menambah...');
 
     try {
       // Clean payload: strip associations and ensure no nulls for text fields
@@ -398,19 +398,19 @@ const Vehicles = () => {
         setIsModalOpen(false);
       }
       
-      notify('success', isNew ? 'Unit added! Do you want to upload documents?' : 'Changes saved!');
+      notify('success', isNew ? 'Unit ditambahkan! Apakah Anda ingin mengunggah dokumen?' : 'Perubahan disimpan!');
       fetchVehicles();
 
     } catch (err) {
       console.error('Save error:', err);
-      const msg = err.response?.data?.message || 'Failed to save changes';
+      const msg = err.response?.data?.message || 'Gagal menyimpan perubahan';
       notify('error', msg);
     }
   };
 
   const handleDelete = async () => {
-    notify('loading', 'Deleting...');
-    try { await api.delete(`/vehicles/${confirmDeleteId}`); notify('success', 'Deleted'); setConfirmDeleteId(null); fetchVehicles(); }
+    notify('loading', 'Menghapus...');
+    try { await api.delete(`/vehicles/${confirmDeleteId}`); notify('success', 'Dihapus'); setConfirmDeleteId(null); fetchVehicles(); }
     catch { notify('error', 'Error'); }
   };
 
@@ -442,7 +442,7 @@ const Vehicles = () => {
 
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
-    notify('loading', 'Processing...');
+    notify('loading', 'Memproses...');
     try {
       setLoading(true);
       let bookingId = bookingData.id || tempBookingId;
@@ -464,14 +464,14 @@ const Vehicles = () => {
         
         setTempBookingId(bookingId);
         setFormStep(2); // Move to Step 2
-        notify('success', 'Data saved! Now please upload documents.');
+        notify('success', 'Data disimpan! Sekarang silakan unggah dokumen.');
         return;
       }
 
       // Step 2: Upload Documents and Finish
       await handleUploadBookingDocs(bookingId);
       
-      notify('success', 'Transaction completed successfully!'); 
+      notify('success', 'Transaksi berhasil diselesaikan!'); 
       setIsBookingModalOpen(false); 
       fetchVehicles();
 
@@ -495,7 +495,7 @@ const Vehicles = () => {
       // No longer resetting to false, we keep the user preference
     } catch (err) {
       console.error('Booking Submit Error:', err);
-      notify('error', err.response?.data?.message || 'Booking failed');
+      notify('error', err.response?.data?.message || 'Pemesanan gagal');
     } finally {
       setLoading(false);
     }
@@ -541,10 +541,10 @@ const Vehicles = () => {
 
   const handleConfirmSale = async () => {
     if (actionType === 'sold' && !bookingData.customer_name) {
-      return notify('error', 'Customer name is required!');
+      return notify('error', 'Nama pelanggan wajib diisi!');
     }
 
-    notify('loading', 'Closing deal...');
+    notify('loading', 'Menyelesaikan transaksi...');
     try {
       setLoading(true);
       
@@ -572,7 +572,7 @@ const Vehicles = () => {
         bookingId = res.data.id || activeBooking?.id;
         setTempBookingId(bookingId);
         setFormStep(2); // Move to Step 2
-        notify('success', 'Sale saved! Now please upload documents.');
+        notify('success', 'Penjualan disimpan! Sekarang silakan unggah dokumen.');
         return;
       }
 
@@ -581,7 +581,7 @@ const Vehicles = () => {
         await handleUploadBookingDocs(bookingId);
       }
       
-      notify('success', 'Deal closed successfully!'); 
+      notify('success', 'Transaksi berhasil diselesaikan!'); 
       setIsConfirmActionModalOpen(false); 
       setDealPhoto(null);
       fetchVehicles();
@@ -595,22 +595,22 @@ const Vehicles = () => {
       }
     } catch (e) { 
       console.error('Sale error:', e);
-      notify('error', e.response?.data?.message || 'Sale failed'); 
+      notify('error', e.response?.data?.message || 'Penjualan gagal'); 
     }
   };
 
   const handleCancelBooking = async (type) => {
     if (!cancellationReason.trim()) {
-        notify('error', 'Please provide a reason for cancellation');
+        notify('error', 'Harap berikan alasan pembatalan');
         return;
     }
-    notify('loading', 'Processing cancellation...');
+    notify('loading', 'Memproses pembatalan...');
     try {
       await api.put(`/bookings/vehicle/${editingVehicle.id}/cancel`, { 
         type,
         remark: cancellationReason 
       });
-      notify('success', 'Booking status updated'); 
+      notify('success', 'Status pemesanan diperbarui'); 
       setIsConfirmActionModalOpen(false); 
       setCancellationReason('');
       fetchVehicles();
@@ -623,24 +623,24 @@ const Vehicles = () => {
 
   const handleSetPrimaryImage = async (imgId) => {
     try {
-      notify('loading', 'Setting primary...');
+      notify('loading', 'Mengatur foto utama...');
       await api.put(`/vehicles/${editingVehicle.id}/images/${imgId}/primary`);
       // Refresh vehicle data to get updated images
       const r = await api.get(`/vehicles/${editingVehicle.id}`);
       const freshImages = r.data.images || r.data.Images || [];
       setEditingVehicle(prev => ({ ...prev, images: freshImages }));
       fetchVehicles();
-      notify('success', 'Primary image updated!');
+      notify('success', 'Foto utama diperbarui!');
     } catch (e) {
       console.error('Set primary error:', e);
-      notify('error', e.response?.data?.message || 'Failed to set primary image');
+      notify('error', e.response?.data?.message || 'Gagal mengatur foto utama');
     }
   };
 
   const handleDeleteImage = async (imgId) => {
     if (!window.confirm('Hapus gambar ini?')) return;
     try {
-      notify('loading', 'Deleting image...');
+      notify('loading', 'Menghapus gambar...');
       await api.delete(`/vehicles/${editingVehicle.id}/images/${imgId}`);
       // Immediately remove from local state
       setEditingVehicle(prev => ({
@@ -648,10 +648,10 @@ const Vehicles = () => {
         images: (prev.images || []).filter(img => img.id !== imgId)
       }));
       fetchVehicles();
-      notify('success', 'Image deleted!');
+      notify('success', 'Gambar dihapus!');
     } catch (e) {
       console.error('Delete image error:', e);
-      notify('error', e.response?.data?.message || 'Failed to delete image');
+      notify('error', e.response?.data?.message || 'Gagal menghapus gambar');
     }
   };
 
@@ -666,7 +666,7 @@ const Vehicles = () => {
 
   const handleExport = async () => {
     try {
-      notify('loading', 'Preparing full inventory report...');
+      notify('loading', 'Menyiapkan laporan inventaris lengkap...');
       const res = await api.get('/export/vehicles', {
         params: { search, officeId: selectedBranch, type: '', status: filterStatus },
         responseType: 'blob'
@@ -677,16 +677,16 @@ const Vehicles = () => {
       link.setAttribute('download', `Vehicle_Inventory_${new Date().toISOString().split('T')[0]}.xlsx`);
       document.body.appendChild(link);
       link.click();
-      notify('success', 'Excel exported successfully');
+      notify('success', 'Excel berhasil diekspor');
     } catch (e) {
       console.error('Export error:', e);
-      notify('error', 'Failed to export data');
+      notify('error', 'Gagal mengekspor data');
     }
   };
 
   return (
     <div className="space-y-6">
-      <DynamicIsland status={confirmDeleteId ? 'confirm' : notification.status} message={confirmDeleteId ? 'Delete vehicle?' : notification.message} onConfirm={handleDelete} onCancel={() => setConfirmDeleteId(null)} />
+      <DynamicIsland status={confirmDeleteId ? 'confirm' : notification.status} message={confirmDeleteId ? 'Hapus kendaraan?' : notification.message} onConfirm={handleDelete} onCancel={() => setConfirmDeleteId(null)} />
       <PdfViewerModal 
         isOpen={isPdfModalOpen} 
         onClose={() => setIsPdfModalOpen(false)} 
@@ -695,8 +695,8 @@ const Vehicles = () => {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Vehicle Inventory</h1>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{isHeadOffice ? 'All Branches' : user?.Office?.name}</p>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Inventaris Kendaraan</h1>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{isHeadOffice ? 'Semua Cabang' : user?.Office?.name}</p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
           <ViewSwitcher viewMode={viewMode} setViewMode={setViewMode} />
@@ -704,19 +704,19 @@ const Vehicles = () => {
             onClick={handleExport}
             className="flex items-center gap-2 h-11 px-4 bg-white dark:bg-gray-800 text-green-600 border border-green-100 dark:border-green-900/30 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-green-600 hover:text-white transition-all shadow-sm"
           >
-            <FileSpreadsheet size={18} /> Export
+            <FileSpreadsheet size={18} /> Ekspor
           </button>
-          <button onClick={() => openModal()} className="btn-primary gap-2 h-11 px-6 text-xs font-black shadow-lg shadow-blue-500/20 uppercase tracking-widest"><Plus size={18} /> Add New</button>
+          <button onClick={() => openModal()} className="btn-primary gap-2 h-11 px-6 text-xs font-black shadow-lg shadow-blue-500/20 uppercase tracking-widest"><Plus size={18} /> Tambah Baru</button>
         </div>
       </div>
 
       {/* Statistics Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         {[
-          { label: 'Total Stock', count: summary.total || 0, icon: Car, color: 'blue', status: '', borderClass: 'border-b-blue-600', bgClass: 'bg-blue-50/20' },
-          { label: 'Available', count: summary.available || 0, icon: Tag, color: 'green', status: 'Available', borderClass: 'border-b-green-600', bgClass: 'bg-green-50/20' },
-          { label: 'In Booking', count: summary.booking || 0, icon: Clock, color: 'orange', status: 'Booked', borderClass: 'border-b-orange-600', bgClass: 'bg-orange-50/20' },
-          { label: 'Unit Sold', count: summary.sold || 0, icon: CheckCircle, color: 'purple', status: 'Sold', borderClass: 'border-b-purple-600', bgClass: 'bg-purple-50/20' },
+          { label: 'Total Stok', count: summary.total || 0, icon: Car, color: 'blue', status: '', borderClass: 'border-b-blue-600', bgClass: 'bg-blue-50/20' },
+          { label: 'Tersedia', count: summary.available || 0, icon: Tag, color: 'green', status: 'Available', borderClass: 'border-b-green-600', bgClass: 'bg-green-50/20' },
+          { label: 'Dalam Booking', count: summary.booking || 0, icon: Clock, color: 'orange', status: 'Booked', borderClass: 'border-b-orange-600', bgClass: 'bg-orange-50/20' },
+          { label: 'Unit Terjual', count: summary.sold || 0, icon: CheckCircle, color: 'purple', status: 'Sold', borderClass: 'border-b-purple-600', bgClass: 'bg-purple-50/20' },
         ].map((s) => (
           <button
             key={s.label}
@@ -730,8 +730,8 @@ const Vehicles = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-        <div className="relative md:col-span-8"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} /><input type="text" className="input pl-10 h-12" placeholder="Search..." value={search} onChange={handleSearch} /></div>
-        <div className="md:col-span-4">{isHeadOffice && (<select className="input h-12" value={selectedBranch} onChange={(e) => { setSelectedBranch(e.target.value); setCurrentPage(1); }}><option value="">All Branches</option>{offices.map(o => <option key={o.id} value={o.id}>{o.displayName}</option>)}</select>)}</div>
+        <div className="relative md:col-span-8"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} /><input type="text" className="input pl-10 h-12" placeholder="Cari..." value={search} onChange={handleSearch} /></div>
+        <div className="md:col-span-4">{isHeadOffice && (<select className="input h-12" value={selectedBranch} onChange={(e) => { setSelectedBranch(e.target.value); setCurrentPage(1); }}><option value="">Semua Cabang</option>{offices.map(o => <option key={o.id} value={o.id}>{o.displayName}</option>)}</select>)}</div>
       </div>
 
       {viewMode === 'table' ? (
@@ -740,11 +740,11 @@ const Vehicles = () => {
             <table className="w-full text-left min-w-[800px]">
               <thead className="bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-800">
                 <tr>
-                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Unit Info</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Office</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Price</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Info Unit</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Kantor</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Harga</th>
                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Admin Controls</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Kontrol Admin</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -764,7 +764,7 @@ const Vehicles = () => {
                                 (Math.ceil((new Date() - new Date(v.entry_date)) / (1000 * 60 * 60 * 24))) > 60 ? 'bg-red-100 text-red-600' : 
                                 (Math.ceil((new Date() - new Date(v.entry_date)) / (1000 * 60 * 60 * 24))) > 30 ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'
                               }`}>
-                                {Math.ceil((new Date() - new Date(v.entry_date)) / (1000 * 60 * 60 * 24))}d In Stock
+                                {Math.ceil((new Date() - new Date(v.entry_date)) / (1000 * 60 * 60 * 24))}h Dalam Stok
                               </span>
                             )}
                           </div>
@@ -777,23 +777,23 @@ const Vehicles = () => {
                     <td className="px-6 py-4"><div className="flex justify-center gap-2">
                       {v.status === 'Available' && (
                         <div className="flex gap-1">
-                          <button onClick={() => openBookingModal(v)} className="flex items-center gap-1.5 px-3 py-2 bg-orange-600 hover:bg-orange-700 dark:bg-orange-600 dark:hover:bg-orange-500 text-white text-[10px] font-black uppercase rounded-xl transition-all active:scale-95 cursor-pointer"><Bookmark size={12} /> Book Now</button>
-                          <button onClick={() => preConfirmAction(v, 'sold')} className="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500 text-white text-[10px] font-black uppercase rounded-xl transition-all active:scale-95 cursor-pointer"><CheckCircle2 size={12} /> Direct Deal</button>
+                          <button onClick={() => openBookingModal(v)} className="flex items-center gap-1.5 px-3 py-2 bg-orange-600 hover:bg-orange-700 dark:bg-orange-600 dark:hover:bg-orange-500 text-white text-[10px] font-black uppercase rounded-xl transition-all active:scale-95 cursor-pointer"><Bookmark size={12} /> Booking</button>
+                          <button onClick={() => preConfirmAction(v, 'sold')} className="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500 text-white text-[10px] font-black uppercase rounded-xl transition-all active:scale-95 cursor-pointer"><CheckCircle2 size={12} /> Jual</button>
                         </div>
                       )}
                       {v.status === 'Booked' && (
                         <div className="flex gap-1">
-                          <button onClick={() => preConfirmAction(v, 'sold')} className="flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500 text-white text-[10px] font-black uppercase rounded-xl transition-all active:scale-95 cursor-pointer"><CheckCircle size={12} /> Close Deal</button>
-                          <button onClick={() => preConfirmAction(v, 'cancel')} className="flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-800 dark:hover:bg-red-700 text-white text-[10px] font-black uppercase rounded-xl shadow-md shadow-red-500/10 transition-all active:scale-95 cursor-pointer" title="Cancel Booking">Cancel</button>
+                          <button onClick={() => preConfirmAction(v, 'sold')} className="flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500 text-white text-[10px] font-black uppercase rounded-xl transition-all active:scale-95 cursor-pointer"><CheckCircle size={12} /> Selesai</button>
+                          <button onClick={() => preConfirmAction(v, 'cancel')} className="flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-800 dark:hover:bg-red-700 text-white text-[10px] font-black uppercase rounded-xl shadow-md shadow-red-500/10 transition-all active:scale-95 cursor-pointer" title="Batalkan Pemesanan">Batal</button>
                         </div>
                       )}
-                      {v.status === 'Sold' && <div className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-400 text-[10px] font-black uppercase rounded-xl">Completed</div>}
+                      {v.status === 'Sold' && <div className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-400 text-[10px] font-black uppercase rounded-xl">Selesai</div>}
                     </div></td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => openModal(v, true)} className="btn-icon hover:bg-purple-100 hover:text-purple-600" title="View Detail"><Eye size={16} /></button>
+                        <button onClick={() => openModal(v, true)} className="btn-icon hover:bg-purple-100 hover:text-purple-600" title="Lihat Detail"><Eye size={16} /></button>
                         <button onClick={() => openModal(v)} className="btn-edit" title="Edit Unit"><Edit size={16} /></button>
-                        <button onClick={() => setConfirmDeleteId(v.id)} className="btn-delete" title="Delete Unit"><Trash2 size={16} /></button>
+                        <button onClick={() => setConfirmDeleteId(v.id)} className="btn-delete" title="Hapus Unit"><Trash2 size={16} /></button>
                       </div>
                     </td>
                   </tr>
@@ -809,7 +809,7 @@ const Vehicles = () => {
             return (
               <div key={v.id} onClick={() => openModal(v, true)} className="card relative group pt-1.5 px-3 pb-3 hover:bg-blue-50/50 hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-400/50 dark:hover:bg-blue-900/20 dark:hover:border-blue-800/50 transition-all duration-500 hover:-translate-y-1.5 cursor-pointer overflow-hidden">
                 <div className="flex justify-between items-center mb-1.5" onClick={e => e.stopPropagation()}>
-                  <span className={`text-[8px] md:text-[9px] font-black px-2 py-1 rounded uppercase tracking-tighter ${v.status === 'Available' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : v.status === 'Sold' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'}`}>{v.status}</span>
+                  <span className={`text-[8px] md:text-[9px] font-black px-2 py-1 rounded uppercase tracking-tighter ${v.status === 'Available' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : v.status === 'Sold' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'}`}>{v.status === 'Available' ? 'Tersedia' : v.status === 'Sold' ? 'Terjual' : 'Booked'}</span>
                   <div className="relative">
                     <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === v.id ? null : v.id); }} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-400">
                       <TrendingUp size={14} className="rotate-90 hidden" /> {/* Hidden trigger for reference if needed */}
@@ -826,7 +826,7 @@ const Vehicles = () => {
                           <Edit size={12} /> Edit
                         </button>
                         <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); setConfirmDeleteId(v.id); }} className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors">
-                          <Trash2 size={12} /> Delete
+                          <Trash2 size={12} /> Hapus
                         </button>
                       </div>
                     )}
@@ -848,7 +848,7 @@ const Vehicles = () => {
                           (Math.ceil((new Date() - new Date(v.entry_date)) / (1000 * 60 * 60 * 24))) > 60 ? 'bg-red-100 text-red-600' : 
                           (Math.ceil((new Date() - new Date(v.entry_date)) / (1000 * 60 * 60 * 24))) > 30 ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'
                         }`}>
-                          {Math.ceil((new Date() - new Date(v.entry_date)) / (1000 * 60 * 60 * 24))}d In Stock
+                          {Math.ceil((new Date() - new Date(v.entry_date)) / (1000 * 60 * 60 * 24))}h Dalam Stok
                         </span>
                       </div>
                     )}
@@ -859,16 +859,16 @@ const Vehicles = () => {
                 <div className="flex gap-1.5 pt-2 border-t border-gray-100 dark:border-gray-800" onClick={e => e.stopPropagation()}>
                   {v.status === 'Available' ? (
                     <div className="flex flex-1 gap-1.5">
-                      <button onClick={() => openBookingModal(v)} className="flex-1 py-2 bg-orange-600 hover:bg-orange-700 dark:bg-orange-600 dark:hover:bg-orange-500 text-white rounded-lg text-[9px] font-black uppercase transition-all active:scale-95 cursor-pointer">Book Now</button>
-                      <button onClick={() => preConfirmAction(v, 'sold')} className="flex-1 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500 text-white rounded-lg text-[9px] font-black uppercase transition-all active:scale-95 cursor-pointer">Direct Deal</button>
+                      <button onClick={() => openBookingModal(v)} className="flex-1 py-2 bg-orange-600 hover:bg-orange-700 dark:bg-orange-600 dark:hover:bg-orange-500 text-white rounded-lg text-[9px] font-black uppercase transition-all active:scale-95 cursor-pointer">Booking</button>
+                      <button onClick={() => preConfirmAction(v, 'sold')} className="flex-1 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500 text-white rounded-lg text-[9px] font-black uppercase transition-all active:scale-95 cursor-pointer">Jual</button>
                     </div>
                   ) :
                     v.status === 'Booked' ? (
                       <div className="flex flex-1 gap-1.5">
-                        <button onClick={() => preConfirmAction(v, 'cancel')} className="flex-1 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-800 dark:hover:bg-red-700 text-white rounded-lg text-[9px] font-black uppercase shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer">Cancel</button>
+                        <button onClick={() => preConfirmAction(v, 'cancel')} className="flex-1 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-800 dark:hover:bg-red-700 text-white rounded-lg text-[9px] font-black uppercase shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer">Batal</button>
                       </div>
                     ) :
-                      <div className="flex-1 py-2 text-center text-white text-[9px] font-black uppercase bg-gray-400 dark:bg-gray-800 rounded-lg">Vehicle Sold</div>}
+                      <div className="flex-1 py-2 text-center text-white text-[9px] font-black uppercase bg-gray-400 dark:bg-gray-800 rounded-lg">Kendaraan Terjual</div>}
                 </div>
               </div>
             );
@@ -879,20 +879,20 @@ const Vehicles = () => {
       <Pagination page={currentPage} totalPages={totalPages} setPage={setCurrentPage} />
 
       {/* MASTER VEHICLE FORM MODAL */}
-      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setIsViewOnly(false); }} title="Master Vehicle Overview" maxWidth="max-w-5xl">
+      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setIsViewOnly(false); }} title="Ringkasan Master Kendaraan" maxWidth="max-w-5xl">
         {/* Tab Switcher */}
         <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-2xl mb-6 w-fit">
           <button
             onClick={() => setActiveTab('main')}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'main' ? 'bg-white dark:bg-gray-700 text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
           >
-            <Car size={14} /> General & Media
+            <Car size={14} /> Umum & Media
           </button>
           <button
             onClick={() => setActiveTab('documents')}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'documents' ? 'bg-white dark:bg-gray-700 text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
           >
-            <FileText size={14} /> Legal Documents
+            <FileText size={14} /> Dokumen Legal
           </button>
         </div>
 
@@ -904,7 +904,7 @@ const Vehicles = () => {
                   <div className="flex items-center gap-3"><div className="w-1 h-5 bg-blue-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Detail Spesifikasi</h4></div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <Select
-                      label="Category"
+                      label="Kategori"
                       value={formData.type}
                       onChange={e => setFormData({ ...formData, type: e.target.value })}
                       options={[
@@ -914,49 +914,49 @@ const Vehicles = () => {
                       required
                       disabled={isViewOnly}
                     />
-                    <Select label="Brand / Merk" value={formData.brand} onChange={e => setFormData({ ...formData, brand: e.target.value })} options={brands.map(b => ({ value: b.name, label: b.name }))} required disabled={isViewOnly} />
-                    <Input label="Model / Type" value={formData.model} onChange={e => setFormData({ ...formData, model: e.target.value })} required readOnly={isViewOnly} />
-                    <Input label="Plate Number" value={formData.plate_number} onChange={e => setFormData({ ...formData, plate_number: sanitizePlate(e.target.value) })} required readOnly={isViewOnly} />
-                    <Select label="Year" value={formData.year} onChange={e => setFormData({ ...formData, year: e.target.value })} options={Array.from({ length: 40 }, (_, i) => ({ value: (new Date().getFullYear() - i).toString(), label: (new Date().getFullYear() - i).toString() }))} required disabled={isViewOnly} />
-                    <Select label="Transmission" value={formData.transmission} onChange={e => setFormData({ ...formData, transmission: e.target.value })} options={[{ value: 'Manual', label: 'Manual' }, { value: 'Automatic', label: 'Automatic' }, { value: 'CVT', label: 'CVT' }, { value: 'Triptonic', label: 'Triptonic' }]} disabled={isViewOnly} />
-                    <Select label="Fuel Type" value={formData.fuel_type} onChange={e => setFormData({ ...formData, fuel_type: e.target.value })} options={[{ value: 'Bensin', label: 'Bensin' }, { value: 'Diesel', label: 'Diesel / Solar' }, { value: 'Electric', label: 'Electric (EV)' }, { value: 'Hybrid', label: 'Hybrid' }]} disabled={isViewOnly} />
-                    <Input label="Color" value={formData.color} onChange={e => setFormData({ ...formData, color: e.target.value })} readOnly={isViewOnly} />
+                    <Select label="Merek" value={formData.brand} onChange={e => setFormData({ ...formData, brand: e.target.value })} options={brands.map(b => ({ value: b.name, label: b.name }))} required disabled={isViewOnly} />
+                    <Input label="Model / Tipe" value={formData.model} onChange={e => setFormData({ ...formData, model: e.target.value })} required readOnly={isViewOnly} />
+                    <Input label="Nomor Plat" value={formData.plate_number} onChange={e => setFormData({ ...formData, plate_number: sanitizePlate(e.target.value) })} required readOnly={isViewOnly} />
+                    <Select label="Tahun" value={formData.year} onChange={e => setFormData({ ...formData, year: e.target.value })} options={Array.from({ length: 40 }, (_, i) => ({ value: (new Date().getFullYear() - i).toString(), label: (new Date().getFullYear() - i).toString() }))} required disabled={isViewOnly} />
+                    <Select label="Transmisi" value={formData.transmission} onChange={e => setFormData({ ...formData, transmission: e.target.value })} options={[{ value: 'Manual', label: 'Manual' }, { value: 'Automatic', label: 'Automatic' }, { value: 'CVT', label: 'CVT' }, { value: 'Triptonic', label: 'Triptonic' }]} disabled={isViewOnly} />
+                    <Select label="Bahan Bakar" value={formData.fuel_type} onChange={e => setFormData({ ...formData, fuel_type: e.target.value })} options={[{ value: 'Bensin', label: 'Bensin' }, { value: 'Diesel', label: 'Diesel / Solar' }, { value: 'Electric', label: 'Electric (EV)' }, { value: 'Hybrid', label: 'Hybrid' }]} disabled={isViewOnly} />
+                    <Input label="Warna" value={formData.color} onChange={e => setFormData({ ...formData, color: e.target.value })} readOnly={isViewOnly} />
                     <Input label="Odometer (KM)" value={displayCurrency(formData.odometer)} onChange={e => handleCurrencyChange(setFormData, formData, 'odometer', e.target.value)} readOnly={isViewOnly} />
-                    <Input label="Sales Price" value={displayCurrency(formData.price)} onChange={e => handleCurrencyChange(setFormData, formData, 'price', e.target.value)} required readOnly={isViewOnly} />
-                    <Select label="Unit Status" value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })} options={[{ value: 'Available', label: 'Available' }, { value: 'Sold', label: 'Sold' }, { value: 'Booked', label: 'Booked' }]} disabled={isViewOnly} />
+                    <Input label="Harga Jual" value={displayCurrency(formData.price)} onChange={e => handleCurrencyChange(setFormData, formData, 'price', e.target.value)} required readOnly={isViewOnly} />
+                    <Select label="Status Unit" value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })} options={[{ value: 'Available', label: 'Tersedia' }, { value: 'Sold', label: 'Terjual' }, { value: 'Booked', label: 'Booked' }]} disabled={isViewOnly} />
                   </div>
                 </div>
 
                 <div className="space-y-6">
-                  <div className="flex items-center gap-3"><div className="w-1 h-5 bg-green-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Financial & Inventory</h4></div>
+                  <div className="flex items-center gap-3"><div className="w-1 h-5 bg-green-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Keuangan & Inventaris</h4></div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <Input label="Purchase Price" icon={Wallet} value={displayCurrency(formData.purchase_price)} onChange={e => handleCurrencyChange(setFormData, formData, 'purchase_price', e.target.value)} readOnly={isViewOnly} />
-                    <Input label="Service Cost" icon={Wrench} value={displayCurrency(formData.service_cost)} onChange={e => handleCurrencyChange(setFormData, formData, 'service_cost', e.target.value)} readOnly={isViewOnly} />
-                    <Input label="Entry Date" type="date" value={formData.entry_date} onChange={e => setFormData({ ...formData, entry_date: e.target.value })} readOnly={isViewOnly} />
-                    {(formData.status === 'Sold' || formData.sold_date) && <Input label="Sold Date" type="date" value={formData.sold_date} onChange={e => setFormData({ ...formData, sold_date: e.target.value })} readOnly={isViewOnly} />}
+                    <Input label="Harga Beli" icon={Wallet} value={displayCurrency(formData.purchase_price)} onChange={e => handleCurrencyChange(setFormData, formData, 'purchase_price', e.target.value)} readOnly={isViewOnly} />
+                    <Input label="Biaya Servis" icon={Wrench} value={displayCurrency(formData.service_cost)} onChange={e => handleCurrencyChange(setFormData, formData, 'service_cost', e.target.value)} readOnly={isViewOnly} />
+                    <Input label="Tanggal Masuk" type="date" value={formData.entry_date} onChange={e => setFormData({ ...formData, entry_date: e.target.value })} readOnly={isViewOnly} />
+                    {(formData.status === 'Sold' || formData.sold_date) && <Input label="Tanggal Terjual" type="date" value={formData.sold_date} onChange={e => setFormData({ ...formData, sold_date: e.target.value })} readOnly={isViewOnly} />}
                     {isHeadOffice ? (
                       <Select
-                        label="Branch Office"
+                        label="Kantor Cabang"
                         value={formData.office_id}
                         onChange={e => setFormData({ ...formData, office_id: e.target.value })}
                         options={[
-                          { value: '', label: '-- Select Branch --' },
+                          { value: '', label: '-- Pilih Cabang --' },
                           ...offices.map(o => ({ value: o.id, label: o.displayName }))
                         ]}
                         required
                         disabled={isViewOnly}
                       />
-                    ) : <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[8px] text-gray-400 font-black uppercase">Current Branch</p><p className="text-[10px] font-bold">{user?.Office?.name}</p></div>}
+                    ) : <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[8px] text-gray-400 font-black uppercase">Cabang Saat Ini</p><p className="text-[10px] font-bold">{user?.Office?.name}</p></div>}
                   </div>
-                  <textarea className="input h-20 p-3 text-xs" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} placeholder="Notes..." readOnly={isViewOnly} />
+                  <textarea className="input h-20 p-3 text-xs" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} placeholder="Catatan..." readOnly={isViewOnly} />
                   {(formData.status === 'Available' && formData.cancellation_reason) && (
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-black text-red-600 uppercase tracking-widest ml-1">Last Cancellation Remark</label>
+                      <label className="text-[10px] font-black text-red-600 uppercase tracking-widest ml-1">Catatan Pembatalan Terakhir</label>
                       <textarea 
                         className="input h-20 p-3 text-xs border-red-100 dark:border-red-900/30 bg-red-50/10" 
                         value={formData.cancellation_reason} 
                         onChange={e => setFormData({ ...formData, cancellation_reason: e.target.value })} 
-                        placeholder="Cancellation reason..." 
+                        placeholder="Alasan pembatalan..." 
                         readOnly={isViewOnly} 
                       />
                     </div>
@@ -966,12 +966,12 @@ const Vehicles = () => {
 
               <div className="space-y-8">
                 <div className="space-y-6">
-                  <div className="flex items-center gap-2"><div className="w-1 h-5 bg-indigo-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Media Gallery</h4></div>
+                  <div className="flex items-center gap-2"><div className="w-1 h-5 bg-indigo-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Galeri Media</h4></div>
                   <div className="grid grid-cols-2 gap-2">
                     {editingVehicle?.images?.map((img) => (
                       <div key={img.id} className="relative group aspect-square rounded-xl overflow-hidden bg-gray-100">
                         <img src={`${IMAGE_BASE_URL}${img.image_url}`} className="w-full h-full object-cover" />
-                        {img.is_primary && <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-blue-600 text-white text-[7px] font-black uppercase rounded">Primary</div>}
+                        {img.is_primary && <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-blue-600 text-white text-[7px] font-black uppercase rounded">Utama</div>}
                         {!isViewOnly && (
                           <div className="absolute top-1 right-1 flex flex-col gap-1 sm:top-auto sm:right-auto sm:inset-0 sm:bg-black/40 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity items-center justify-center flex-row">
                             <button type="button" onClick={() => handleSetPrimaryImage(img.id)} className="p-2 bg-white text-blue-600 rounded-lg shadow-lg sm:shadow-none"><CheckCircle size={14} /></button>
@@ -997,17 +997,17 @@ const Vehicles = () => {
 
                 {bookingHistory.length > 0 && (
                   <div className="space-y-6">
-                    <div className="flex items-center gap-2"><div className="w-1 h-5 bg-amber-500 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Recent Activity</h4></div>
+                    <div className="flex items-center gap-2"><div className="w-1 h-5 bg-amber-500 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Aktivitas Terbaru</h4></div>
                     <div className="space-y-3 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
                       {bookingHistory.map(bh => (
                         <div key={bh.id} className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-row sm:items-center justify-between gap-4 transition-all hover:bg-white dark:hover:bg-gray-800">
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase ${bh.status === 'Cancelled' ? 'bg-red-100 text-red-600' : bh.status === 'Sold' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>{bh.status}</span>
+                              <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase ${bh.status === 'Cancelled' ? 'bg-red-100 text-red-600' : bh.status === 'Sold' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>{bh.status === 'Cancelled' ? 'Batal' : bh.status === 'Sold' ? 'Terjual' : 'Booked'}</span>
                               <span className="text-[9px] text-gray-400 font-bold">{new Date(bh.booking_date).toLocaleDateString('id-ID')}</span>
                             </div>
                             <p className="font-black truncate text-gray-900 dark:text-gray-100 text-sm">{bh.customer_name}</p>
-                            <p className="text-[10px] text-gray-400 font-bold uppercase">Agent: {bh.salesAgent?.name || 'Unknown'} ({bh.salesAgent?.sales_code || 'N/A'})</p>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase">Agen: {bh.salesAgent?.name || 'Tidak Diketahui'} ({bh.salesAgent?.sales_code || 'N/A'})</p>
                           </div>
                           <div className="flex flex-col items-end gap-3 shrink-0">
                             <p className="font-black text-blue-600 text-xs">{formatPrice(bh.down_payment)}</p>
@@ -1041,7 +1041,7 @@ const Vehicles = () => {
                 )}
               </div>
             </div>
-            {!isViewOnly && <div className="pt-6 border-t border-gray-100 text-right"><button type="submit" className="btn-primary px-8 py-3 bg-blue-600 border-none text-[10px] font-black uppercase tracking-widest shadow-xl">Save Master Changes</button></div>}
+            {!isViewOnly && <div className="pt-6 border-t border-gray-100 text-right"><button type="submit" className="btn-primary px-8 py-3 bg-blue-600 border-none text-[10px] font-black uppercase tracking-widest shadow-xl">Simpan Perubahan Master</button></div>}
           </form>
         ) : (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -1071,7 +1071,7 @@ const Vehicles = () => {
                                 <p className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-tight">{type.name}</p>
                                 {type.is_mandatory && <span className="text-[8px] font-black text-red-500 uppercase tracking-widest">Wajib</span>}
                               </div>
-                              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{existingDoc ? `Uploaded: ${new Date(existingDoc.created_at).toLocaleDateString('id-ID')}` : 'Belum ada file'}</p>
+                              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{existingDoc ? `Diunggah: ${new Date(existingDoc.created_at).toLocaleDateString('id-ID')}` : 'Belum ada file'}</p>
                             </div>
                           </div>
                           {existingDoc && (
@@ -1087,7 +1087,7 @@ const Vehicles = () => {
                                 onClick={() => window.open(`${IMAGE_BASE_URL}${existingDoc.file_path}`, '_blank')}
                                 className="flex-1 py-2.5 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white rounded-xl text-[9px] font-black uppercase transition-all flex items-center justify-center gap-2"
                              >
-                               <Eye size={14} /> View Document
+                               <Eye size={14} /> Lihat Dokumen
                              </button>
                           </div>
                         ) : (
@@ -1113,7 +1113,7 @@ const Vehicles = () => {
       </Modal>
 
       {/* DOCUMENT UPLOAD PROMPT */}
-      <Modal isOpen={isDocPromptOpen} onClose={() => { setIsDocPromptOpen(false); setIsModalOpen(false); }} title="Unit Saved Successfully">
+      <Modal isOpen={isDocPromptOpen} onClose={() => { setIsDocPromptOpen(false); setIsModalOpen(false); }} title="Unit Berhasil Disimpan">
         <div className="p-6 text-center space-y-6">
           <div className="w-20 h-20 bg-green-50 dark:bg-green-900/20 rounded-full flex items-center justify-center text-green-500 mx-auto animate-bounce">
             <CheckCircle2 size={48} />
@@ -1145,7 +1145,7 @@ const Vehicles = () => {
         </div>
       </Modal>
 
-      <Modal isOpen={isConfirmActionModalOpen} onClose={() => setIsConfirmActionModalOpen(false)} title="Transaction Confirmation">
+      <Modal isOpen={isConfirmActionModalOpen} onClose={() => setIsConfirmActionModalOpen(false)} title="Konfirmasi Transaksi">
         <div className="space-y-6">
           {actionType === 'sold' && (
             <div className="flex gap-2 px-1">
@@ -1161,11 +1161,11 @@ const Vehicles = () => {
                     <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full -mr-16 -mt-16 blur-3xl" />
                     <div className="relative flex justify-between items-start">
                       <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Plate Number</p>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Nomor Plat</p>
                         <p className="text-xl font-black tracking-tight">{editingVehicle?.plate_number}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Selling Price</p>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Harga Jual</p>
                         <p className="text-xl font-black text-blue-400 tracking-tight">{formatPrice(editingVehicle?.price)}</p>
                       </div>
                     </div>
@@ -1174,28 +1174,28 @@ const Vehicles = () => {
                     <div className="space-y-4 p-5 bg-gray-50/80 dark:bg-gray-800/60 rounded-[32px] border-2 border-dashed border-gray-200 dark:border-gray-700">
                       <div className="flex items-center gap-2 mb-1">
                         <UserIcon size={14} className="text-orange-500" />
-                        <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest">Direct Sale Customer Data</p>
+                        <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest">Data Pelanggan Jual Langsung</p>
                       </div>
-                      <Input label="Customer Name" value={bookingData.customer_name} onChange={e => setBookingData({ ...bookingData, customer_name: e.target.value })} required />
+                      <Input label="Nama Pelanggan" value={bookingData.customer_name} onChange={e => setBookingData({ ...bookingData, customer_name: e.target.value })} required />
                       <div className="grid grid-cols-2 gap-4">
-                        <Input label="NIK (ID Number)" value={bookingData.nik} onChange={e => setBookingData({ ...bookingData, nik: e.target.value.replace(/\D/g, '').slice(0, 16) })} required />
-                        <Input label="Phone Number" value={bookingData.customer_phone} onChange={e => setBookingData({ ...bookingData, customer_phone: sanitizePhone(e.target.value) })} required />
+                        <Input label="NIK (Nomor ID)" value={bookingData.nik} onChange={e => setBookingData({ ...bookingData, nik: e.target.value.replace(/\D/g, '').slice(0, 16) })} required />
+                        <Input label="Nomor Telepon" value={bookingData.customer_phone} onChange={e => setBookingData({ ...bookingData, customer_phone: sanitizePhone(e.target.value) })} required />
                       </div>
                       <textarea 
                         className="input min-h-[80px] p-3 text-xs" 
-                        placeholder="Additional transaction notes..." 
+                        placeholder="Catatan transaksi tambahan..." 
                         value={bookingData.notes} 
                         onChange={e => setBookingData({ ...bookingData, notes: e.target.value })} 
                       />
                     </div>
                   ) : (
                     <div className="p-4 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-600/20">
-                      <p className="text-[9px] font-black text-blue-200 uppercase mb-1">Selling to Reserved Customer:</p>
+                      <p className="text-[9px] font-black text-blue-200 uppercase mb-1">Menjual ke Pelanggan Reservasi:</p>
                       <p className="text-base font-black uppercase tracking-tight">{activeBooking.customer_name}</p>
                       <p className="text-xs font-medium opacity-80">{activeBooking.customer_phone}</p>
                     </div>
                   )}
-                  <Select label="Sales Executive" value={bookingData.sales_agent_id} onChange={e => setBookingData({ ...bookingData, sales_agent_id: e.target.value })} options={salesAgents.map(a => ({ value: a.id, label: `${a.name} [${a.sales_code}] - ${a.Office?.name || 'Unknown'}` }))} required />
+                  <Select label="Eksekutif Penjualan" value={bookingData.sales_agent_id} onChange={e => setBookingData({ ...bookingData, sales_agent_id: e.target.value })} options={salesAgents.map(a => ({ value: a.id, label: `${a.name} [${a.sales_code}] - ${a.Office?.name || 'Tidak Diketahui'}` }))} required />
                 </div>
               ) : (
                 <div className="space-y-6">
@@ -1203,7 +1203,7 @@ const Vehicles = () => {
                     <div className="space-y-4 p-5 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-[32px] border border-indigo-100 dark:border-indigo-900/30">
                       <div className="flex items-center gap-2 mb-1">
                         <FileText size={14} className="text-indigo-600" />
-                        <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Customer Legal Documents</p>
+                        <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Dokumen Legalitas Pelanggan</p>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {bookingDocumentTypes.map(type => (
@@ -1211,7 +1211,7 @@ const Vehicles = () => {
                             <label className="text-[9px] font-black text-gray-400 uppercase ml-1">{type.name}</label>
                             <label className={`flex items-center gap-2 p-2 rounded-xl border-2 border-dashed transition-all cursor-pointer ${selectedBookingDocs[type.id] ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-indigo-400'}`}>
                               {selectedBookingDocs[type.id] ? <CheckCircle size={14} /> : <Upload size={14} className="text-gray-300" />}
-                              <span className="text-[10px] font-bold truncate flex-1">{selectedBookingDocs[type.id] ? selectedBookingDocs[type.id].name : 'Upload File'}</span>
+                              <span className="text-[10px] font-bold truncate flex-1">{selectedBookingDocs[type.id] ? selectedBookingDocs[type.id].name : 'Unggah File'}</span>
                               <input type="file" className="hidden" onChange={(e) => setSelectedBookingDocs({ ...selectedBookingDocs, [type.id]: e.target.files[0] })} />
                             </label>
                           </div>
@@ -1221,7 +1221,7 @@ const Vehicles = () => {
                   )}
                   <div className="space-y-2 mt-4">
                     <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-                      <Camera size={14} className="text-blue-500" /> Proof of Delivery Photo
+                      <Camera size={14} className="text-blue-500" /> Foto Bukti Penyerahan
                     </label>
                     <div className="relative group aspect-video bg-gray-100 dark:bg-gray-900 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 hover:border-blue-500 transition-all overflow-hidden flex items-center justify-center">
                       {dealPhoto ? (
@@ -1232,7 +1232,7 @@ const Vehicles = () => {
                       ) : (
                         <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer">
                           <ImageIcon size={32} className="text-gray-300 mb-2" />
-                          <p className="text-[10px] font-black text-gray-400 uppercase">Click to upload photo with customer</p>
+                          <p className="text-[10px] font-black text-gray-400 uppercase">Klik untuk unggah foto bersama pelanggan</p>
                           <input type="file" accept="image/*" className="hidden" onChange={(e) => setDealPhoto(e.target.files[0])} />
                         </label>
                       )}
@@ -1244,12 +1244,12 @@ const Vehicles = () => {
                     localStorage.setItem('pref_print_deal', newVal);
                   }}>
                     <input type="checkbox" checked={printDealProof} onChange={() => {}} className="w-4 h-4 rounded text-blue-600" />
-                    <span className="text-[10px] font-black text-gray-400 uppercase">Print Sales Receipt after save</span>
+                    <span className="text-[10px] font-black text-gray-400 uppercase">Cetak Kwitansi Penjualan setelah simpan</span>
                   </div>
                 </div>
               )}
               <button onClick={handleConfirmSale} className={`w-full py-4 ${formStep === 1 ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500'} text-white rounded-2xl font-black transition-all active:scale-95 uppercase text-xs tracking-widest`}>
-                {formStep === 1 ? 'SAVE & CONTINUE TO UPLOAD' : 'FINISH & PRINT DOCUMENTS'}
+                {formStep === 1 ? 'SIMPAN & LANJUT KE UNGGAH' : 'SELESAI & CETAK DOKUMEN'}
               </button>
             </div>
           )}
@@ -1259,23 +1259,23 @@ const Vehicles = () => {
                 <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700">
                   <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
                     <Hash size={14} className="text-orange-500" />
-                    <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Data Verification</p>
+                    <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Verifikasi Data</p>
                   </div>
                   <div className="grid grid-cols-2 gap-y-4 gap-x-6">
                     <div className="space-y-0.5">
-                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Plate Number</p>
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Nomor Plat</p>
                       <p className="text-xs font-bold text-gray-900 dark:text-white uppercase">{editingVehicle?.plate_number}</p>
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Customer Name</p>
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Nama Pelanggan</p>
                       <p className="text-xs font-bold text-gray-900 dark:text-white uppercase truncate">{activeBooking?.customer_name || '-'}</p>
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">NIK / ID Number</p>
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">NIK / Nomor ID</p>
                       <p className="text-xs font-bold text-gray-900 dark:text-white">{activeBooking?.id_number || activeBooking?.nik || '-'}</p>
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Total Down Payment</p>
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Total Uang Muka (DP)</p>
                       <p className="text-sm font-black text-orange-600">{formatPrice(activeBooking?.down_payment || 0)}</p>
                     </div>
                   </div>
@@ -1283,18 +1283,18 @@ const Vehicles = () => {
                 <div className="space-y-2 mb-6">
                   <div className="flex items-center gap-2 ml-1">
                     <Edit size={14} className="text-blue-500" />
-                    <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Cancellation Reason / Remark</label>
-                    <span className="text-[9px] font-bold text-red-500 ml-auto uppercase opacity-60">* Mandatory</span>
+                    <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Alasan Pembatalan / Catatan</label>
+                    <span className="text-[9px] font-bold text-red-500 ml-auto uppercase opacity-60">* Wajib</span>
                   </div>
                   <textarea 
                     value={cancellationReason}
                     onChange={(e) => setCancellationReason(e.target.value)}
-                    placeholder="Type the reason why this booking is being cancelled..."
+                    placeholder="Ketik alasan mengapa pemesanan ini dibatalkan..."
                     className="w-full p-4 bg-white dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-2xl text-xs focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none min-h-[120px] resize-none shadow-sm transition-all placeholder:text-gray-300"
                   />
                 </div>
                 <div className="space-y-3">
-                  <p className="text-[10px] font-black text-orange-600 uppercase text-center tracking-[0.2em] opacity-80">Select Final Outcome</p>
+                  <p className="text-[10px] font-black text-orange-600 uppercase text-center tracking-[0.2em] opacity-80">Pilih Hasil Akhir</p>
                   <div className="grid grid-cols-1 gap-3">
                     <button 
                       onClick={() => handleCancelBooking('Cancelled')}
@@ -1303,7 +1303,7 @@ const Vehicles = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <XCircle size={16} className="text-red-600" />
-                          <p className="text-sm font-black text-red-600 uppercase tracking-tight">Cancel (No Refund)</p>
+                          <p className="text-sm font-black text-red-600 uppercase tracking-tight">Batal (Tanpa Refund)</p>
                         </div>
                         <p className="text-[10px] text-gray-500 font-bold uppercase leading-relaxed max-w-[280px]">Dana DP hangus dan menjadi komponen pendapatan kantor.</p>
                       </div>
@@ -1316,7 +1316,7 @@ const Vehicles = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <CheckCircle2 size={16} className="text-blue-600" />
-                          <p className="text-sm font-black text-blue-600 uppercase tracking-tight">Refund (Full Return)</p>
+                          <p className="text-sm font-black text-blue-600 uppercase tracking-tight">Refund (Pengembalian Penuh)</p>
                         </div>
                         <p className="text-[10px] text-gray-500 font-bold uppercase leading-relaxed max-w-[280px]">Dana DP dikembalikan sepenuhnya kepada customer.</p>
                       </div>
@@ -1327,11 +1327,11 @@ const Vehicles = () => {
               </div>
             </div>
           )}
-          <button onClick={() => setIsConfirmActionModalOpen(false)} className="w-full py-3 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all uppercase text-xs tracking-widest">BACK TO DASHBOARD</button>
+          <button onClick={() => setIsConfirmActionModalOpen(false)} className="w-full py-3 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all uppercase text-xs tracking-widest">KEMBALI KE DASHBOARD</button>
         </div>
       </Modal>
 
-      <Modal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} title="Unit Reservation Form">
+      <Modal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} title="Formulir Reservasi Unit">
         <form onSubmit={handleBookingSubmit} className="space-y-6">
           <div className="flex gap-2 px-1">
             <div className={`h-1.5 flex-1 rounded-full transition-all ${formStep >= 1 ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-800'}`} />
@@ -1339,21 +1339,21 @@ const Vehicles = () => {
           </div>
           {formStep === 1 ? (
             <div className="space-y-4">
-              <Input label="Customer Name" value={bookingData.customer_name} onChange={e => setBookingData({ ...bookingData, customer_name: e.target.value })} required />
+              <Input label="Nama Pelanggan" value={bookingData.customer_name} onChange={e => setBookingData({ ...bookingData, customer_name: e.target.value })} required />
               <div className="grid grid-cols-2 gap-4">
-                <Input label="NIK (ID Number)" placeholder="16-digit NIK" value={bookingData.nik} onChange={e => setBookingData({ ...bookingData, nik: e.target.value.replace(/\D/g, '').slice(0, 16) })} required />
-                <Input label="Phone Number" placeholder="+62..." value={bookingData.customer_phone} onChange={e => setBookingData({ ...bookingData, customer_phone: sanitizePhone(e.target.value) })} required />
+                <Input label="NIK (Nomor ID)" placeholder="16-digit NIK" value={bookingData.nik} onChange={e => setBookingData({ ...bookingData, nik: e.target.value.replace(/\D/g, '').slice(0, 16) })} required />
+                <Input label="Nomor Telepon" placeholder="+62..." value={bookingData.customer_phone} onChange={e => setBookingData({ ...bookingData, customer_phone: sanitizePhone(e.target.value) })} required />
               </div>
-              <Input label="Down Payment (DP)" value={displayCurrency(bookingData.down_payment)} onChange={e => handleCurrencyChange(setBookingData, bookingData, 'down_payment', e.target.value)} />
+              <Input label="Uang Muka (DP)" value={displayCurrency(bookingData.down_payment)} onChange={e => handleCurrencyChange(setBookingData, bookingData, 'down_payment', e.target.value)} />
               <Select
-                label="Sales Agent (Optional)"
+                label="Agen Penjualan (Opsional)"
                 value={bookingData.sales_agent_id}
                 onChange={e => setBookingData({ ...bookingData, sales_agent_id: e.target.value })}
-                options={[{ value: '', label: '-- Select Sales (Optional) --' }, ...salesAgents.map(a => ({ value: a.id, label: `${a.name} [${a.sales_code}] - ${a.Office?.name || 'Unknown'}` }))]}
+                options={[{ value: '', label: '-- Pilih Sales (Opsional) --' }, ...salesAgents.map(a => ({ value: a.id, label: `${a.name} [${a.sales_code}] - ${a.Office?.name || 'Tidak Diketahui'}` }))]}
               />
               <textarea
                 className="input min-h-[80px] p-3 text-xs"
-                placeholder="Additional notes / information..."
+                placeholder="Catatan / informasi tambahan..."
                 value={bookingData.notes}
                 onChange={e => setBookingData({ ...bookingData, notes: e.target.value })}
               />
@@ -1364,7 +1364,7 @@ const Vehicles = () => {
                 <div className="space-y-4 p-5 bg-gray-50 dark:bg-gray-800/40 rounded-[32px] border border-gray-100 dark:border-gray-800">
                   <div className="flex items-center gap-2 mb-1">
                     <FileText size={14} className="text-indigo-600" />
-                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Customer Legal Documents (Optional)</p>
+                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Dokumen Legalitas Pelanggan (Opsional)</p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {bookingDocumentTypes.map(type => (
@@ -1372,7 +1372,7 @@ const Vehicles = () => {
                         <label className="text-[9px] font-black text-gray-400 uppercase ml-1">{type.name}</label>
                         <label className={`flex items-center gap-2 p-2 rounded-xl border-2 border-dashed transition-all cursor-pointer ${selectedBookingDocs[type.id] ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-indigo-400'}`}>
                           {selectedBookingDocs[type.id] ? <CheckCircle size={14} /> : <Upload size={14} className="text-gray-300" />}
-                          <span className="text-[10px] font-bold truncate flex-1">{selectedBookingDocs[type.id] ? selectedBookingDocs[type.id].name : 'Upload File'}</span>
+                          <span className="text-[10px] font-bold truncate flex-1">{selectedBookingDocs[type.id] ? selectedBookingDocs[type.id].name : 'Unggah File'}</span>
                           <input type="file" className="hidden" onChange={(e) => setSelectedBookingDocs({ ...selectedBookingDocs, [type.id]: e.target.files[0] })} />
                         </label>
                       </div>
@@ -1387,7 +1387,7 @@ const Vehicles = () => {
                   localStorage.setItem('pref_print_receipt', newVal);
                 }}>
                   <input type="checkbox" checked={printReceipt} onChange={() => {}} className="w-4 h-4 rounded text-blue-600" />
-                  <span className="text-[9px] font-black text-gray-400 uppercase leading-none">Print Reservation Receipt</span>
+                  <span className="text-[9px] font-black text-gray-400 uppercase leading-none">Cetak Kwitansi Reservasi</span>
                 </div>
                 <div className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all cursor-pointer" onClick={() => {
                   const newVal = !printInvoice;
@@ -1395,13 +1395,13 @@ const Vehicles = () => {
                   localStorage.setItem('pref_print_invoice', newVal);
                 }}>
                   <input type="checkbox" checked={printInvoice} onChange={() => {}} className="w-4 h-4 rounded text-blue-600" />
-                  <span className="text-[9px] font-black text-gray-400 uppercase leading-none">Print Settlement Invoice</span>
+                  <span className="text-[9px] font-black text-gray-400 uppercase leading-none">Cetak Invoice Pelunasan</span>
                 </div>
               </div>
             </div>
           )}
           <button type="submit" className={`w-full py-4 ${formStep === 1 ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500'} text-white rounded-2xl font-black transition-all active:scale-95 uppercase text-xs tracking-widest`}>
-            {formStep === 1 ? 'SAVE DATA & CONTINUE TO UPLOAD' : 'FINISH & PRINT DOCUMENTS'}
+            {formStep === 1 ? 'SIMPAN DATA & LANJUT KE UNGGAH' : 'SELESAI & CETAK DOKUMEN'}
           </button>
         </form>
       </Modal>

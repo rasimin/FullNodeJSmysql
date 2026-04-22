@@ -60,8 +60,8 @@ const SalesReport = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">Sales Performance</h1>
-          <p className="text-xs text-gray-400 font-bold uppercase tracking-[0.2em] mt-1">Revenue, Units & Margin Analytics</p>
+          <h1 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">Performa Penjualan</h1>
+          <p className="text-xs text-gray-400 font-bold uppercase tracking-[0.2em] mt-1">Analisis Pendapatan, Unit & Margin</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 bg-white dark:bg-gray-900 p-2 rounded-2xl shadow-xl shadow-gray-200/50 dark:shadow-none border border-gray-100 dark:border-gray-800">
@@ -85,7 +85,7 @@ const SalesReport = () => {
             onClick={fetchReport}
             className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95"
           >
-            Filter Report
+            Filter Laporan
           </button>
         </div>
       </div>
@@ -97,7 +97,7 @@ const SalesReport = () => {
              <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md"><Package size={24} /></div>
              <TrendingUp size={20} className="text-blue-200" />
           </div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-blue-100">Total Units Sold</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-blue-100">Total Unit Terjual</p>
           <h3 className="text-4xl font-black mt-1">{agents.reduce((acc, a) => acc + a.unitsSold, 0)}</h3>
         </div>
 
@@ -106,7 +106,7 @@ const SalesReport = () => {
              <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-2xl"><DollarSign size={24} /></div>
              <ArrowUpRight size={20} className="text-emerald-500" />
           </div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total Sales Volume</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total Volume Penjualan</p>
           <h3 className="text-2xl font-black mt-1 text-gray-900 dark:text-white">{formatIDR(agents.reduce((acc, a) => acc + a.totalRevenue, 0))}</h3>
         </div>
 
@@ -115,7 +115,7 @@ const SalesReport = () => {
              <div className="p-3 bg-purple-50 dark:bg-purple-900/20 text-purple-600 rounded-2xl"><TrendingUp size={24} /></div>
              <div className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-[10px] font-black text-purple-600 uppercase">Profit</div>
           </div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Accumulated Margin</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Akumulasi Margin</p>
           <h3 className="text-2xl font-black mt-1 text-gray-900 dark:text-white">{formatIDR(agents.reduce((acc, a) => acc + a.totalMargin, 0))}</h3>
         </div>
       </div>
@@ -123,12 +123,12 @@ const SalesReport = () => {
       {/* Main Table */}
       <div className="card bg-white dark:bg-gray-900 p-0 overflow-hidden border-none shadow-2xl shadow-gray-200/50 dark:shadow-none">
         <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
-           <h2 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">Agent Leaderboard</h2>
+           <h2 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">Peringkat Agen</h2>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
               <input 
                 type="text" 
-                placeholder="Search Agent..." 
+                placeholder="Cari Agen..." 
                 className="pl-10 pr-4 py-2 bg-gray-50 dark:bg-white/5 rounded-xl text-[10px] font-black uppercase text-gray-700 dark:text-gray-200 outline-none border border-transparent focus:border-blue-500 transition-all w-48"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -140,11 +140,11 @@ const SalesReport = () => {
           <table className="w-full text-left">
              <thead className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
                 <tr>
-                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Sales Executive</th>
-                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Units</th>
-                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Sales Amount</th>
-                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Net Margin</th>
-                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">Details</th>
+                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Eksekutif Sales</th>
+                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Unit</th>
+                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Jumlah Penjualan</th>
+                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Margin Bersih</th>
+                   <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">Detail</th>
                 </tr>
              </thead>
              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -192,15 +192,15 @@ const SalesReport = () => {
       </div>
 
       {/* Details Modal */}
-      <Modal isOpen={!!selectedAgent} onClose={() => setSelectedAgent(null)} title={`${selectedAgent?.name}'s Sales Details`} wide>
+      <Modal isOpen={!!selectedAgent} onClose={() => setSelectedAgent(null)} title={`Detail Penjualan ${selectedAgent?.name}`} wide>
          <div className="min-h-[400px]">
             {loadingDetails ? (
-              <div className="flex items-center justify-center h-64 text-gray-400 font-bold uppercase text-xs animate-pulse">Loading Inventory Details...</div>
+              <div className="flex items-center justify-center h-64 text-gray-400 font-bold uppercase text-xs animate-pulse">Memuat Detail Inventaris...</div>
             ) : (
               <div className="space-y-4">
                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div className="p-4 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/5">
-                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Total Sales</p>
+                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Total Penjualan</p>
                         <p className="text-sm font-black text-gray-900 dark:text-white mt-1">{formatIDR(selectedAgent?.totalRevenue)}</p>
                     </div>
                     <div className="p-4 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/5">
@@ -213,9 +213,9 @@ const SalesReport = () => {
                     <table className="w-full text-left">
                        <thead className="bg-gray-50 dark:bg-gray-800/50">
                           <tr>
-                             <th className="px-4 py-3 text-[9px] font-black text-gray-400 uppercase">Unit Details</th>
-                             <th className="px-4 py-3 text-[9px] font-black text-gray-400 uppercase">Date</th>
-                             <th className="px-4 py-3 text-[9px] font-black text-gray-400 uppercase">Revenue</th>
+                             <th className="px-4 py-3 text-[9px] font-black text-gray-400 uppercase">Detail Unit</th>
+                             <th className="px-4 py-3 text-[9px] font-black text-gray-400 uppercase">Tanggal</th>
+                             <th className="px-4 py-3 text-[9px] font-black text-gray-400 uppercase">Pendapatan</th>
                              <th className="px-4 py-3 text-[9px] font-black text-gray-400 uppercase">Margin</th>
                           </tr>
                        </thead>
@@ -235,7 +235,7 @@ const SalesReport = () => {
                           ))}
                           {agentDetails.length === 0 && (
                             <tr>
-                              <td colSpan="4" className="px-4 py-12 text-center text-gray-400 font-bold uppercase">No records found for this period</td>
+                              <td colSpan="4" className="px-4 py-12 text-center text-gray-400 font-bold uppercase">Tidak ada catatan untuk periode ini</td>
                             </tr>
                           )}
                        </tbody>

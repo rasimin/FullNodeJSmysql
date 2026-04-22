@@ -85,7 +85,7 @@ const Transactions = () => {
       setTotalPages(r.data.total_pages || 1);
     } catch (e) {
       console.error('Fetch transactions error:', e);
-      notify('error', 'Failed to load transaction data');
+      notify('error', 'Gagal memuat data transaksi');
     } finally {
       setLoading(false);
     }
@@ -108,7 +108,7 @@ const Transactions = () => {
   const handleUploadDocument = async (bookingId, typeId, file) => {
     if (!file) return;
     setIsUploadingDoc(true);
-    notify('loading', 'Uploading document...');
+    notify('loading', 'Mengunggah dokumen...');
     try {
       const formData = new FormData();
       formData.append('document', file);
@@ -116,11 +116,11 @@ const Transactions = () => {
       await api.post(`/documents/booking/${bookingId}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      notify('success', 'Document uploaded successfully');
+      notify('success', 'Dokumen berhasil diunggah');
       fetchBookingDocuments(bookingId);
     } catch (err) {
       console.error('Upload doc error:', err);
-      notify('error', 'Failed to upload document');
+      notify('error', 'Gagal mengunggah dokumen');
     } finally {
       setIsUploadingDoc(false);
     }
@@ -128,14 +128,14 @@ const Transactions = () => {
 
   const handleDeleteDocument = async (bookingId, docId) => {
     if (!window.confirm('Hapus dokumen ini?')) return;
-    notify('loading', 'Deleting document...');
+    notify('loading', 'Menghapus dokumen...');
     try {
       await api.delete(`/documents/booking/${bookingId}/${docId}`);
-      notify('success', 'Document deleted');
+      notify('success', 'Dokumen dihapus');
       fetchBookingDocuments(bookingId);
     } catch (err) {
       console.error('Delete doc error:', err);
-      notify('error', 'Failed to delete document');
+      notify('error', 'Gagal menghapus dokumen');
     }
   };
 
@@ -153,7 +153,7 @@ const Transactions = () => {
   };
 
   const handlePrintDoc = async (bookingId, type, openModal = true) => {
-    notify('loading', `Preparing document...`);
+    notify('loading', `Menyiapkan dokumen...`);
     try {
       let url = '';
       let filename = '';
@@ -163,15 +163,15 @@ const Transactions = () => {
 
       if (type === 'receipt' || type === 'invoice') {
         const docType = type === 'receipt' ? 'receipt' : 'dp-invoice';
-        label = type === 'receipt' ? 'Reservation Receipt' : 'Settlement Invoice';
-        filename = type === 'receipt' ? `Reservation_Receipt${customerSuffix}.pdf` : `Settlement_Invoice${customerSuffix}.pdf`;
+        label = type === 'receipt' ? 'Kwitansi Reservasi' : 'Invoice Pelunasan';
+        filename = type === 'receipt' ? `Kwitansi_Reservasi${customerSuffix}.pdf` : `Invoice_Pelunasan${customerSuffix}.pdf`;
 
         const res = await api.get(`/export/bookings/${bookingId}?type=${docType}`, { responseType: 'blob' });
         url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
       } else if (type === 'sale-invoice' || type === 'deal-proof') {
         const isProof = type === 'deal-proof';
-        label = isProof ? 'Sales Receipt' : 'Final Settlement Invoice';
-        filename = isProof ? `Sales_Receipt${customerSuffix}.pdf` : `Final_Settlement_Invoice${customerSuffix}.pdf`;
+        label = isProof ? 'Kwitansi Penjualan' : 'Invoice Pelunasan Akhir';
+        filename = isProof ? `Kwitansi_Penjualan${customerSuffix}.pdf` : `Invoice_Pelunasan_Akhir${customerSuffix}.pdf`;
 
         const res = await api.get(`/export/sales/${bookingId}/invoice${isProof ? '?isProof=true' : ''}`, { responseType: 'blob' });
         url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
@@ -188,14 +188,14 @@ const Transactions = () => {
       }
     } catch (e) {
       console.error('Print error:', e);
-      notify('error', 'Failed to generate document');
+      notify('error', 'Gagal membuat dokumen');
       return null;
     }
   };
 
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
-    notify('loading', 'Updating booking details...');
+    notify('loading', 'Memperbarui detail reservasi...');
     try {
       const cleanData = {
         ...bookingData,
@@ -204,7 +204,7 @@ const Transactions = () => {
 
       await api.put(`/bookings/${bookingData.id}`, cleanData);
 
-      notify('success', 'Booking updated successfully!');
+      notify('success', 'Reservasi berhasil diperbarui!');
       setIsBookingModalOpen(false);
       fetchTransactions();
 
@@ -225,7 +225,7 @@ const Transactions = () => {
 
     } catch (err) {
       console.error('Booking Update Error:', err);
-      notify('error', err.response?.data?.message || 'Update failed');
+      notify('error', err.response?.data?.message || 'Pembaruan gagal');
     }
   };
 
@@ -267,50 +267,50 @@ const Transactions = () => {
 
   const handleCancelBooking = async (type) => {
     if (!cancellationReason.trim()) {
-        notify('error', 'Please provide a reason for cancellation');
+        notify('error', 'Silakan berikan alasan pembatalan');
         return;
     }
-    notify('loading', 'Processing cancellation...');
+    notify('loading', 'Memproses pembatalan...');
     try {
       await api.put(`/bookings/${selectedTransaction.id}/cancel`, { 
         type,
         remark: cancellationReason
       });
-      notify('success', 'Booking cancelled successfully');
+      notify('success', 'Reservasi berhasil dibatalkan');
       setIsCancelModalOpen(false);
       setCancellationReason('');
       fetchTransactions();
     } catch (err) {
       console.error('Cancel booking error:', err);
-      notify('error', err.response?.data?.message || 'Failed to cancel booking');
+      notify('error', err.response?.data?.message || 'Gagal membatalkan reservasi');
     }
   };
 
   const handleDelete = async () => {
     if (!selectedTransaction) return;
-    notify('loading', 'Moving transaction to trash...');
+    notify('loading', 'Memindahkan transaksi ke tempat sampah...');
     try {
       await api.delete(`/bookings/${selectedTransaction.id}`);
-      notify('success', 'Transaction moved to trash');
+      notify('success', 'Transaksi dipindahkan ke tempat sampah');
       setIsDeleteModalOpen(false);
       fetchTransactions();
     } catch (e) {
       console.error('Delete error:', e);
-      notify('error', 'Failed to delete transaction');
+      notify('error', 'Gagal menghapus transaksi');
     }
   };
 
   const getStatusBadge = (status) => {
-    if (!status) return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-gray-50 text-gray-400 dark:bg-gray-800 border border-gray-100 dark:border-gray-800">No Status</span>;
+    if (!status) return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-gray-50 text-gray-400 dark:bg-gray-800 border border-gray-100 dark:border-gray-800">Tanpa Status</span>;
 
     const s = status.toLowerCase();
     switch (s) {
       case 'active':
         return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-100 dark:border-blue-800">Booking</span>;
       case 'sold':
-        return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400 border border-green-100 dark:border-green-800">Sold / Deal</span>;
+        return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400 border border-green-100 dark:border-green-800">Terjual / Deal</span>;
       case 'cancelled':
-        return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 border border-red-100 dark:border-red-800">Cancelled (Income)</span>;
+        return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 border border-red-100 dark:border-red-800">Dibatalkan (Pendapatan)</span>;
       case 'refunded':
       case 'refund':
         return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400 border border-orange-100 dark:border-orange-800">Refunded</span>;
@@ -338,13 +338,13 @@ const Transactions = () => {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Transactions & Bookings</h1>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Financial History & Documents</p>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Transaksi & Booking</h1>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Riwayat Keuangan & Dokumen</p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
           <ViewSwitcher viewMode={viewMode} setViewMode={setViewMode} />
           <button className="btn gap-2 text-xs h-11 px-6 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-            <FileSpreadsheet size={18} className="text-green-600" /> Export Excel
+            <FileSpreadsheet size={18} className="text-green-600" /> Ekspor Excel
           </button>
         </div>
       </div>
@@ -352,11 +352,11 @@ const Transactions = () => {
       {/* Filters */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
         <div className="lg:col-span-4 relative">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Search Transaction</label>
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Cari Transaksi</label>
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
-              type="text" placeholder="Search ID, customer or unit..."
+              type="text" placeholder="Cari ID, pelanggan atau unit..."
               className="input pl-10 h-11 text-xs"
               value={search} onChange={(e) => setSearch(e.target.value)}
             />
@@ -370,17 +370,17 @@ const Transactions = () => {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            <option value="">All Status</option>
-            <option value="Active">Active Booking</option>
-            <option value="Sold">Sold / Deal</option>
-            <option value="Cancelled">Cancelled</option>
+            <option value="">Semua Status</option>
+            <option value="Active">Booking Aktif</option>
+            <option value="Sold">Terjual / Deal</option>
+            <option value="Cancelled">Dibatalkan</option>
             <option value="Refunded">Refunded</option>
           </select>
         </div>
 
         <div className="lg:col-span-4 grid grid-cols-2 gap-2">
           <div>
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Start Date</label>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Tanggal Mulai</label>
             <div className="relative group">
               <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-focus-within:text-blue-500 transition-colors" />
               <input 
@@ -393,7 +393,7 @@ const Transactions = () => {
             </div>
           </div>
           <div>
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">End Date</label>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Tanggal Akhir</label>
             <div className="relative group">
               <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-focus-within:text-blue-500 transition-colors" />
               <input 
@@ -412,7 +412,7 @@ const Transactions = () => {
             onClick={() => setDateRange({ start: '', end: '' })}
             className="w-full h-11 bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
           >
-            Clear Date
+            Hapus Tanggal
           </button>
         </div>
       </div>
@@ -422,14 +422,14 @@ const Transactions = () => {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
             <div className="w-10 h-10 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
-            <p className="mt-4 text-xs font-black text-gray-400 uppercase tracking-widest">Refreshing transactions...</p>
+            <p className="mt-4 text-xs font-black text-gray-400 uppercase tracking-widest">Memperbarui transaksi...</p>
           </div>
         ) : transactions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
             <div className="w-16 h-16 bg-gray-50 dark:bg-gray-900 rounded-full flex items-center justify-center text-gray-300 mb-4">
               <Search size={32} />
             </div>
-            <p className="text-xs font-black text-gray-400 uppercase tracking-widest">No transactions found</p>
+            <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Transaksi tidak ditemukan</p>
           </div>
         ) : viewMode === 'table' ? (
           <div className="card overflow-hidden border-none shadow-xl shadow-gray-200/50 dark:shadow-none">
@@ -439,24 +439,24 @@ const Transactions = () => {
                   <tr className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
                     <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap cursor-pointer hover:text-blue-600 transition-colors group" onClick={() => toggleSort('booking_date')}>
                       <div className="flex items-center gap-2">
-                        Booking Date <ArrowUpDown size={10} className={sort.column === 'booking_date' ? 'text-blue-500' : 'text-gray-300 opacity-0 group-hover:opacity-100'} />
+                        Tgl Booking <ArrowUpDown size={10} className={sort.column === 'booking_date' ? 'text-blue-500' : 'text-gray-300 opacity-0 group-hover:opacity-100'} />
                       </div>
                     </th>
                     <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap cursor-pointer hover:text-blue-600 transition-colors group" onClick={() => toggleSort('updatedAt')}>
                       <div className="flex items-center gap-2">
-                        Date Modif <ArrowUpDown size={10} className={sort.column === 'updatedAt' ? 'text-blue-500' : 'text-gray-300 opacity-0 group-hover:opacity-100'} />
+                        Tgl Modif <ArrowUpDown size={10} className={sort.column === 'updatedAt' ? 'text-blue-500' : 'text-gray-300 opacity-0 group-hover:opacity-100'} />
                       </div>
                     </th>
                     <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest cursor-pointer hover:text-blue-600 transition-colors group" onClick={() => toggleSort('customer_name')}>
                       <div className="flex items-center gap-2">
-                        Customer <ArrowUpDown size={10} className={sort.column === 'customer_name' ? 'text-blue-500' : 'text-gray-300 opacity-0 group-hover:opacity-100'} />
+                        Pelanggan <ArrowUpDown size={10} className={sort.column === 'customer_name' ? 'text-blue-500' : 'text-gray-300 opacity-0 group-hover:opacity-100'} />
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Unit Detail</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Office / Sales</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Pricing</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Detail Unit</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Kantor / Sales</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Harga</th>
                     <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right whitespace-nowrap">Print Out</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right whitespace-nowrap">Cetak</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -471,7 +471,7 @@ const Transactions = () => {
                               <p className="text-[9px] text-gray-300 font-bold uppercase truncate max-w-[80px]">ID: {t.id.split('-')[0]}</p>
                             </div>
                             <div className="flex gap-1 transition-opacity">
-                              <button onClick={() => { setSelectedTransaction(t); setIsDeleteModalOpen(true); }} className="btn-delete !p-1" title="Trash"><Trash2 size={12} /></button>
+                              <button onClick={() => { setSelectedTransaction(t); setIsDeleteModalOpen(true); }} className="btn-delete !p-1" title="Hapus"><Trash2 size={12} /></button>
                               {s === 'active' && (
                                 <>
                                   <button onClick={() => openBookingModal(t)} className="btn-edit !p-1" title="Edit"><Edit size={12} /></button>
@@ -482,7 +482,7 @@ const Transactions = () => {
                                       setIsCancelModalOpen(true); 
                                     }}
                                     className="btn-icon !p-1 text-red-500 hover:bg-red-50" 
-                                    title="Cancel Booking"
+                                    title="Batalkan Booking"
                                   >
                                     <XCircle size={12} />
                                   </button>
@@ -521,7 +521,7 @@ const Transactions = () => {
                           <div className="space-y-1">
                             <div className="flex items-center gap-1.5">
                               <Building2 size={12} className="text-gray-400" />
-                              <p className="text-xs font-black text-gray-700 dark:text-gray-300 uppercase">{t.Office?.name || 'Central Office'}</p>
+                              <p className="text-xs font-black text-gray-700 dark:text-gray-300 uppercase">{t.Office?.name || 'Kantor Pusat'}</p>
                             </div>
                             {t.salesAgent && (
                               <div className="flex items-center gap-1.5">
@@ -551,11 +551,11 @@ const Transactions = () => {
                           <div className="flex justify-end gap-1.5">
                             {(s === 'active' || s === 'sold') && (
                               <>
-                                <button onClick={() => handlePrintDoc(t.id, 'receipt')} className="btn-icon hover:text-indigo-600 hover:bg-indigo-50" title="Print Receipt"><Printer size={12} /></button>
-                                <button onClick={() => handlePrintDoc(t.id, 'sale-invoice')} className="btn-icon hover:text-amber-600 hover:bg-amber-50" title="Print Invoice"><FileSpreadsheet size={12} /></button>
+                                <button onClick={() => handlePrintDoc(t.id, 'receipt')} className="btn-icon hover:text-indigo-600 hover:bg-indigo-50" title="Cetak Kwitansi"><Printer size={12} /></button>
+                                <button onClick={() => handlePrintDoc(t.id, 'sale-invoice')} className="btn-icon hover:text-amber-600 hover:bg-amber-50" title="Cetak Invoice"><FileSpreadsheet size={12} /></button>
                               </>
                             )}
-                            {s === 'sold' && <button onClick={() => handlePrintDoc(t.id, 'deal-proof')} className="btn-icon hover:text-green-600 hover:bg-green-50" title="Print Sales Receipt"><CheckCircle size={12} /></button>}
+                            {s === 'sold' && <button onClick={() => handlePrintDoc(t.id, 'deal-proof')} className="btn-icon hover:text-green-600 hover:bg-green-50" title="Cetak Kwitansi Penjualan"><CheckCircle size={12} /></button>}
                           </div>
                         </td>
                       </tr>
@@ -583,7 +583,7 @@ const Transactions = () => {
                     {/* Header: Date & Status */}
                     <div className="p-4 border-b border-gray-50 dark:border-gray-800 flex justify-between items-start bg-gray-50/50 dark:bg-gray-800/30">
                       <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase leading-none mb-1">Booking Date</p>
+                        <p className="text-[10px] font-black text-gray-400 uppercase leading-none mb-1">Tgl Booking</p>
                         <p className="text-sm font-bold text-gray-900 dark:text-white">{new Date(t.booking_date).toLocaleDateString('id-ID')}</p>
                       </div>
                       {getStatusBadge(t.status)}
@@ -609,7 +609,7 @@ const Transactions = () => {
                       <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-800">
                         <div className="flex justify-between items-start mb-2">
                           <div>
-                            <p className="text-[10px] font-black text-gray-400 uppercase leading-none mb-1">Unit Detail</p>
+                            <p className="text-[10px] font-black text-gray-400 uppercase leading-none mb-1">Detail Unit</p>
                             <p className="text-xs font-bold text-gray-900 dark:text-white uppercase">{t.Vehicle?.brand} {t.Vehicle?.model}</p>
                           </div>
                           <button 
@@ -621,11 +621,11 @@ const Transactions = () => {
                         </div>
                         <div className="flex justify-between items-end pt-2 border-t border-gray-200/50 dark:border-gray-700/50">
                           <div>
-                            <p className="text-[9px] font-black text-blue-400 uppercase leading-none">Sale Price</p>
+                            <p className="text-[9px] font-black text-blue-400 uppercase leading-none">Harga Jual</p>
                             <p className="text-sm font-black text-blue-600 dark:text-blue-400">Rp. {formatNumber(t.Vehicle?.price || 0)}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-[9px] font-black text-gray-400 uppercase leading-none">Down Payment</p>
+                            <p className="text-[9px] font-black text-gray-400 uppercase leading-none">Uang Muka (DP)</p>
                             <p className="text-xs font-bold text-gray-700 dark:text-gray-300">{formatPrice(t.down_payment)}</p>
                           </div>
                         </div>
@@ -635,7 +635,7 @@ const Transactions = () => {
                       <div className="flex justify-between items-center px-1">
                         <div className="flex items-center gap-1.5">
                           <Building2 size={12} className="text-gray-400" />
-                          <p className="text-[10px] font-bold text-gray-500 uppercase">{t.Office?.name || 'Central Office'}</p>
+                          <p className="text-[10px] font-bold text-gray-500 uppercase">{t.Office?.name || 'Kantor Pusat'}</p>
                         </div>
                         {t.salesAgent ? (
                           <div className="flex items-center gap-1.5 px-2 py-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-xl border border-blue-100 dark:border-blue-800/50 min-w-0">
@@ -647,7 +647,7 @@ const Transactions = () => {
                         ) : (
                           <div className="flex items-center gap-1.5 px-2 py-1.5 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800/50">
                             <User size={12} className="text-gray-400 shrink-0" />
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">No Sales Agent</p>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Tidak Ada Agen Sales</p>
                           </div>
                         )}
                       </div>
@@ -655,7 +655,7 @@ const Transactions = () => {
                       {/* Cancellation Reason */}
                       {(['cancelled', 'refunded', 'refund'].includes(t.status?.toLowerCase())) && t.cancellation_reason && (
                         <div className="px-4 py-2 bg-red-50/50 dark:bg-red-900/10 border-t border-red-50 dark:border-red-900/20">
-                          <p className="text-[9px] font-black text-red-600 uppercase tracking-widest mb-0.5">Cancellation Remark</p>
+                          <p className="text-[9px] font-black text-red-600 uppercase tracking-widest mb-0.5">Catatan Pembatalan</p>
                           <p className="text-[11px] text-gray-700 dark:text-gray-300 italic">"{t.cancellation_reason}"</p>
                         </div>
                       )}
@@ -664,7 +664,7 @@ const Transactions = () => {
                     {/* Footer: All Actions */}
                     <div className="p-2.5 px-4 bg-gray-50 dark:bg-gray-800/20 border-t border-gray-50 dark:border-gray-800 flex justify-between items-center">
                       <div className="flex gap-1.5">
-                        <button onClick={() => { setSelectedTransaction(t); setIsDeleteModalOpen(true); }} className="btn-delete !bg-white dark:!bg-gray-800 !p-1.5 shadow-sm" title="Trash"><Trash2 size={14} /></button>
+                        <button onClick={() => { setSelectedTransaction(t); setIsDeleteModalOpen(true); }} className="btn-delete !bg-white dark:!bg-gray-800 !p-1.5 shadow-sm" title="Hapus"><Trash2 size={14} /></button>
                         {s === 'active' && (
                           <>
                             <button onClick={() => openBookingModal(t)} className="btn-edit !bg-white dark:!bg-gray-800 !p-1.5 shadow-sm" title="Edit"><Edit size={14} /></button>
@@ -672,18 +672,18 @@ const Transactions = () => {
                                setSelectedTransaction(t); 
                                setCancellationReason(''); // Reset
                                setIsCancelModalOpen(true); 
-                             }} className="btn-icon !bg-white dark:!bg-gray-800 !p-1.5 !text-red-500 hover:!bg-red-50 shadow-sm" title="Cancel Booking"><XCircle size={14} /></button>
+                             }} className="btn-icon !bg-white dark:!bg-gray-800 !p-1.5 !text-red-500 hover:!bg-red-50 shadow-sm" title="Batalkan Booking"><XCircle size={14} /></button>
                           </>
                         )}
                       </div>
                       <div className="flex gap-1">
                         {(s === 'active' || s === 'sold') && (
                           <>
-                            <button onClick={() => handlePrintDoc(t.id, 'receipt')} className="p-1.5 bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-lg hover:bg-indigo-600 dark:hover:bg-indigo-600 hover:text-white transition-all shadow-sm" title="Print Reservation Receipt"><Printer size={14} /></button>
-                            <button onClick={() => handlePrintDoc(t.id, 'sale-invoice')} className="p-1.5 bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 rounded-lg hover:bg-amber-600 dark:hover:bg-amber-600 hover:text-white transition-all shadow-sm" title="Print Final Invoice"><FileSpreadsheet size={14} /></button>
+                            <button onClick={() => handlePrintDoc(t.id, 'receipt')} className="p-1.5 bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-lg hover:bg-indigo-600 dark:hover:bg-indigo-600 hover:text-white transition-all shadow-sm" title="Cetak Kwitansi Reservasi"><Printer size={14} /></button>
+                            <button onClick={() => handlePrintDoc(t.id, 'sale-invoice')} className="p-1.5 bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 rounded-lg hover:bg-amber-600 dark:hover:bg-amber-600 hover:text-white transition-all shadow-sm" title="Cetak Invoice Akhir"><FileSpreadsheet size={14} /></button>
                           </>
                         )}
-                        {s === 'sold' && <button onClick={() => handlePrintDoc(t.id, 'deal-proof')} className="p-1.5 bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400 rounded-lg hover:bg-green-600 dark:hover:bg-green-600 hover:text-white transition-all shadow-sm" title="Print Sales Receipt"><CheckCircle2 size={14} /></button>}
+                        {s === 'sold' && <button onClick={() => handlePrintDoc(t.id, 'deal-proof')} className="p-1.5 bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400 rounded-lg hover:bg-green-600 dark:hover:bg-green-600 hover:text-white transition-all shadow-sm" title="Cetak Kwitansi Penjualan"><CheckCircle2 size={14} /></button>}
                       </div>
                     </div>
                   </motion.div>
@@ -700,7 +700,7 @@ const Transactions = () => {
       <Modal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        title="Move to Trash"
+        title="Pindahkan ke Tempat Sampah"
       >
         <div className="space-y-6 pt-2">
           <div className="flex flex-col items-center gap-4 text-center">
@@ -708,16 +708,16 @@ const Transactions = () => {
               <Trash2 size={32} />
             </div>
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Are you sure you want to move this transaction to trash?</p>
-              <p className="text-xs font-bold text-gray-400 mt-1 uppercase">Transaction ID: {selectedTransaction?.id.split('-')[0]}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">Apakah Anda yakin ingin memindahkan transaksi ini ke tempat sampah?</p>
+              <p className="text-xs font-bold text-gray-400 mt-1 uppercase">ID Transaksi: {selectedTransaction?.id.split('-')[0]}</p>
             </div>
           </div>
 
           <div className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800">
-            <p className="text-[10px] font-black text-gray-400 uppercase mb-2">Transaction Details:</p>
+            <p className="text-[10px] font-black text-gray-400 uppercase mb-2">Detail Transaksi:</p>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-[10px] text-gray-400 font-bold uppercase">Customer</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase">Pelanggan</p>
                 <p className="text-xs font-black text-gray-900 dark:text-white uppercase">{selectedTransaction?.customer_name}</p>
               </div>
               <div>
@@ -732,13 +732,13 @@ const Transactions = () => {
               onClick={() => setIsDeleteModalOpen(false)}
               className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all uppercase text-xs tracking-widest"
             >
-              Cancel
+              Batal
             </button>
             <button
               onClick={handleDelete}
               className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold shadow-lg shadow-red-500/20 transition-all active:scale-95 uppercase text-xs tracking-widest"
             >
-              Move to Trash
+              Pindahkan ke Tempat Sampah
             </button>
           </div>
         </div>
@@ -748,7 +748,7 @@ const Transactions = () => {
       <Modal
         isOpen={isCancelModalOpen}
         onClose={() => setIsCancelModalOpen(false)}
-        title="Transaction Cancellation"
+        title="Pembatalan Transaksi"
       >
         <div className="space-y-6 pt-2">
           <div className="flex flex-col items-center gap-4 text-center">
@@ -756,25 +756,25 @@ const Transactions = () => {
               <XCircle size={32} />
             </div>
             <div className="w-full">
-              <p className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight mb-4">Transaction Verification</p>
+              <p className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tight mb-4">Verifikasi Transaksi</p>
               
               {/* Verification Card */}
               <div className="p-5 bg-gray-50 dark:bg-gray-800/50 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-inner mb-6">
                 <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-left">
                   <div className="space-y-0.5">
-                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Plate Number</p>
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Nomor Plat</p>
                     <p className="text-xs font-bold text-gray-900 dark:text-white uppercase">{selectedTransaction?.Vehicle?.plate_number}</p>
                   </div>
                   <div className="space-y-0.5">
-                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Customer Name</p>
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Nama Pelanggan</p>
                     <p className="text-xs font-bold text-gray-900 dark:text-white uppercase truncate">{selectedTransaction?.customer_name}</p>
                   </div>
                   <div className="space-y-0.5">
-                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">NIK / ID Number</p>
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">NIK / Nomor ID</p>
                     <p className="text-xs font-bold text-gray-900 dark:text-white">{selectedTransaction?.id_number || selectedTransaction?.nik || '-'}</p>
                   </div>
                   <div className="space-y-0.5">
-                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Down Payment</p>
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Uang Muka (DP)</p>
                     <p className="text-sm font-black text-orange-600">{formatPrice(selectedTransaction?.down_payment || 0)}</p>
                   </div>
                 </div>
@@ -784,20 +784,20 @@ const Transactions = () => {
               <div className="space-y-2 mb-6 text-left px-1">
                 <div className="flex items-center gap-2">
                   <Edit size={14} className="text-blue-500" />
-                  <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Cancellation Reason / Remark</label>
-                  <span className="text-[9px] font-bold text-red-500 ml-auto opacity-60">* REQUIRED</span>
+                  <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Alasan Pembatalan / Catatan</label>
+                  <span className="text-[9px] font-bold text-red-500 ml-auto opacity-60">* WAJIB</span>
                 </div>
                 <textarea 
                   value={cancellationReason}
                   onChange={(e) => setCancellationReason(e.target.value)}
-                  placeholder="Type the official reason for cancellation here..."
+                  placeholder="Ketik alasan resmi pembatalan di sini..."
                   className="w-full p-4 bg-white dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-2xl text-xs focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none min-h-[120px] resize-none shadow-sm transition-all"
                 />
               </div>
 
               {/* Action Buttons */}
               <div className="space-y-3">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Select Process Method</p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Pilih Metode Proses</p>
                 <div className="grid grid-cols-1 gap-3">
                   <button 
                     onClick={() => handleCancelBooking('Cancelled')}
@@ -806,7 +806,7 @@ const Transactions = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <XCircle size={16} className="text-red-600" />
-                        <p className="text-sm font-black text-red-600 uppercase tracking-tight">Cancel (No Refund)</p>
+                        <p className="text-sm font-black text-red-600 uppercase tracking-tight">Batal (Tanpa Refund)</p>
                       </div>
                       <p className="text-[10px] text-gray-500 font-bold uppercase leading-relaxed max-w-[280px]">Dana DP hangus dan menjadi pendapatan kantor.</p>
                     </div>
@@ -820,7 +820,7 @@ const Transactions = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <CheckCircle2 size={16} className="text-blue-600" />
-                        <p className="text-sm font-black text-blue-600 uppercase tracking-tight">Refund (Full Return)</p>
+                        <p className="text-sm font-black text-blue-600 uppercase tracking-tight">Refund (Pengembalian Penuh)</p>
                       </div>
                       <p className="text-[10px] text-gray-500 font-bold uppercase leading-relaxed max-w-[280px]">Dana DP dikembalikan sepenuhnya ke customer.</p>
                     </div>
@@ -836,40 +836,40 @@ const Transactions = () => {
       </Modal>
 
       {/* Booking Form Modal */}
-      <Modal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} title="Update Reservation Details">
+      <Modal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} title="Perbarui Detail Reservasi">
         {/* Tab Switcher */}
         <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-2xl mb-6 w-fit">
           <button
             onClick={() => setActiveTab('main')}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'main' ? 'bg-white dark:bg-gray-700 text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
           >
-            <Tag size={14} /> Reservation Info
+            <Tag size={14} /> Info Reservasi
           </button>
           <button
             onClick={() => setActiveTab('documents')}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'documents' ? 'bg-white dark:bg-gray-700 text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
           >
-            <FileText size={14} /> Legal Documents
+            <FileText size={14} /> Dokumen Legal
           </button>
         </div>
 
         {activeTab === 'main' ? (
           <form onSubmit={handleBookingSubmit} className="space-y-4">
-            <Input label="Customer Name" value={bookingData.customer_name} onChange={e => setBookingData({ ...bookingData, customer_name: e.target.value })} required />
+            <Input label="Nama Pelanggan" value={bookingData.customer_name} onChange={e => setBookingData({ ...bookingData, customer_name: e.target.value })} required />
             <div className="grid grid-cols-2 gap-4">
-              <Input label="NIK (ID Number)" placeholder="16-digit NIK" value={bookingData.nik || ''} onChange={e => setBookingData({ ...bookingData, nik: e.target.value.replace(/\D/g, '').slice(0, 16) })} required />
-              <Input label="Phone Number" placeholder="+62..." value={bookingData.customer_phone} onChange={e => setBookingData({ ...bookingData, customer_phone: e.target.value })} required />
+              <Input label="NIK (Nomor ID)" placeholder="16-digit NIK" value={bookingData.nik || ''} onChange={e => setBookingData({ ...bookingData, nik: e.target.value.replace(/\D/g, '').slice(0, 16) })} required />
+              <Input label="Nomor Telepon" placeholder="+62..." value={bookingData.customer_phone} onChange={e => setBookingData({ ...bookingData, customer_phone: e.target.value })} required />
             </div>
-            <Input label="Down Payment (DP)" value={displayCurrency(bookingData.down_payment)} onChange={e => handleCurrencyChange(setBookingData, bookingData, 'down_payment', e.target.value)} />
+            <Input label="Uang Muka (DP)" value={displayCurrency(bookingData.down_payment)} onChange={e => handleCurrencyChange(setBookingData, bookingData, 'down_payment', e.target.value)} />
             <Select
               label="Sales Agent (Optional)"
               value={bookingData.sales_agent_id}
               onChange={e => setBookingData({ ...bookingData, sales_agent_id: e.target.value })}
-              options={[{ value: '', label: '-- Select Sales (Optional) --' }, ...salesAgents.map(a => ({ value: a.id, label: `${a.name} [${a.sales_code}] - ${a.Office?.name || 'Unknown'}` }))]}
+              options={[{ value: '', label: '-- Pilih Sales (Opsional) --' }, ...salesAgents.map(a => ({ value: a.id, label: `${a.name} [${a.sales_code}] - ${a.Office?.name || 'Tidak Diketahui'}` }))]}
             />
             <textarea
               className="input min-h-[80px] p-3 text-xs"
-              placeholder="Additional notes / information..."
+              placeholder="Catatan / informasi tambahan..."
               value={bookingData.notes || ''}
               onChange={e => setBookingData({ ...bookingData, notes: e.target.value })}
             />
@@ -881,7 +881,7 @@ const Transactions = () => {
                 localStorage.setItem('pref_print_receipt', newVal);
               }}>
                 <input type="checkbox" checked={printReceipt} readOnly className="w-4 h-4 rounded text-blue-600" />
-                <span className="text-[9px] font-black text-gray-400 uppercase leading-none">Print Reservation Receipt</span>
+                <span className="text-[9px] font-black text-gray-400 uppercase leading-none">Cetak Kwitansi Reservasi</span>
               </div>
               <div className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all cursor-pointer" onClick={() => {
                 const newVal = !printInvoice;
@@ -889,15 +889,15 @@ const Transactions = () => {
                 localStorage.setItem('pref_print_invoice', newVal);
               }}>
                 <input type="checkbox" checked={printInvoice} readOnly className="w-4 h-4 rounded text-blue-600" />
-                <span className="text-[9px] font-black text-gray-400 uppercase leading-none">Print Settlement Invoice</span>
+                <span className="text-[9px] font-black text-gray-400 uppercase leading-none">Cetak Invoice Pelunasan</span>
               </div>
             </div>
 
-            <button type="submit" className="btn-primary w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-black border-none uppercase text-xs font-black tracking-widest shadow-xl">UPDATE RESERVATION</button>
+            <button type="submit" className="btn-primary w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-black border-none uppercase text-xs font-black tracking-widest shadow-xl">PERBARUI RESERVASI</button>
           </form>
         ) : (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="flex items-center gap-3"><div className="w-1 h-5 bg-blue-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Customer & Transaction Documents</h4></div>
+            <div className="flex items-center gap-3"><div className="w-1 h-5 bg-blue-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Dokumen Pelanggan & Transaksi</h4></div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {documentTypes.map((type) => {
@@ -914,7 +914,7 @@ const Transactions = () => {
                             <p className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-tight">{type.name}</p>
                             {type.is_mandatory && <span className="text-[8px] font-black text-red-500 uppercase tracking-widest">Wajib</span>}
                           </div>
-                          <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{existingDoc ? `Uploaded: ${new Date(existingDoc.created_at).toLocaleDateString('id-ID')}` : 'Belum ada file'}</p>
+                          <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{existingDoc ? `Diunggah: ${new Date(existingDoc.created_at).toLocaleDateString('id-ID')}` : 'Belum ada file'}</p>
                         </div>
                       </div>
                       {existingDoc && (

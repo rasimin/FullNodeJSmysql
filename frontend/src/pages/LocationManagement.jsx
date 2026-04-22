@@ -140,24 +140,24 @@ const LocationManagement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    notify('loading', editingLocation ? 'Syncing...' : 'Creating...');
+    notify('loading', editingLocation ? 'Sinkronisasi...' : 'Membuat...');
     try {
       const payload = { ...formData, parent_id: formData.parent_id || null };
       editingLocation ? await api.put(`/locations/${editingLocation.id}`, payload) : await api.post('/locations', payload);
-      notify('success', 'Registry updated'); 
+      notify('success', 'Data wilayah diperbarui'); 
       setIsModalOpen(false); 
       fetchLocations(formData.parent_id || null);
-    } catch { notify('error', 'Transaction failed'); }
+    } catch { notify('error', 'Transaksi gagal'); }
   };
 
   const handleDelete = async () => {
-    notify('loading', 'Revoking...');
+    notify('loading', 'Menghapus...');
     try { 
       await api.delete(`/locations/${confirmDeleteId}`); 
       setLocations(prev => prev.filter(l => l.id !== confirmDeleteId));
       setConfirmDeleteId(null); 
-      notify('success', 'Purged'); 
-    } catch { notify('error', 'Integrity error'); }
+      notify('success', 'Dihapus'); 
+    } catch { notify('error', 'Kesalahan integritas'); }
   };
 
   const handleSync = () => {
@@ -284,7 +284,7 @@ const LocationManagement = () => {
                        >
                          {canHaveChildren && (
                            <button onClick={(e) => { e.stopPropagation(); setActiveActionsId(null); openModal(null, getNextType(node.type), node.id); }} className="w-full flex items-center justify-center md:justify-start gap-3 px-6 py-4 md:px-4 md:py-3 text-[12px] md:text-[11px] font-bold text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
-                             <Plus size={16} /> Add
+                             <Plus size={16} /> Tambah
                            </button>
                          )}
                          <button onClick={(e) => { e.stopPropagation(); setActiveActionsId(null); openModal(node); }} className="w-full flex items-center justify-center md:justify-start gap-3 px-6 py-4 md:px-4 md:py-3 text-[12px] md:text-[11px] font-bold text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors border-t border-gray-50 dark:border-gray-700">
@@ -329,7 +329,7 @@ const LocationManagement = () => {
     <div className="min-h-screen bg-transparent md:bg-gray-50 dark:bg-transparent md:dark:bg-gray-950 text-gray-600 dark:text-gray-400 font-inter p-2 md:p-8 lg:p-12 transition-colors duration-500">
       <DynamicIsland 
         status={confirmDeleteId ? 'confirm' : notification.status} 
-        message={confirmDeleteId ? 'Revoke this node?' : notification.message} 
+        message={confirmDeleteId ? 'Hapus wilayah ini?' : notification.message} 
         onConfirm={handleDelete} onCancel={() => setConfirmDeleteId(null)} 
       />
 
@@ -342,7 +342,7 @@ const LocationManagement = () => {
               type="text" 
               style={{ paddingLeft: window.innerWidth < 768 ? '40px' : '84px' }}
               className="w-full h-12 md:h-16 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl md:rounded-2xl pr-4 text-[11px] md:text-sm font-medium focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all outline-none text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600 shadow-sm" 
-              placeholder="Search location (min 3 characters)..." 
+              placeholder="Cari lokasi (minimal 3 karakter)..." 
               value={search} onChange={(e) => setSearch(e.target.value)} 
            />
         </div>
@@ -365,14 +365,14 @@ const LocationManagement = () => {
 
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl md:rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none relative z-0">
            <div className="px-3 py-3 md:px-6 md:py-5 border-b border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 md:gap-3 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md sticky top-0 z-10">
-              <h2 className="text-[10px] md:text-sm font-bold text-gray-900 dark:text-white uppercase tracking-tight">Indonesian Regions</h2>
+              <h2 className="text-[10px] md:text-sm font-bold text-gray-900 dark:text-white uppercase tracking-tight">Wilayah Indonesia</h2>
               <div className="flex flex-wrap gap-1 md:gap-2 w-full sm:w-auto">
                 <button onClick={handleSync} disabled={isSyncing} className={`h-7 md:h-9 px-2 md:px-4 rounded-lg md:rounded-xl text-[8px] md:text-[10px] font-bold transition-all border flex items-center gap-1.5 md:gap-2 cursor-pointer ${isSyncing ? 'bg-gray-100 text-gray-400 border-gray-200' : 'bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900/50'}`}>
                    <RefreshCcw size={10} md={12} className={isSyncing ? 'animate-spin' : ''} />
-                   <span className="hidden md:inline">{isSyncing ? 'Syncing...' : 'Sync Data'}</span>
+                   <span className="hidden md:inline">{isSyncing ? 'Sinkronisasi...' : 'Sinkronisasi Data'}</span>
                 </button>
-                <button onClick={collapseAll} className="h-7 md:h-9 px-2 md:px-4 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg md:rounded-xl text-[8px] md:text-[10px] font-bold transition-all border border-gray-200 dark:border-none cursor-pointer">Collapse All</button>
-                <button onClick={() => openModal()} className="h-7 md:h-9 px-3 md:px-6 bg-blue-600 hover:bg-blue-400 text-white rounded-lg md:rounded-xl text-[8px] md:text-[10px] font-black uppercase tracking-wider transition-all shadow-lg shadow-blue-500/20 active:scale-95 text-center flex items-center justify-center cursor-pointer ml-auto sm:ml-0">+ NEW</button>
+                <button onClick={collapseAll} className="h-7 md:h-9 px-2 md:px-4 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg md:rounded-xl text-[8px] md:text-[10px] font-bold transition-all border border-gray-200 dark:border-none cursor-pointer">Tutup Semua</button>
+                <button onClick={() => openModal()} className="h-7 md:h-9 px-3 md:px-6 bg-blue-600 hover:bg-blue-400 text-white rounded-lg md:rounded-xl text-[8px] md:text-[10px] font-black uppercase tracking-wider transition-all shadow-lg shadow-blue-500/20 active:scale-95 text-center flex items-center justify-center cursor-pointer ml-auto sm:ml-0">+ BARU</button>
               </div>
            </div>
 
@@ -389,7 +389,7 @@ const LocationManagement = () => {
                   </div>
                   <div className="px-4 py-2 flex justify-between items-center text-[9px] font-black tracking-widest uppercase">
                     <span className="text-blue-600 dark:text-blue-400 animate-pulse">
-                      {isSyncing ? syncProgress.message : 'Loading Registry Data...'}
+                      {isSyncing ? syncProgress.message : 'Memuat Data Wilayah...'}
                     </span>
                     <div className="flex items-center gap-4">
                       {isSyncing && (
@@ -397,7 +397,7 @@ const LocationManagement = () => {
                           onClick={stopSync}
                           className="px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white rounded text-[8px] font-black transition-colors"
                         >
-                          STOP SYNC
+                          STOP SINKRONISASI
                         </button>
                       )}
                       {(isSyncing && syncProgress.percent > 0) && (
@@ -412,11 +412,11 @@ const LocationManagement = () => {
                 {loading && treeData.length === 0 ? (
                   <div className="py-24 text-center space-y-4">
                       <div className="w-8 h-8 border-3 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mx-auto" />
-                      <p className="text-[9px] uppercase font-bold tracking-[0.3em] text-gray-300 dark:text-gray-700">Synchronizing Registry...</p>
+                      <p className="text-[9px] uppercase font-bold tracking-[0.3em] text-gray-300 dark:text-gray-700">Sinkronisasi Data Wilayah...</p>
                   </div>
                 ) : treeData.length === 0 ? (
                   <div className="py-24 text-center text-gray-300 dark:text-gray-800 text-[10px] font-bold uppercase tracking-[0.4em]">
-                    {search ? 'No results found' : 'Empty Registry'}
+                    {search ? 'Lokasi tidak ditemukan' : 'Wilayah Kosong'}
                   </div>
                 ) : (
                   <div className={`space-y-0 ${(loading || isSyncing) ? 'opacity-40 grayscale pointer-events-none transition-all duration-300' : ''}`}>
@@ -430,17 +430,17 @@ const LocationManagement = () => {
         </div>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Registry Sync">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Sinkronisasi Wilayah">
         <form onSubmit={handleSubmit} className="space-y-6 pt-2">
           {/* Form remains mostly the same, but parent selection could also be optimized if needed */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Context Type</label>
+              <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Tipe Wilayah</label>
               <select className="w-full h-12 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-4 text-xs font-bold uppercase text-gray-900 dark:text-white focus:border-blue-500 outline-none transition-all" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value, parent_id: ''})}>
-                <option value="PROVINCE">Province</option>
-                <option value="CITY">Kab / Kota</option>
+                <option value="PROVINCE">Provinsi</option>
+                <option value="CITY">Kota / Kabupaten</option>
                 <option value="DISTRICT">Kecamatan</option>
-                <option value="POSTAL_CODE">Kel / Zip</option>
+                <option value="POSTAL_CODE">Kelurahan / Kode Pos</option>
               </select>
             </div>
             {formData.type !== 'PROVINCE' && (
@@ -449,18 +449,18 @@ const LocationManagement = () => {
                 <input 
                   type="text" required className="w-full h-12 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-4 text-xs font-bold text-gray-900 dark:text-white focus:border-blue-500 outline-none transition-all" 
                   value={formData.parent_id} onChange={e => setFormData({...formData, parent_id: e.target.value})} 
-                  placeholder="Parent Region ID"
+                  placeholder="ID Wilayah Induk"
                 />
               </div>
             )}
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Registry Identity" icon={Navigation} required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value.toUpperCase()})} placeholder="E.G. YOGYAKARTA" className="h-12 rounded-xl bg-gray-50 dark:bg-gray-900" />
+            <Input label="Nama Wilayah" icon={Navigation} required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value.toUpperCase()})} placeholder="MISAL: YOGYAKARTA" className="h-12 rounded-xl bg-gray-50 dark:bg-gray-900" />
             <Input label="Region Code (BPS)" icon={Hash} value={formData.region_code} onChange={e => setFormData({...formData, region_code: e.target.value})} placeholder="E.G. 31.71" className="h-12 rounded-xl bg-gray-50 dark:bg-gray-900" />
           </div>
           
           {formData.type === 'POSTAL_CODE' && (
-            <Input label="Zip Code" icon={Hash} value={formData.postal_code} onChange={e => setFormData({...formData, postal_code: e.target.value})} placeholder="E.G. 55121" className="h-12 rounded-xl bg-gray-50 dark:bg-gray-900" />
+            <Input label="Kode Pos" icon={Hash} value={formData.postal_code} onChange={e => setFormData({...formData, postal_code: e.target.value})} placeholder="MISAL: 55121" className="h-12 rounded-xl bg-gray-50 dark:bg-gray-900" />
           )}
           
           <button type="submit" className="w-full h-14 bg-gray-900 dark:bg-white hover:opacity-90 text-white dark:text-gray-900 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all shadow-xl shadow-black/10 cursor-pointer">Commit Registry</button>

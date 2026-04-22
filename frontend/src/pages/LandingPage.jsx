@@ -82,9 +82,9 @@ const LandingPage = () => {
           </div>
 
           <div className="hidden md:flex items-center gap-8 font-bold text-[11px] uppercase tracking-widest text-gray-500 dark:text-gray-400">
-            <NavLink to="/catalog" className="hover:text-blue-600 transition-colors">Catalog</NavLink>
-            <a href="#solutions" className="hover:text-blue-600 transition-colors">Solutions</a>
-            <a href="#pricing" className="hover:text-blue-600 transition-colors">Pricing</a>
+            <NavLink to="/catalog" className="hover:text-blue-600 transition-colors">Katalog</NavLink>
+            <a href="#solutions" className="hover:text-blue-600 transition-colors">Solusi</a>
+            <a href="#pricing" className="hover:text-blue-600 transition-colors">Harga</a>
           </div>
 
           <div className="flex items-center gap-4">
@@ -115,7 +115,7 @@ const LandingPage = () => {
               transition={{ duration: 0.6 }}
             >
               <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] mb-8 border border-emerald-100 dark:border-emerald-500/20">
-                <Shield size={14} className="fill-current" /> 100% Verified Showroom Units Only
+                <Shield size={14} className="fill-current" /> 100% Unit Showroom Terverifikasi
               </span>
               <h1 className="text-5xl md:text-8xl font-black tracking-tight leading-[0.9] mb-8">
                 Cari Unit <span className="text-blue-600">Terpercaya</span> <br />
@@ -197,10 +197,10 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col lg:flex-row items-center gap-20">
             <div className="lg:w-1/2 space-y-8">
-              <span className="text-blue-600 font-black uppercase text-[11px] tracking-[0.3em]">For Showroom Owners</span>
+              <span className="text-blue-600 font-black uppercase text-[11px] tracking-[0.3em]">Untuk Pemilik Showroom</span>
               <h2 className="text-4xl md:text-6xl font-black tracking-tight leading-[1.1]">
-                Scale Your Business <br />
-                <span className="text-gray-400">With Data Precision.</span>
+                Kembangkan Bisnis Anda <br />
+                <span className="text-gray-400">Dengan Presisi Data.</span>
               </h2>
               <p className="text-gray-500 dark:text-gray-400 text-lg leading-relaxed font-medium">
                 Berhenti menggunakan spreadsheet manual. Kelola seluruh ekosistem bisnis Anda dari satu dashboard terpusat.
@@ -208,10 +208,10 @@ const LandingPage = () => {
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
                 {[
-                  { icon: Database, title: 'Central Inventory', desc: 'Satu database untuk semua cabang.' },
-                  { icon: TrendingUp, title: 'Sales Analytics', desc: 'Grafik performa real-time.' },
-                  { icon: Users, title: 'Agent Management', desc: 'Pantau kinerja tim sales Anda.' },
-                  { icon: Shield, title: 'Secure Audit', desc: 'History aktivitas yang terlindungi.' }
+                  { icon: Database, title: 'Inventaris Terpusat', desc: 'Satu database untuk semua cabang.' },
+                  { icon: TrendingUp, title: 'Analisis Penjualan', desc: 'Grafik performa real-time.' },
+                  { icon: Users, title: 'Manajemen Agen', desc: 'Pantau kinerja tim sales Anda.' },
+                  { icon: Shield, title: 'Audit Aman', desc: 'History aktivitas yang terlindungi.' }
                 ].map((item, i) => (
                   <div key={i} className="flex gap-4 group">
                     <div className="w-12 h-12 shrink-0 rounded-2xl bg-white dark:bg-white/5 flex items-center justify-center text-blue-600 shadow-sm group-hover:scale-110 transition-transform">
@@ -230,7 +230,7 @@ const LandingPage = () => {
                   onClick={() => navigate('/login')}
                   className="px-10 py-5 bg-blue-600 text-white rounded-[24px] font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-blue-600/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-4"
                 >
-                  Start Your Dashboard <ArrowRight size={18} />
+                  Buka Dashboard Anda <ArrowRight size={18} />
                 </button>
               </div>
             </div>
@@ -290,7 +290,7 @@ const LandingPage = () => {
                     <Star size={24} fill="white" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Growth</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pertumbuhan</p>
                     <p className="text-xl font-black">+142.8%</p>
                   </div>
                 </div>
@@ -305,8 +305,8 @@ const LandingPage = () => {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-600/5 blur-[150px] rounded-full pointer-events-none" />
         
         <div className="text-center mb-20 relative z-10">
-          <span className="text-blue-600 font-black uppercase text-[11px] tracking-[0.4em] mb-4 inline-block">Pricing Strategy</span>
-          <h2 className="text-4xl md:text-6xl font-black tracking-tight mb-4 uppercase">Invest for Growth.</h2>
+          <span className="text-blue-600 font-black uppercase text-[11px] tracking-[0.4em] mb-4 inline-block">Strategi Harga</span>
+          <h2 className="text-4xl md:text-6xl font-black tracking-tight mb-4 uppercase">Investasi untuk Pertumbuhan.</h2>
           <p className="text-gray-500 dark:text-gray-400 font-bold uppercase text-[10px] tracking-widest max-w-lg mx-auto leading-relaxed">Pilih paket yang sesuai dengan volume kendaraan dan kebutuhan operasional showroom Anda.</p>
         </div>
 
@@ -322,7 +322,7 @@ const LandingPage = () => {
             >
               {t.popular && (
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-600 text-white px-8 py-2.5 rounded-full font-black uppercase text-[10px] tracking-[0.3em] shadow-xl">
-                  Most Popular
+                  Paling Populer
                 </div>
               )}
               
@@ -348,7 +348,7 @@ const LandingPage = () => {
               </div>
 
               <button className={`w-full py-5 rounded-[24px] font-black uppercase text-[10px] tracking-[0.2em] transition-all ${t.popular ? 'bg-blue-600 text-white shadow-2xl shadow-blue-600/40' : 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white hover:bg-blue-600 hover:text-white hover:shadow-xl'}`}>
-                Choose {t.name}
+                Pilih {t.name}
               </button>
             </motion.div>
           ))}
@@ -359,10 +359,10 @@ const LandingPage = () => {
       <section className="relative py-24 px-6 max-w-6xl mx-auto border-t border-gray-100 dark:border-white/5">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-12 text-center">
           {[
-            { label: 'Showrooms', val: '250+' },
-            { label: 'Vehicles Sold', val: '12K+' },
-            { label: 'Satisfaction', val: '99%' },
-            { label: 'Uptime', val: '24h' }
+            { label: 'Showroom', val: '250+' },
+            { label: 'Unit Terjual', val: '12K+' },
+            { label: 'Kepuasan', val: '99%' },
+            { label: 'Aktif', val: '24j' }
           ].map((s, i) => (
             <div key={i}>
               <p className="text-4xl md:text-5xl font-black mb-2 tracking-tighter">{s.val}</p>
@@ -379,24 +379,24 @@ const LandingPage = () => {
             <div className="absolute -top-32 -left-32 w-64 h-64 bg-white/10 blur-[80px] rounded-full" />
             <div className="absolute -bottom-32 -right-32 w-64 h-64 bg-black/10 blur-[80px] rounded-full" />
             
-            <h3 className="text-4xl md:text-7xl font-black uppercase z-10 leading-[0.9] tracking-tighter max-w-2xl">Ready to <br /> Transform?</h3>
+            <h3 className="text-4xl md:text-7xl font-black uppercase z-10 leading-[0.9] tracking-tighter max-w-2xl">Siap untuk <br /> Bertransformasi?</h3>
             <p className="text-blue-100 font-bold uppercase text-xs md:text-sm tracking-[0.3em] z-10 opacity-80 max-w-xl">
               Gabung dengan ratusan showroom lainnya dan tingkatkan efisiensi operasional Anda mulai hari ini.
             </p>
             <div className="flex flex-col sm:flex-row gap-6 z-10">
               <button className="px-12 py-6 bg-white text-blue-600 rounded-[28px] font-black uppercase text-xs tracking-[0.25em] shadow-2xl hover:scale-105 active:scale-95 transition-all">
-                Contact Sales
+                Hubungi Sales
               </button>
               <button onClick={() => navigate('/catalog')} className="px-12 py-6 bg-blue-700 text-white border border-white/20 rounded-[28px] font-black uppercase text-xs tracking-[0.25em] hover:bg-blue-800 transition-all">
-                Explore Catalog
+                Jelajahi Katalog
               </button>
             </div>
          </div>
          <div className="mt-20 flex flex-col md:flex-row items-center justify-between max-w-5xl mx-auto opacity-40 gap-6">
             <p className="text-[10px] font-black uppercase tracking-[0.3em]">© 2026 ShowroomHub — Premium Solution</p>
             <div className="flex gap-8 text-[10px] font-black uppercase tracking-[0.2em]">
-              <a href="#" className="hover:text-blue-600">Privacy Policy</a>
-              <a href="#" className="hover:text-blue-600">Terms of Service</a>
+              <a href="#" className="hover:text-blue-600">Kebijakan Privasi</a>
+              <a href="#" className="hover:text-blue-600">Syarat & Ketentuan</a>
             </div>
          </div>
       </footer>

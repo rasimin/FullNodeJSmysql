@@ -24,9 +24,9 @@ function useDebounce(value, delay) {
 }
 
 const FILTER_OPTIONS = [
-  { value: '', label: 'All' },
-  { value: 'Mobil', label: 'Cars' },
-  { value: 'Motor', label: 'Motorcycles' },
+  { value: '', label: 'Semua' },
+  { value: 'Mobil', label: 'Mobil' },
+  { value: 'Motor', label: 'Motor' },
 ];
 
 // Isolated Location Selector Component to prevent Catalog re-renders on every keystroke
@@ -401,7 +401,7 @@ const Catalog = () => {
         {!finalSearchTerm && (
           <header className="flex flex-col gap-3 pt-8 px-2 md:items-center md:text-center mb-12 animate-in fade-in duration-500">
             <h1 className="text-5xl md:text-7xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-none">
-              Product <span className="text-gray-400">Catalog</span>
+              Katalog <span className="text-gray-400">Produk</span>
             </h1>
             <p className="text-gray-500 dark:text-gray-400 text-lg font-light tracking-wide max-w-2xl">
               Temukan unit impian Anda dengan standar kualitas terbaik dan proses yang transparan.
@@ -413,7 +413,7 @@ const Catalog = () => {
           {finalSearchTerm && (
             <div className="flex justify-center -mb-5 relative z-0 animate-in fade-in slide-in-from-top-4 duration-500">
               <div className="bg-gray-100 dark:bg-[#1a1c26] border border-gray-200 dark:border-white/5 px-10 pt-2 pb-6 rounded-t-[24px]">
-                <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 tracking-[0.2em]">Product Catalog</p>
+                <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 tracking-[0.2em]">Katalog Produk</p>
               </div>
             </div>
           )}
@@ -448,7 +448,7 @@ const Catalog = () => {
                   onClick={() => setShowAdvanced(!showAdvanced)}
                   className={`h-9 w-[80px] md:w-auto px-0 md:px-6 rounded-full text-[11px] font-extrabold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 flex-shrink-0 ${showAdvanced ? 'bg-gray-950 text-white dark:bg-white dark:text-gray-950' : 'bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'}`}
                 >
-                  <Filter size={14} /> <span className="md:hidden">{showAdvanced ? 'Hide' : 'Filter'}</span>
+                  <Filter size={14} /> <span className="md:hidden">{showAdvanced ? 'Sembunyikan' : 'Filter'}</span>
                 </button>
                 <div className="flex items-center gap-1 md:gap-1.5 flex-shrink-0">
                   <button onClick={toggleTheme} className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10 bg-gray-100 dark:bg-white/5 transition-colors">
@@ -465,8 +465,8 @@ const Catalog = () => {
                             <p className="text-[10px] font-bold text-gray-900 dark:text-white truncate">{user?.name}</p>
                             <p className="text-[8px] text-gray-400 uppercase tracking-widest mt-0.5">{user?.Role?.name || 'User'}</p>
                           </div>
-                          <NavLink to="/profile" className="flex items-center gap-3 px-4 py-2 text-[10px] font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"> <UserCircle size={14} /> Profile </NavLink>
-                          <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-2 text-[10px] font-bold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"> <LogOut size={14} /> Logout </button>
+                          <NavLink to="/profile" className="flex items-center gap-3 px-4 py-2 text-[10px] font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"> <UserCircle size={14} /> Profil </NavLink>
+                          <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-2 text-[10px] font-bold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"> <LogOut size={14} /> Keluar </button>
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -756,9 +756,9 @@ const Catalog = () => {
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-y-3 gap-x-4 md:gap-4 mb-4 md:mb-5">
                         {[
                           { label: 'Odometer', val: `${parseInt(selectedVehicle.odometer || 0).toLocaleString()} KM` },
-                          { label: 'Transmission', val: selectedVehicle.transmission || '-' },
-                          { label: 'Fuel Type', val: selectedVehicle.fuel_type || '-' },
-                          { label: 'Color', val: selectedVehicle.color || '-' }
+                          { label: 'Transmisi', val: selectedVehicle.transmission || '-' },
+                          { label: 'Bahan Bakar', val: selectedVehicle.fuel_type || '-' },
+                          { label: 'Warna', val: selectedVehicle.color || '-' }
                         ].map((spec, i) => (
                           <div key={i}>
                             <p className="text-[7px] md:text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 md:mb-1">{spec.label}</p>
@@ -774,7 +774,7 @@ const Catalog = () => {
                       <div className="flex items-center gap-3 md:gap-4">
                         <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-blue-600/10 text-blue-600 flex items-center justify-center shrink-0"> <MapPin size={16} className="md:w-[18px] md:h-[18px]" /> </div>
                         <div className="min-w-0">
-                          <p className="text-[7px] md:text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5">Location</p>
+                          <p className="text-[7px] md:text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5">Lokasi</p>
                           <p className="text-xs md:text-sm font-bold text-gray-900 dark:text-white truncate">{selectedVehicle.Office?.name}</p>
                           <p className="text-[9px] md:text-[10px] text-gray-500 dark:text-gray-400 truncate">{selectedVehicle.Office?.location?.name || selectedVehicle.Office?.address}</p>
                         </div>
@@ -784,7 +784,7 @@ const Catalog = () => {
                       {(selectedVehicle.description || selectedVehicle.notes || selectedVehicle.note) && (
                         <div className="p-5 bg-blue-500/5 rounded-[16px] border border-blue-500/10">
                           <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                            <Info size={12} /> Unit Description
+                            <Info size={12} /> Deskripsi Unit
                           </p>
                           <p className="text-[12px] text-gray-600 dark:text-gray-300 italic leading-relaxed"> "{selectedVehicle.description || selectedVehicle.notes || selectedVehicle.note}" </p>
                         </div>
@@ -797,7 +797,7 @@ const Catalog = () => {
                       onClick={() => handleContact(selectedVehicle.office_id)}
                       className="w-full h-12 md:h-14 bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-blue-600 dark:hover:bg-blue-50 transition-all rounded-xl md:rounded-[20px] font-black text-sm flex items-center justify-center gap-3 active:scale-95 shadow-2xl uppercase tracking-widest"
                     >
-                      <MessageCircle size={20} /> <span>Contact Sales</span>
+                      <MessageCircle size={20} /> <span>Hubungi Sales</span>
                     </button>
                   </div>
                 </div>
@@ -825,7 +825,7 @@ const Catalog = () => {
                       <p className="text-xs font-bold uppercase tracking-widest">Mencari Agent...</p>
                     </div>
                   ) : contactAgents.length === 0 ? (
-                    <div className="py-20 text-center text-gray-400 px-10"> <p className="text-sm font-bold uppercase tracking-widest">No active agents</p> </div>
+                    <div className="py-20 text-center text-gray-400 px-10"> <p className="text-sm font-bold uppercase tracking-widest">Tidak ada agen aktif</p> </div>
                   ) : (
                     contactAgents.map(agent => (
                       <div key={agent.id} className="group p-5 bg-gray-50 dark:bg-white/5 rounded-[30px] border border-transparent hover:border-blue-500/30 transition-all">

@@ -58,7 +58,7 @@ const SalesAgents = () => {
       setTotalPages(res.data.total_pages || 1);
     } catch (err) {
       console.error(err);
-      notify('error', 'Failed to load agents');
+      notify('error', 'Gagal memuat agen');
     } finally {
       setLoading(false);
     }
@@ -75,7 +75,7 @@ const SalesAgents = () => {
 
   const handleExport = async () => {
     try {
-      notify('loading', 'Exporting...');
+      notify('loading', 'Mengekspor...');
       const r = await api.get('/export/sales-agents', { 
         params: { search: searchTerm, office_id: selectedOffice },
         responseType: 'blob' 
@@ -83,8 +83,8 @@ const SalesAgents = () => {
       const url = window.URL.createObjectURL(new Blob([r.data]));
       const a = document.createElement('a');
       a.href = url; a.setAttribute('download', 'sales_agents.xlsx'); document.body.appendChild(a); a.click();
-      notify('success', 'Export complete!');
-    } catch { notify('error', 'Export failed'); }
+      notify('success', 'Ekspor selesai!');
+    } catch { notify('error', 'Ekspor gagal'); }
   };
 
   const handleSubmit = async (e) => {
@@ -93,7 +93,7 @@ const SalesAgents = () => {
     Object.keys(formData).forEach(key => data.append(key, formData[key]));
     if (avatarFile) data.append('avatar', avatarFile);
 
-    notify('loading', editingAgent ? 'Updating...' : 'Saving...');
+    notify('loading', editingAgent ? 'Memperbarui...' : 'Menyimpan...');
     try {
       if (editingAgent) {
         await api.put(`/sales-agents/${editingAgent.id}`, data, {
@@ -110,7 +110,7 @@ const SalesAgents = () => {
       setPreviewUrl(null);
       setFormData({ name: '', email: '', phone: '', address: '', bio: '', office_id: '', status: 'Active' });
       fetchAgents();
-      notify('success', editingAgent ? 'Agent updated!' : 'Agent created!');
+      notify('success', editingAgent ? 'Agen diperbarui!' : 'Agen dibuat!');
     } catch (err) {
       notify('error', err.response?.data?.message || 'Error occurred');
     }
@@ -135,11 +135,11 @@ const SalesAgents = () => {
   const handleDelete = async () => {
     const id = confirmDeleteId;
     setConfirmDeleteId(null);
-    notify('loading', 'Deleting...');
+    notify('loading', 'Menghapus...');
     try {
       await api.delete(`/sales-agents/${id}`);
       fetchAgents();
-      notify('success', 'Agent deleted');
+      notify('success', 'Agen dihapus');
     } catch (err) {
       notify('error', err.response?.data?.message || 'Error occurred');
     }
@@ -153,26 +153,26 @@ const SalesAgents = () => {
     }
   };
 
-  const headers = ['Agent', 'Code', 'Contact', 'Office', 'Status', 'Actions'];
+  const headers = ['Agen', 'Kode', 'Kontak', 'Kantor', 'Status', 'Aksi'];
 
   return (
     <div className="space-y-6">
       <DynamicIsland
         status={confirmDeleteId ? 'confirm' : notification.status}
-        message={confirmDeleteId ? 'Delete this agent?' : notification.message}
+        message={confirmDeleteId ? 'Hapus agen ini?' : notification.message}
         onConfirm={handleDelete} onCancel={() => setConfirmDeleteId(null)}
       />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Sales Agent Management</h1>
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Manage sales teams and their assigned offices</p>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Manajemen Agen Sales</h1>
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Kelola tim sales dan penempatan kantor mereka</p>
         </div>
         <div className="flex gap-2">
           <ViewSwitcher viewMode={viewMode} setViewMode={setViewMode} />
           <button onClick={handleExport} className="btn gap-2 text-xs h-9 shrink-0">
-            <FileSpreadsheet size={15} className="text-green-600" /> Export
+            <FileSpreadsheet size={15} className="text-green-600" /> Ekspor
           </button>
           <button 
             onClick={() => { 
@@ -184,7 +184,7 @@ const SalesAgents = () => {
             }}
             className="btn-primary gap-2 text-xs h-9 shrink-0 px-4"
           >
-            <Plus size={15} /> Add Agent
+            <Plus size={15} /> Tambah Agen
           </button>
         </div>
       </div>
@@ -195,7 +195,7 @@ const SalesAgents = () => {
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input 
             type="text"
-            placeholder="Search by name or code..."
+            placeholder="Cari berdasarkan nama atau kode..."
             className="input pl-10 h-11"
             value={searchTerm}
             onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
@@ -207,7 +207,7 @@ const SalesAgents = () => {
             value={selectedOffice}
             onChange={(e) => { setSelectedOffice(e.target.value); setPage(1); }}
           >
-            <option value="">All Offices</option>
+            <option value="">Semua Kantor</option>
             {offices.map(o => <option key={o.id} value={o.id}>{o.displayName}</option>)}
           </select>
         </div>
@@ -233,7 +233,7 @@ const SalesAgents = () => {
                       </tr>
                     ))
                   ) : agents.length === 0 ? (
-                    <tr><td colSpan={headers.length} className="px-5 py-20 text-center text-xs text-gray-400 font-bold uppercase tracking-widest">No agents found</td></tr>
+                    <tr><td colSpan={headers.length} className="px-5 py-20 text-center text-xs text-gray-400 font-bold uppercase tracking-widest">Agen tidak ditemukan</td></tr>
                   ) : agents.map((agent) => (
                     <motion.tr
                       key={agent.id}
@@ -259,7 +259,7 @@ const SalesAgents = () => {
                       </td>
                       <td className="px-5 py-3.5 text-xs text-gray-500">{agent.Office?.name}</td>
                       <td className="px-5 py-3.5">
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${agent.status === 'Active' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'}`}>{agent.status}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${agent.status === 'Active' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'}`}>{agent.status === 'Active' ? 'Aktif' : 'Tidak Aktif'}</span>
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex gap-1">
@@ -285,7 +285,7 @@ const SalesAgents = () => {
             ) : agents.length === 0 ? (
               <div className="col-span-full py-12 text-center card">
                 <Users size={48} className="mx-auto text-gray-300 mb-3" />
-                <p className="text-gray-500 uppercase text-[10px] font-bold tracking-widest">No sales agents found</p>
+                <p className="text-gray-500 uppercase text-[10px] font-bold tracking-widest">Agen sales tidak ditemukan</p>
               </div>
             ) : agents.map((agent) => (
               <motion.div
@@ -331,7 +331,7 @@ const SalesAgents = () => {
                 <div className="flex justify-between items-center text-[8px] md:text-[10px]">
                   <span className="font-black text-gray-400 uppercase tracking-widest truncate max-w-[100px]">{agent.Office?.type?.replace(/_/g, ' ') || 'AGENT'}</span>
                   <span className={`px-2 py-0.5 rounded-full font-black uppercase tracking-tighter ${agent.status === 'Active' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
-                    {agent.status}
+                    {agent.status === 'Active' ? 'Aktif' : 'Tidak Aktif'}
                   </span>
                 </div>
               </motion.div>
@@ -346,7 +346,7 @@ const SalesAgents = () => {
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        title={editingAgent ? 'Edit Sales Agent' : 'Add New Sales Agent'}
+        title={editingAgent ? 'Edit Agen Sales' : 'Tambah Agen Sales Baru'}
       >
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           {/* Avatar Upload */}
@@ -361,30 +361,30 @@ const SalesAgents = () => {
               </div>
               <label className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 group-hover:opacity-100 cursor-pointer rounded-full transition-opacity">
                 <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-                <span className="text-[10px] font-bold uppercase">Change</span>
+                <span className="text-[10px] font-bold uppercase">Ubah</span>
               </label>
             </div>
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center">Profile Photo</p>
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center">Foto Profil</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input label="Full Name" icon={Users} required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="e.g. John Doe" />
+            <Input label="Nama Lengkap" icon={Users} required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Misal: John Doe" />
             
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Office Assigned</label>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Kantor Penempatan</label>
               <select 
                 required className="input h-12"
                 value={formData.office_id} onChange={(e) => setFormData({...formData, office_id: e.target.value})}
               >
-                <option value="">Select Office</option>
+                <option value="">Pilih Kantor</option>
                 {offices.map(o => <option key={o.id} value={o.id}>{o.displayName}</option>)}
               </select>
             </div>
 
-            <Input label="Email Address" icon={Mail} type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="john@example.com" />
+            <Input label="Alamat Email" icon={Mail} type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="john@example.com" />
             
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Sales Code</label>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Kode Sales</label>
               <input 
                 type="text" className="input h-12 bg-gray-50 dark:bg-gray-800/50 cursor-not-allowed font-mono font-bold text-blue-600" 
                 value={editingAgent?.sales_code || '---'} 
@@ -392,7 +392,7 @@ const SalesAgents = () => {
               />
             </div>
 
-            <Input label="Phone Number" icon={Phone} value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} placeholder="+62..." />
+            <Input label="Nomor Telepon" icon={Phone} value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} placeholder="+62..." />
             
             <div className="space-y-1">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Status</label>
@@ -405,7 +405,7 @@ const SalesAgents = () => {
                       onChange={(e) => setFormData({...formData, status: e.target.value})}
                       className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500"
                     />
-                    <span className={`text-xs font-bold uppercase ${formData.status === s ? 'text-blue-600' : 'text-gray-400'}`}>{s}</span>
+                    <span className={`text-xs font-bold uppercase ${formData.status === s ? 'text-blue-600' : 'text-gray-400'}`}>{s === 'Active' ? 'Aktif' : 'Tidak Aktif'}</span>
                   </label>
                 ))}
               </div>
@@ -413,25 +413,25 @@ const SalesAgents = () => {
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Address</label>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Alamat</label>
             <textarea 
-              className="input min-h-[80px] p-3 text-xs" placeholder="Full address..."
+              className="input min-h-[80px] p-3 text-xs" placeholder="Alamat lengkap..."
               value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})}
             />
           </div>
 
           <div className="space-y-1">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Biography / Notes</label>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Biografi / Catatan</label>
             <textarea 
-              className="input min-h-[100px] p-3 text-xs" placeholder="Brief background of the sales agent..."
+              className="input min-h-[100px] p-3 text-xs" placeholder="Latar belakang singkat agen sales..."
               value={formData.bio} onChange={(e) => setFormData({...formData, bio: e.target.value})}
             />
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
-            <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-[10px] font-black uppercase text-gray-400">Cancel</button>
+            <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-[10px] font-black uppercase text-gray-400">Batal</button>
             <button type="submit" className="btn-primary px-8 h-12 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-500/20">
-              {editingAgent ? 'Update Agent' : 'Save Agent'}
+              {editingAgent ? 'Perbarui Agen' : 'Simpan Agen'}
             </button>
           </div>
         </form>

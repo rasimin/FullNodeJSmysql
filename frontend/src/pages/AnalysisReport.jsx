@@ -37,7 +37,7 @@ const AnalysisReport = () => {
   };
 
   const handleGenerateDetailedReport = async () => {
-    notify('loading', 'Generating Detailed Financial Report...');
+    notify('loading', 'Menghasilkan Laporan Keuangan Detail...');
     try {
       const res = await api.get('/export/financial-report', {
         params: { year: selectedYear, officeId: selectedOffice },
@@ -48,15 +48,15 @@ const AnalysisReport = () => {
       const filename = `Financial_Report_${selectedYear}_${selectedOffice || 'All'}.pdf`;
       
       setPdfDocuments([{
-        title: `Financial Detail - ${selectedYear === 'all' ? 'All-Time' : selectedYear}`,
+        title: `Detail Keuangan - ${selectedYear === 'all' ? 'Semua Waktu' : selectedYear}`,
         url,
         filename
       }]);
       setIsPdfModalOpen(true);
-      notify('success', 'Report generated successfully!');
+      notify('success', 'Laporan berhasil dibuat!');
     } catch (err) {
       console.error('Failed to generate PDF report', err);
-      notify('error', 'Failed to generate PDF report');
+      notify('error', 'Gagal menghasilkan laporan PDF');
     }
   };
 
@@ -139,8 +139,8 @@ const AnalysisReport = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Business Analysis Report</h1>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Live Inventory & Performance Metrics</p>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Laporan Analisis Bisnis</h1>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Metrik Inventaris & Performa Langsung</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
             <button 
@@ -152,7 +152,7 @@ const AnalysisReport = () => {
               }`}
             >
               {showFullAmount ? <Eye size={14} /> : <EyeOff size={14} />}
-              {showFullAmount ? 'Full Amount' : 'Abbreviated'}
+              {showFullAmount ? 'Jumlah Penuh' : 'Disingkat'}
             </button>
 
             {isHeadOffice && (
@@ -163,7 +163,7 @@ const AnalysisReport = () => {
                   value={selectedOffice}
                   onChange={(e) => setSelectedOffice(e.target.value)}
                 >
-                  <option value="" className="text-gray-900 dark:bg-gray-800 dark:text-white">All Branches</option>
+                  <option value="" className="text-gray-900 dark:bg-gray-800 dark:text-white">Semua Cabang</option>
                   {offices.map((office) => (
                     <option 
                       key={office.id} 
@@ -180,10 +180,10 @@ const AnalysisReport = () => {
               onClick={handleGenerateDetailedReport}
               className="px-4 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/25"
             >
-                <FileText size={14} /> Financial PDF Report
+                <FileText size={14} /> Laporan PDF Keuangan
             </button>
             <button onClick={fetchData} className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
-                <Activity size={14} className="text-blue-500" /> Refresh Data
+                <Activity size={14} className="text-blue-500" /> Perbarui Data
             </button>
         </div>
       </div>
@@ -191,38 +191,38 @@ const AnalysisReport = () => {
       {/* Top Cards: Current Live Stock & Potential */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard 
-          title="Live Stock Summary" 
+          title="Ringkasan Stok Aktif" 
           value={
             <div className="flex items-baseline gap-2">
               <span className="text-2xl">{data?.currentStock?.totalUnits || 0}</span>
-              <span className="text-[10px] text-gray-400 font-bold uppercase">Available</span>
+              <span className="text-[10px] text-gray-400 font-bold uppercase">Tersedia</span>
               <div className="w-[1px] h-3 bg-gray-200 dark:bg-gray-700 mx-1" />
               <span className="text-xl text-orange-500">{data?.currentStock?.bookedUnits || 0}</span>
-              <span className="text-[10px] text-orange-400 font-bold uppercase">Booked</span>
+              <span className="text-[10px] text-orange-400 font-bold uppercase">Dipesan</span>
             </div>
           } 
-          subValue="Real-time Inventory Status" 
+          subValue="Status Inventaris Real-time" 
           icon={Package} 
           color="blue" 
         />
         <MetricCard 
-          title="Potential Cash Inflow" 
+          title="Potensi Arus Kas Masuk" 
           value={displayAmount(data?.currentStock?.potentialRevenue)} 
-          subValue="Total Asking Price of Stock" 
+          subValue="Total Harga Penawaran Stok" 
           icon={DollarSign} 
           color="green" 
         />
         <MetricCard 
-          title="Potential Net Margin" 
+          title="Potensi Margin Bersih" 
           value={displayAmount(data?.currentStock?.potentialNetMargin)} 
-          subValue="Expected Profit from Stock" 
+          subValue="Estimasi Keuntungan dari Stok" 
           icon={TrendingUp} 
           color="amber" 
         />
         <MetricCard 
-          title="Avg. Potential Margin" 
+          title="Rata-rata Potensi Margin" 
           value={displayAmount(data?.currentStock?.totalUnits > 0 ? data?.currentStock?.potentialNetMargin / data?.currentStock?.totalUnits : 0)} 
-          subValue="Per Unit Profit Estimate" 
+          subValue="Estimasi Profit Per Unit" 
           icon={Activity} 
           color="purple" 
         />
@@ -233,9 +233,9 @@ const AnalysisReport = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
             <h2 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
-              <BarChart2 size={18} className="text-blue-500" /> Financial Performance Summary
+              <BarChart2 size={18} className="text-blue-500" /> Ringkasan Performa Keuangan
             </h2>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mt-1">Accumulated data filtered by fiscal year</p>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mt-1">Data akumulasi berdasarkan tahun fiskal</p>
           </div>
           
           {!isChangingYear ? (
@@ -245,7 +245,7 @@ const AnalysisReport = () => {
             >
               <Calendar size={14} className="text-blue-500 group-hover:scale-110 transition-transform" />
               <span className="text-[11px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
-                {selectedYear === 'all' ? 'All-Time Records' : `${selectedYear} Fiscal Year`}
+                {selectedYear === 'all' ? 'Semua Catatan' : `Tahun Fiskal ${selectedYear}`}
               </span>
               <ArrowUpRight size={12} className="text-blue-300 opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
@@ -261,9 +261,9 @@ const AnalysisReport = () => {
                 }}
                 onBlur={() => setIsChangingYear(false)}
               >
-                <option value="all" className="dark:bg-gray-800">All-Time Records</option>
+                <option value="all" className="dark:bg-gray-800">Semua Catatan</option>
                 {Array.from({length: 5}, (_, i) => new Date().getFullYear() - i).map(y => (
-                  <option key={y} value={y} className="dark:bg-gray-800">{y} Fiscal Year</option>
+                  <option key={y} value={y} className="dark:bg-gray-800">Tahun Fiskal {y}</option>
                 ))}
               </select>
             </div>
@@ -277,23 +277,23 @@ const AnalysisReport = () => {
               <div className="p-6 flex-1">
                   <div className="flex justify-between items-start mb-6">
                     <h3 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-2">
-                        <div className="p-1.5 bg-green-100 dark:bg-green-900/40 rounded-lg"><Briefcase size={14} className="text-green-600" /></div> Sales Summary
+                        <div className="p-1.5 bg-green-100 dark:bg-green-900/40 rounded-lg"><Briefcase size={14} className="text-green-600" /></div> Ringkasan Penjualan
                     </h3>
-                    <span className="px-2 py-0.5 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-[8px] font-black rounded uppercase">Revenue Stream</span>
+                    <span className="px-2 py-0.5 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-[8px] font-black rounded uppercase">Aliran Pendapatan</span>
                   </div>
                   <div className="grid grid-cols-3 gap-6">
                       <div className="space-y-1 border-r border-gray-100 dark:border-gray-700/50">
-                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Total Units</p>
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Total Unit</p>
                           <p className="text-2xl font-black text-gray-900 dark:text-white leading-none">{data?.overall?.sales?.units}</p>
-                          <p className="text-[8px] font-bold text-gray-400 uppercase">Closed Deals</p>
+                          <p className="text-[8px] font-bold text-gray-400 uppercase">Transaksi Selesai</p>
                       </div>
                       <div className="space-y-1 border-r border-gray-100 dark:border-gray-700/50">
-                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Gross Revenue</p>
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Pendapatan Kotor</p>
                           <p className="text-lg font-black text-blue-600 leading-none">{displayAmount(data?.overall?.sales?.revenue)}</p>
-                          <p className="text-[8px] font-bold text-gray-400 uppercase">Total Value</p>
+                          <p className="text-[8px] font-bold text-gray-400 uppercase">Nilai Total</p>
                       </div>
                       <div className="space-y-1">
-                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Net Margin</p>
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Margin Bersih</p>
                           <p className="text-lg font-black text-green-600 leading-none">{displayAmount(data?.overall?.sales?.margin)}</p>
                           <p className="text-[8px] font-bold text-gray-400 uppercase">Total Profit</p>
                       </div>
@@ -307,25 +307,25 @@ const AnalysisReport = () => {
               <div className="p-6 flex-1">
                   <div className="flex justify-between items-start mb-6">
                     <h3 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-2">
-                        <div className="p-1.5 bg-blue-100 dark:bg-blue-900/40 rounded-lg"><ShoppingCart size={14} className="text-blue-600" /></div> Purchase Summary
+                        <div className="p-1.5 bg-blue-100 dark:bg-blue-900/40 rounded-lg"><ShoppingCart size={14} className="text-blue-600" /></div> Ringkasan Pembelian
                     </h3>
-                    <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[8px] font-black rounded uppercase">Capital Allocation</span>
+                    <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[8px] font-black rounded uppercase">Alokasi Modal</span>
                   </div>
                   <div className="grid grid-cols-3 gap-6">
                       <div className="space-y-1 border-r border-gray-100 dark:border-gray-700/50">
-                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Stock In</p>
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Stok Masuk</p>
                           <p className="text-2xl font-black text-gray-900 dark:text-white leading-none">{data?.overall?.purchases?.units}</p>
-                          <p className="text-[8px] font-bold text-gray-400 uppercase">New Units</p>
+                          <p className="text-[8px] font-bold text-gray-400 uppercase">Unit Baru</p>
                       </div>
                       <div className="space-y-1 border-r border-gray-100 dark:border-gray-700/50">
-                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Acquisition</p>
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Akuisisi</p>
                           <p className="text-lg font-black text-red-600 leading-none">{displayAmount(data?.overall?.purchases?.cost)}</p>
-                          <p className="text-[8px] font-bold text-gray-400 uppercase">Capital Out</p>
+                          <p className="text-[8px] font-bold text-gray-400 uppercase">Modal Keluar</p>
                       </div>
                       <div className="space-y-1">
-                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Service/Prep</p>
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Servis/Persiapan</p>
                           <p className="text-lg font-black text-orange-600 leading-none">{displayAmount(data?.overall?.purchases?.service)}</p>
-                          <p className="text-[8px] font-bold text-gray-400 uppercase">Total Costs</p>
+                          <p className="text-[8px] font-bold text-gray-400 uppercase">Total Biaya</p>
                       </div>
                   </div>
               </div>
@@ -336,17 +336,17 @@ const AnalysisReport = () => {
               <div className="h-1.5 bg-orange-500" />
               <div className="p-6 flex-1">
                   <h3 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                      <div className="p-1.5 bg-orange-100 dark:bg-orange-900/40 rounded-lg"><XCircle size={14} className="text-orange-600" /></div> Cancellation Revenue
+                      <div className="p-1.5 bg-orange-100 dark:bg-orange-900/40 rounded-lg"><XCircle size={14} className="text-orange-600" /></div> Pendapatan Pembatalan
                   </h3>
                   <div className="flex items-center justify-between bg-white dark:bg-gray-800/50 p-4 rounded-xl border border-orange-100/50 dark:border-orange-900/20">
                       <div>
-                          <p className="text-[9px] font-black text-gray-400 uppercase mb-1">Non-Refundable DP</p>
+                          <p className="text-[9px] font-black text-gray-400 uppercase mb-1">DP Tidak Kembali</p>
                           <p className="text-3xl font-black text-orange-600 leading-none">{displayAmount(data?.currentStock?.cancelledDPIncome)}</p>
                       </div>
                       <div className="text-right">
                           <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase leading-relaxed">
-                            Secured Revenue <br/>
-                            <span className="text-[8px] text-gray-400">From Cancelled Bookings</span>
+                            Pendapatan Aman <br/>
+                            <span className="text-[8px] text-gray-400">Dari Pemesanan Batal</span>
                           </p>
                       </div>
                   </div>
@@ -358,18 +358,18 @@ const AnalysisReport = () => {
               <div className="h-1.5 bg-purple-500" />
               <div className="p-6 flex-1">
                   <h3 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                      <div className="p-1.5 bg-purple-100 dark:bg-purple-900/40 rounded-lg"><Wallet size={14} className="text-purple-600" /></div> Cash Flow Balance
+                      <div className="p-1.5 bg-purple-100 dark:bg-purple-900/40 rounded-lg"><Wallet size={14} className="text-purple-600" /></div> Saldo Arus Kas
                   </h3>
                   <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4 pb-2 border-b border-gray-100 dark:border-gray-700/50">
                           <div>
-                              <p className="text-[9px] font-black text-gray-400 uppercase">Opening Balance</p>
+                              <p className="text-[9px] font-black text-gray-400 uppercase">Saldo Awal</p>
                               <p className={`text-xs font-black ${data?.overall?.openingBalance >= 0 ? 'text-gray-900 dark:text-gray-200' : 'text-red-500'}`}>
                                   {displayAmount(data?.overall?.openingBalance || 0)}
                               </p>
                           </div>
                           <div className="text-right border-l border-gray-100 dark:border-gray-700/50 pl-4">
-                              <p className="text-[9px] font-black text-gray-400 uppercase">Current Flow</p>
+                              <p className="text-[9px] font-black text-gray-400 uppercase">Arus Saat Ini</p>
                               <p className={`text-xs font-black ${
                                   (data?.overall?.sales?.revenue - (data?.overall?.purchases?.cost + data?.overall?.purchases?.service)) >= 0 
                                   ? 'text-green-600' : 'text-red-600'
@@ -381,7 +381,7 @@ const AnalysisReport = () => {
 
                       <div className="flex justify-between items-center">
                           <div>
-                              <p className="text-[9px] font-black text-gray-400 uppercase mb-1">Final Cash Position</p>
+                              <p className="text-[9px] font-black text-gray-400 uppercase mb-1">Posisi Kas Akhir</p>
                               <p className={`text-3xl font-black leading-none ${
                                   ((data?.overall?.openingBalance || 0) + (data?.overall?.sales?.revenue - (data?.overall?.purchases?.cost + data?.overall?.purchases?.service))) >= 0 
                                   ? 'text-green-600' : 'text-red-600'
@@ -391,7 +391,7 @@ const AnalysisReport = () => {
                           </div>
                           <div className="text-right">
                               <div className="inline-block px-2 py-1 bg-purple-50 dark:bg-purple-900/20 rounded text-[8px] font-black text-purple-600 dark:text-purple-400 uppercase">
-                                {selectedYear === 'all' ? 'LIFETIME STATUS' : `${selectedYear} STATUS`}
+                                {selectedYear === 'all' ? 'STATUS SELAMANYA' : `STATUS ${selectedYear}`}
                               </div>
                           </div>
                       </div>
@@ -408,7 +408,7 @@ const AnalysisReport = () => {
         <div className="card p-6">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
-              <BarChart2 size={16} className="text-purple-500" /> Cash Flow Performance (6 Months)
+              <BarChart2 size={16} className="text-purple-500" /> Performa Arus Kas (6 Bulan)
             </h3>
           </div>
           <div className="flex justify-center w-full overflow-hidden">
@@ -427,10 +427,10 @@ const AnalysisReport = () => {
                   itemStyle={{ color: '#fff' }}
                 />
                 <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }} />
-                <Bar name="Cash In (Sales)" dataKey="inflow" fill="#10b981" radius={[4, 4, 0, 0]} barSize={40} isAnimationActive={false}>
+                <Bar name="Kas Masuk (Penjualan)" dataKey="inflow" fill="#10b981" radius={[4, 4, 0, 0]} barSize={40} isAnimationActive={false}>
                   <LabelList dataKey="inflow" position="top" formatter={formatShort} fill="#10b981" fontSize={9} fontWeight="bold" />
                 </Bar>
-                <Bar name="Cash Out (Buy+Service)" dataKey="outflow" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={40} isAnimationActive={false}>
+                <Bar name="Kas Keluar (Beli+Servis)" dataKey="outflow" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={40} isAnimationActive={false}>
                   <LabelList dataKey="outflow" position="top" formatter={formatShort} fill="#ef4444" fontSize={9} fontWeight="bold" />
                 </Bar>
                 {/* Subtle Trend Lines */}
@@ -438,7 +438,7 @@ const AnalysisReport = () => {
                 <Line type="monotone" dataKey="outflow" stroke="#ef4444" strokeWidth={2} dot={false} strokeOpacity={0.4} strokeDasharray="5 5" />
               </ComposedChart>
             ) : (
-              <div className="h-[300px] flex items-center justify-center text-xs text-gray-400 font-bold uppercase">No data available</div>
+              <div className="h-[300px] flex items-center justify-center text-xs text-gray-400 font-bold uppercase">Data tidak tersedia</div>
             )}
           </div>
         </div>
@@ -448,7 +448,7 @@ const AnalysisReport = () => {
         <div className="card p-6">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
-              <ShoppingCart size={16} className="text-blue-500" /> Unit Volume Performance (6 Months)
+              <ShoppingCart size={16} className="text-blue-500" /> Performa Volume Unit (6 Bulan)
             </h3>
           </div>
           <div className="flex justify-center w-full overflow-hidden">
@@ -467,10 +467,10 @@ const AnalysisReport = () => {
                   itemStyle={{ color: '#fff' }}
                 />
                 <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }} />
-                <Bar name="Units Sold" dataKey="sold" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={40} isAnimationActive={false}>
+                <Bar name="Unit Terjual" dataKey="sold" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={40} isAnimationActive={false}>
                   <LabelList dataKey="sold" position="top" fill="#3b82f6" fontSize={10} fontWeight="bold" />
                 </Bar>
-                <Bar name="Units Purchased" dataKey="bought" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={40} isAnimationActive={false}>
+                <Bar name="Unit Dibeli" dataKey="bought" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={40} isAnimationActive={false}>
                   <LabelList dataKey="bought" position="top" fill="#f59e0b" fontSize={10} fontWeight="bold" />
                 </Bar>
                 {/* Subtle Trend Lines */}
@@ -478,7 +478,7 @@ const AnalysisReport = () => {
                 <Line type="monotone" dataKey="bought" stroke="#f59e0b" strokeWidth={2} dot={false} strokeOpacity={0.4} strokeDasharray="5 5" />
               </ComposedChart>
             ) : (
-              <div className="h-[300px] flex items-center justify-center text-xs text-gray-400 font-bold uppercase">No data available</div>
+              <div className="h-[300px] flex items-center justify-center text-xs text-gray-400 font-bold uppercase">Data tidak tersedia</div>
             )}
           </div>
         </div>
@@ -492,7 +492,7 @@ const AnalysisReport = () => {
         <div className="card p-6">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
-              <PieIcon size={16} className="text-blue-500" /> Current Units Per Brand (Top 10)
+              <PieIcon size={16} className="text-blue-500" /> Stok Unit Per Merk (10 Besar)
             </h3>
           </div>
           <div className="flex justify-center w-full overflow-hidden">
@@ -520,7 +520,7 @@ const AnalysisReport = () => {
                 </Bar>
               </BarChart>
             ) : (
-              <div className="h-[300px] flex items-center justify-center text-xs text-gray-400 font-bold uppercase">No data available</div>
+              <div className="h-[300px] flex items-center justify-center text-xs text-gray-400 font-bold uppercase">Data tidak tersedia</div>
             )}
           </div>
         </div>
@@ -528,7 +528,7 @@ const AnalysisReport = () => {
         {/* Monthly Margin Trend */}
         <div className="card p-6">
           <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
-            <TrendingUp size={16} className="text-green-500" /> Monthly Margin Trend (6 Months)
+            <TrendingUp size={16} className="text-green-500" /> Tren Margin Bulanan (6 Bulan)
           </h3>
           <div className="flex justify-center w-full overflow-hidden">
             {data?.trends?.sales?.length > 0 ? (
@@ -547,7 +547,7 @@ const AnalysisReport = () => {
                 </Area>
               </AreaChart>
             ) : (
-              <div className="h-[300px] flex items-center justify-center text-xs text-gray-400 font-bold uppercase">No data available</div>
+              <div className="h-[300px] flex items-center justify-center text-xs text-gray-400 font-bold uppercase">Data tidak tersedia</div>
             )}
           </div>
         </div>
@@ -561,20 +561,20 @@ const AnalysisReport = () => {
         <div className="card p-6 overflow-hidden">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
-              <TrendingUp size={16} className="text-blue-500" /> Sales Agent Leaderboard
+              <TrendingUp size={16} className="text-blue-500" /> Papan Peringkat Agen Sales
             </h3>
-            <span className="text-[10px] font-bold text-gray-400 uppercase">Top Performers ({selectedYear === 'all' ? 'All-Time' : selectedYear})</span>
+            <span className="text-[10px] font-bold text-gray-400 uppercase">Performa Terbaik ({selectedYear === 'all' ? 'Semua Waktu' : selectedYear})</span>
           </div>
           
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100 dark:border-gray-800">
-                  <th className="pb-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Rank</th>
-                  <th className="pb-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Agent</th>
-                  <th className="pb-4 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Units Sold</th>
-                  <th className="pb-4 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Sales Value</th>
-                  <th className="pb-4 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Performance</th>
+                  <th className="pb-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Peringkat</th>
+                  <th className="pb-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Agen</th>
+                  <th className="pb-4 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Unit Terjual</th>
+                  <th className="pb-4 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Nilai Jual</th>
+                  <th className="pb-4 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Performa</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
@@ -618,7 +618,7 @@ const AnalysisReport = () => {
                               )}
                             </div>
                             <div>
-                              <p className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-tight">{agent.salesAgent?.name || 'Unknown Agent'}</p>
+                              <p className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-tight">{agent.salesAgent?.name || 'Agen Tidak Diketahui'}</p>
                               <p className="text-[9px] font-bold text-gray-400">ID: {agent.sales_agent_id || 'N/A'}</p>
                             </div>
                           </div>
@@ -650,7 +650,7 @@ const AnalysisReport = () => {
                   })
                 ) : (
                   <tr>
-                    <td colSpan="5" className="py-10 text-center text-xs text-gray-400 font-bold uppercase">No sales data available for this period</td>
+                    <td colSpan="5" className="py-10 text-center text-xs text-gray-400 font-bold uppercase">Tidak ada data penjualan untuk periode ini</td>
                   </tr>
                 )}
               </tbody>

@@ -32,7 +32,7 @@ const BrandManagement = () => {
       const r = await api.get(`/vehicles/brands?page=${page}&search=${search}`);
       setBrands(r.data.items || []);
       setTotalPages(r.data.total_pages || 1);
-    } catch { notify('error', 'Failed to fetch brands'); }
+    } catch { notify('error', 'Gagal memuat merk'); }
     setLoading(false);
   };
 
@@ -47,39 +47,39 @@ const BrandManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.for_car && !formData.for_motorcycle) {
-      return notify('error', 'Select at least one category');
+      return notify('error', 'Pilih minimal satu kategori');
     }
-    notify('loading', editingBrand ? 'Updating...' : 'Adding...');
+    notify('loading', editingBrand ? 'Memperbarui...' : 'Menambah...');
     try {
       editingBrand ? await api.put(`/vehicles/brands/${editingBrand.id}`, formData) : await api.post('/vehicles/brands', formData);
-      notify('success', 'Success!'); setIsModalOpen(false); fetchBrands();
-    } catch (err) { notify('error', 'Failed'); }
+      notify('success', 'Berhasil!'); setIsModalOpen(false); fetchBrands();
+    } catch (err) { notify('error', 'Gagal'); }
   };
 
   const handleDelete = async () => {
-    notify('loading', 'Deleting...');
-    try { await api.delete(`/vehicles/brands/${confirmDeleteId}`); setConfirmDeleteId(null); notify('success', 'Deleted'); fetchBrands(); }
+    notify('loading', 'Menghapus...');
+    try { await api.delete(`/vehicles/brands/${confirmDeleteId}`); setConfirmDeleteId(null); notify('success', 'Dihapus'); fetchBrands(); }
     catch { notify('error', 'Error'); }
   };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <DynamicIsland status={confirmDeleteId ? 'confirm' : notification.status} message={confirmDeleteId ? 'Delete brand?' : notification.message} onConfirm={handleDelete} onCancel={() => setConfirmDeleteId(null)} />
+      <DynamicIsland status={confirmDeleteId ? 'confirm' : notification.status} message={confirmDeleteId ? 'Hapus merk?' : notification.message} onConfirm={handleDelete} onCancel={() => setConfirmDeleteId(null)} />
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Vehicle Brands</h1>
-          <p className="text-sm text-gray-500">Manage master brand list</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Merk Kendaraan</h1>
+          <p className="text-sm text-gray-500">Kelola daftar merk utama</p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
           <ViewSwitcher viewMode={viewMode} setViewMode={setViewMode} />
-          <button onClick={() => openModal()} className="btn-primary gap-2 h-11 px-4 text-sm"><Plus size={18} /> Add Brand</button>
+          <button onClick={() => openModal()} className="btn-primary gap-2 h-11 px-4 text-sm"><Plus size={18} /> Tambah Merk</button>
         </div>
       </div>
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-        <input type="text" className="input pl-10 h-11" placeholder="Search brands..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
+        <input type="text" className="input pl-10 h-11" placeholder="Cari merk..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
       </div>
 
       {viewMode === 'table' ? (
@@ -87,21 +87,21 @@ const BrandManagement = () => {
           <table className="w-full text-left">
             <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-100 dark:border-gray-800">
               <tr>
-                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Brand Name</th>
-                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Category</th>
-                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase text-right">Actions</th>
+                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Nama Merk</th>
+                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Kategori</th>
+                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase text-right">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {loading ? <tr><td colSpan={3} className="px-6 py-12 text-center text-gray-400 italic animate-pulse">Loading brands...</td></tr> : 
-               brands.length === 0 ? <tr><td colSpan={3} className="px-6 py-12 text-center text-gray-400 italic">No brands found</td></tr> :
+              {loading ? <tr><td colSpan={3} className="px-6 py-12 text-center text-gray-400 italic animate-pulse">Memuat merk...</td></tr> : 
+               brands.length === 0 ? <tr><td colSpan={3} className="px-6 py-12 text-center text-gray-400 italic">Merk tidak ditemukan</td></tr> :
                brands.map(b => (
                 <tr key={b.id} className="hover:bg-blue-100/40 dark:hover:bg-blue-900/20 transition-colors">
                   <td className="px-6 py-4 font-bold">{b.name}</td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
-                       {b.for_motorcycle && <span className="badge badge-orange">Motorcycle</span>}
-                       {b.for_car && <span className="badge badge-blue">Car</span>}
+                       {b.for_motorcycle && <span className="badge badge-orange">Motor</span>}
+                       {b.for_car && <span className="badge badge-blue">Mobil</span>}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -127,7 +127,7 @@ const BrandManagement = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 shrink-0 font-black group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors"><Tags size={20} /></div>
-                    <div className="min-w-0"><h3 className="text-xs md:text-sm font-black text-gray-900 dark:text-white truncate">{b.name}</h3><p className="text-[10px] text-gray-400 capitalize">Master Brand</p></div>
+                    <div className="min-w-0"><h3 className="text-xs md:text-sm font-black text-gray-900 dark:text-white truncate">{b.name}</h3><p className="text-[10px] text-gray-400 capitalize">Merk Utama</p></div>
                   </div>
                   <div className="flex gap-0.5" onClick={e => e.stopPropagation()}>
                     <button onClick={() => openModal(b)} className="btn-edit p-1"><Edit size={14} /></button>
@@ -135,8 +135,8 @@ const BrandManagement = () => {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                   {b.for_motorcycle && <span className="px-2 py-0.5 rounded-md bg-orange-50 dark:bg-orange-950/20 text-orange-600 text-[9px] font-bold border border-orange-100 dark:border-orange-800">MOTORCYCLE</span>}
-                   {b.for_car && <span className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/20 text-blue-600 text-[9px] font-bold border border-blue-100 dark:border-blue-800">CAR</span>}
+                   {b.for_motorcycle && <span className="px-2 py-0.5 rounded-md bg-orange-50 dark:bg-orange-950/20 text-orange-600 text-[9px] font-bold border border-orange-100 dark:border-orange-800">MOTOR</span>}
+                   {b.for_car && <span className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/20 text-blue-600 text-[9px] font-bold border border-blue-100 dark:border-blue-800">MOBIL</span>}
                 </div>
               </motion.div>
             ))}
@@ -146,17 +146,17 @@ const BrandManagement = () => {
 
       <Pagination page={page} totalPages={totalPages} setPage={setPage} />
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingBrand ? 'Edit Brand' : 'New Brand'}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingBrand ? 'Edit Merk' : 'Merk Baru'}>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input label="Brand Name" icon={Tags} required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="e.g. BMW, Honda" />
+          <Input label="Nama Merk" icon={Tags} required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Misal: BMW, Honda" />
           <div className="space-y-2">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">Category</p>
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">Kategori</p>
             <div className="flex gap-6 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border">
-              <label className="flex items-center gap-2 cursor-pointer grow"><input type="checkbox" checked={formData.for_motorcycle} onChange={e => setFormData({...formData, for_motorcycle: e.target.checked})} className="w-5 h-5 rounded border-gray-300 text-orange-600" /><span className="text-sm font-medium">Motorcycle</span></label>
-              <label className="flex items-center gap-2 cursor-pointer grow"><input type="checkbox" checked={formData.for_car} onChange={e => setFormData({...formData, for_car: e.target.checked})} className="w-5 h-5 rounded border-gray-300 text-blue-600" /><span className="text-sm font-medium">Car</span></label>
+              <label className="flex items-center gap-2 cursor-pointer grow"><input type="checkbox" checked={formData.for_motorcycle} onChange={e => setFormData({...formData, for_motorcycle: e.target.checked})} className="w-5 h-5 rounded border-gray-300 text-orange-600" /><span className="text-sm font-medium">Motor</span></label>
+              <label className="flex items-center gap-2 cursor-pointer grow"><input type="checkbox" checked={formData.for_car} onChange={e => setFormData({...formData, for_car: e.target.checked})} className="w-5 h-5 rounded border-gray-300 text-blue-600" /><span className="text-sm font-medium">Mobil</span></label>
             </div>
           </div>
-          <button type="submit" className="btn-primary w-full py-3 mt-4">{editingBrand ? 'Update Brand' : 'Save Brand'}</button>
+          <button type="submit" className="btn-primary w-full py-3 mt-4">{editingBrand ? 'Perbarui Merk' : 'Simpan Merk'}</button>
         </form>
       </Modal>
     </div>

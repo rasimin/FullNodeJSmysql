@@ -166,7 +166,7 @@ const OfficeManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsModalOpen(false);
-    notify('loading', editingOffice ? 'Updating...' : 'Creating...');
+    notify('loading', editingOffice ? 'Memperbarui...' : 'Membuat...');
     try {
       const fd = new FormData();
       // Ensure region_code is the one from the ward node
@@ -187,28 +187,28 @@ const OfficeManagement = () => {
       editingOffice 
         ? await api.put(`/offices/${editingOffice.id}`, fd, config) 
         : await api.post('/offices', fd, config);
-      notify('success', 'Success!'); fetchOffices();
+      notify('success', 'Berhasil!'); fetchOffices();
     } catch (err) { 
       console.error(err);
-      notify('error', 'Error'); 
+      notify('error', 'Terjadi Kesalahan'); 
     }
   };
 
   const handleDelete = async () => {
-    notify('loading', 'Deleting...');
+    notify('loading', 'Menghapus...');
     setConfirmDeleteId(null);
-    try { await api.delete(`/offices/${confirmDeleteId}`); notify('success', 'Deleted'); fetchOffices(); }
-    catch { notify('error', 'Failed'); }
+    try { await api.delete(`/confirmDeleteId}`); notify('success', 'Dihapus'); fetchOffices(); }
+    catch { notify('error', 'Gagal'); }
   };
 
   return (
     <div className="space-y-6 pb-20">
-      <DynamicIsland status={confirmDeleteId ? 'confirm' : notification.status} message={confirmDeleteId ? 'Delete office?' : notification.message} onConfirm={handleDelete} onCancel={() => setConfirmDeleteId(null)} />
+      <DynamicIsland status={confirmDeleteId ? 'confirm' : notification.status} message={confirmDeleteId ? 'Hapus kantor?' : notification.message} onConfirm={handleDelete} onCancel={() => setConfirmDeleteId(null)} />
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Office Management</h1>
-          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Master Organization Hierarchy</p>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Manajemen Kantor</h1>
+          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Hierarki Organisasi Utama</p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
           <ViewSwitcher viewMode={viewMode} setViewMode={setViewMode} />
@@ -223,8 +223,8 @@ const OfficeManagement = () => {
              <table className="w-full text-left">
                 <thead className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
                    <tr>
-                      <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Hierarchy & Office</th>
-                      <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Action</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Hierarki & Kantor</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Aksi</th>
                    </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -239,7 +239,7 @@ const OfficeManagement = () => {
                              <div>
                                <p className={`text-sm font-black ${o.isParent ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-300'}`}>{o.name}</p>
                                <div className="flex items-center gap-2 mt-0.5">
-                                 <p className="text-[9px] text-gray-400 font-bold uppercase">{o.type.replace('_', ' ')}</p>
+                                 <p className="text-[9px] text-gray-400 font-bold uppercase">{o.type === 'HEAD_OFFICE' ? 'KANTOR PUSAT' : 'KANTOR CABANG'}</p>
                                  {o.phone && <p className="text-[9px] text-blue-500 font-black tracking-wider border-l border-gray-100 dark:border-white/10 pl-2">{o.phone}</p>}
                                </div>
                              </div>
@@ -343,41 +343,41 @@ const OfficeManagement = () => {
       )}
 
       {/* MODAL */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Office Registration">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Registrasi Kantor">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input label="Office Name" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Pusat Jakarta" />
+          <Input label="Nama Kantor" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Misal: Pusat Jakarta" />
           
           <div className="grid grid-cols-2 gap-4">
-            <Select label="Type" value={formData.type} onChange={e => {
+            <Select label="Tipe" value={formData.type} onChange={e => {
               const newType = e.target.value;
               setFormData({
                 ...formData, 
                 type: newType,
                 parent_id: newType === 'HEAD_OFFICE' ? '' : formData.parent_id
               });
-            }} options={[{ value: 'HEAD_OFFICE', label: 'Head Office' }, { value: 'BRANCH_OFFICE', label: 'Branch Office' }]} />
-            <Input label="Phone Number" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="+62..." />
+            }} options={[{ value: 'HEAD_OFFICE', label: 'Kantor Pusat' }, { value: 'BRANCH_OFFICE', label: 'Kantor Cabang' }]} />
+            <Input label="Nomor Telepon" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="+62..." />
           </div>
 
-          <Input label="Address" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} placeholder="Jl. Raya No. 123..." />
+          <Input label="Alamat" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} placeholder="Jl. Raya No. 123..." />
 
           {formData.type === 'BRANCH_OFFICE' && (
-            <Select label="Parent" value={formData.parent_id} onChange={e => setFormData({...formData, parent_id: e.target.value})} options={rawOffices.filter(o => !o.parent_id).map(o => ({ value: o.id, label: o.name }))} />
+            <Select label="Induk" value={formData.parent_id} onChange={e => setFormData({...formData, parent_id: e.target.value})} options={rawOffices.filter(o => !o.parent_id).map(o => ({ value: o.id, label: o.name }))} />
           )}
 
           <div className="space-y-4 pt-2">
-            <div className="flex items-center gap-2"><div className="w-1 h-3 bg-blue-500 rounded-full" /><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Regional Hierarchy (Ward Required)</label></div>
+            <div className="flex items-center gap-2"><div className="w-1 h-3 bg-blue-500 rounded-full" /><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Hierarki Regional (Kelurahan Wajib)</label></div>
             <div className="grid grid-cols-2 gap-4">
-               <Select label="Province" value={selectedLoc.province} onChange={e => setSelectedLoc({...selectedLoc, province: e.target.value})} options={provinces.map(p => ({ value: p.id, label: p.name }))} />
-               <Select label="City/Regency" value={selectedLoc.city} onChange={e => setSelectedLoc({...selectedLoc, city: e.target.value})} options={cities.map(c => ({ value: c.id, label: c.name }))} disabled={!selectedLoc.province} />
-               <Select label="District" value={selectedLoc.district} onChange={e => setSelectedLoc({...selectedLoc, district: e.target.value})} options={districts.map(d => ({ value: d.id, label: d.name }))} disabled={!selectedLoc.city} />
-               <Select label="Ward" value={selectedLoc.ward} onChange={e => setSelectedLoc({...selectedLoc, ward: e.target.value})} options={wards.map(w => ({ value: w.id, label: w.name }))} disabled={!selectedLoc.district} />
+               <Select label="Provinsi" value={selectedLoc.province} onChange={e => setSelectedLoc({...selectedLoc, province: e.target.value})} options={provinces.map(p => ({ value: p.id, label: p.name }))} />
+               <Select label="Kota/Kabupaten" value={selectedLoc.city} onChange={e => setSelectedLoc({...selectedLoc, city: e.target.value})} options={cities.map(c => ({ value: c.id, label: c.name }))} disabled={!selectedLoc.province} />
+               <Select label="Kecamatan" value={selectedLoc.district} onChange={e => setSelectedLoc({...selectedLoc, district: e.target.value})} options={districts.map(d => ({ value: d.id, label: d.name }))} disabled={!selectedLoc.city} />
+               <Select label="Kelurahan/Desa" value={selectedLoc.ward} onChange={e => setSelectedLoc({...selectedLoc, ward: e.target.value})} options={wards.map(w => ({ value: w.id, label: w.name }))} disabled={!selectedLoc.district} />
             </div>
-            <Input label="Manual Postal Code" value={formData.postal_code} onChange={e => setFormData({...formData, postal_code: e.target.value})} placeholder="e.g. 12345" />
+            <Input label="Kode Pos Manual" value={formData.postal_code} onChange={e => setFormData({...formData, postal_code: e.target.value})} placeholder="Misal: 12345" />
           </div>
           
           <div className="space-y-2 pt-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Office Logo / Branding</label>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Logo / Branding Kantor</label>
             <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-white/5 border-2 border-dashed border-gray-100 dark:border-white/10 rounded-[20px] transition-all hover:bg-white dark:hover:bg-gray-800">
                <div className="w-16 h-16 rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-white/5 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
                  {logoPreview ? <img src={logoPreview} className="w-full h-full object-cover" /> : <ImageIcon size={24} className="text-gray-300" />}
@@ -386,7 +386,7 @@ const OfficeManagement = () => {
                  <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase mb-1">Company Identity</p>
                  <p className="text-[8px] text-gray-400 font-bold uppercase mb-3">Resized & Compressed Automatically</p>
                  <label className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer hover:scale-105 transition-transform">
-                   <Upload size={14} /> Choose Logo
+                   <Upload size={14} /> Pilih Logo
                    <input type="file" className="hidden" accept="image/*" onChange={(e) => {
                       const file = e.target.files[0];
                       if (file) {
@@ -399,7 +399,7 @@ const OfficeManagement = () => {
             </div>
           </div>
 
-          <button type="submit" disabled={!selectedLoc.ward} className={`btn-primary w-full py-4 text-xs font-black uppercase tracking-widest shadow-xl shadow-blue-500/20 ${!selectedLoc.ward ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}>Save Office Unit</button>
+          <button type="submit" disabled={!selectedLoc.ward} className={`btn-primary w-full py-4 text-xs font-black uppercase tracking-widest shadow-xl shadow-blue-500/20 ${!selectedLoc.ward ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}>Simpan Unit Kantor</button>
         </form>
       </Modal>
     </div>
