@@ -13,6 +13,9 @@ const SystemSetting = require('./SystemSetting');
 const UserSession = require('./UserSession');
 const Location = require('./Location');
 const BookingArchive = require('./BookingArchive');
+const DocumentType = require('./DocumentType');
+const VehicleDocument = require('./VehicleDocument');
+const BookingDocument = require('./BookingDocument');
 
 // User Relationships
 User.belongsTo(Role, { foreignKey: 'role_id' });
@@ -50,6 +53,11 @@ SalesAgent.hasMany(Vehicle, { foreignKey: 'sales_agent_id', as: 'soldVehicles' }
 Vehicle.hasMany(VehicleImage, { foreignKey: 'vehicle_id', as: 'images' });
 VehicleImage.belongsTo(Vehicle, { foreignKey: 'vehicle_id' });
 
+// Vehicle Documents
+Vehicle.hasMany(VehicleDocument, { foreignKey: 'vehicle_id', as: 'documents' });
+VehicleDocument.belongsTo(Vehicle, { foreignKey: 'vehicle_id' });
+VehicleDocument.belongsTo(DocumentType, { foreignKey: 'document_type_id', as: 'type' });
+
 // Booking Relationships
 Booking.belongsTo(Vehicle, { foreignKey: 'vehicle_id' });
 Vehicle.hasMany(Booking, { foreignKey: 'vehicle_id' });
@@ -64,6 +72,11 @@ Booking.belongsTo(SalesAgent, { foreignKey: 'sales_agent_id', as: 'salesAgent' }
 Booking.belongsTo(SalesAgent, { foreignKey: 'booked_by_agent_id', as: 'bookedByAgent' });
 SalesAgent.hasMany(Booking, { foreignKey: 'sales_agent_id', as: 'bookings' });
 BookingArchive.belongsTo(User, { foreignKey: 'deleted_by_user_id', as: 'deletedBy' });
+
+// Booking Documents
+Booking.hasMany(BookingDocument, { foreignKey: 'booking_id', as: 'documents' });
+BookingDocument.belongsTo(Booking, { foreignKey: 'booking_id' });
+BookingDocument.belongsTo(DocumentType, { foreignKey: 'document_type_id', as: 'type' });
 
 // Location Hierarchy
 Location.belongsTo(Location, { as: 'parent', foreignKey: 'parent_id' });
@@ -143,5 +156,9 @@ module.exports = {
   SystemSetting,
   UserSession,
   Location,
-  BookingArchive
+  BookingArchive,
+  DocumentType,
+  VehicleDocument,
+  BookingDocument
 };
+

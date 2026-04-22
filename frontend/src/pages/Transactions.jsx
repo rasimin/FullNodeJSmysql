@@ -5,7 +5,7 @@ import {
   Search, FileSpreadsheet, Printer, Eye, Calendar, User,
   Phone, Tag, Clock, CheckCircle, XCircle, MoreHorizontal,
   Building2, Hash, Wallet, UserCheck, Trash2, Edit, CheckCircle2,
-  PhoneCall, CreditCard as CardIcon, ChevronRight, ArrowUpDown
+  PhoneCall, CreditCard as CardIcon, ChevronRight, ArrowUpDown, FileText, Upload
 } from 'lucide-react';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
@@ -15,6 +15,7 @@ import Pagination from '../components/ui/Pagination';
 import Modal from '../components/Modal';
 import PdfViewerModal from '../components/PdfViewerModal';
 import { motion, AnimatePresence } from 'framer-motion';
+import { IMAGE_BASE_URL } from '../config';
 
 const Transactions = () => {
   const navigate = useNavigate();
@@ -26,6 +27,12 @@ const Transactions = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [notification, setNotification] = useState({ status: 'idle', message: '' });
   const [viewMode, setViewMode] = useState(window.innerWidth < 768 ? 'grid' : 'table');
+
+  const [activeTab, setActiveTab] = useState('main');
+  const [documentTypes, setDocumentTypes] = useState([]);
+  const [bookingDocuments, setBookingDocuments] = useState([]);
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+
 
   // Delete handling
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -84,9 +91,59 @@ const Transactions = () => {
     }
   };
 
+  const fetchMetadata = async () => {
+    try {
+      const r = await api.get('/documents/types', { params: { category: 'Booking' } });
+      setDocumentTypes(r.data);
+    } catch (e) { console.error('Fetch doc types error:', e); }
+  };
+
+  const fetchBookingDocuments = async (bookingId) => {
+    try {
+      const r = await api.get(`/documents/booking/${bookingId}`);
+      setBookingDocuments(r.data);
+    } catch (e) { console.error('Fetch docs error:', e); }
+  };
+
+  const handleUploadDocument = async (bookingId, typeId, file) => {
+    if (!file) return;
+    setIsUploadingDoc(true);
+    notify('loading', 'Uploading document...');
+    try {
+      const formData = new FormData();
+      formData.append('document', file);
+      formData.append('document_type_id', typeId);
+      await api.post(`/documents/booking/${bookingId}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      notify('success', 'Document uploaded successfully');
+      fetchBookingDocuments(bookingId);
+    } catch (err) {
+      console.error('Upload doc error:', err);
+      notify('error', 'Failed to upload document');
+    } finally {
+      setIsUploadingDoc(false);
+    }
+  };
+
+  const handleDeleteDocument = async (bookingId, docId) => {
+    if (!window.confirm('Hapus dokumen ini?')) return;
+    notify('loading', 'Deleting document...');
+    try {
+      await api.delete(`/documents/booking/${bookingId}/${docId}`);
+      notify('success', 'Document deleted');
+      fetchBookingDocuments(bookingId);
+    } catch (err) {
+      console.error('Delete doc error:', err);
+      notify('error', 'Failed to delete document');
+    }
+  };
+
   useEffect(() => {
     fetchTransactions();
+    fetchMetadata();
   }, [page, search, statusFilter, dateRange, sort]);
+
 
   const toggleSort = (column) => {
     setSort(prev => ({
@@ -173,6 +230,8 @@ const Transactions = () => {
   };
 
   const openBookingModal = (t) => {
+    setActiveTab('main');
+    setBookingDocuments([]);
     setBookingData({
       ...t,
       id: t.id,
@@ -184,8 +243,10 @@ const Transactions = () => {
       sales_agent_id: t.sales_agent_id || ''
     });
     fetchAgentsByOffice(t.office_id);
+    fetchBookingDocuments(t.id);
     setIsBookingModalOpen(true);
   };
+
 
   const fetchAgentsByOffice = async (officeId) => {
     try {
@@ -774,48 +835,123 @@ const Transactions = () => {
 
       {/* Booking Form Modal */}
       <Modal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} title="Update Reservation Details">
-        <form onSubmit={handleBookingSubmit} className="space-y-4">
-          <Input label="Customer Name" value={bookingData.customer_name} onChange={e => setBookingData({ ...bookingData, customer_name: e.target.value })} required />
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="NIK (ID Number)" placeholder="16-digit NIK" value={bookingData.nik || ''} onChange={e => setBookingData({ ...bookingData, nik: e.target.value.replace(/\D/g, '').slice(0, 16) })} required />
-            <Input label="Phone Number" placeholder="+62..." value={bookingData.customer_phone} onChange={e => setBookingData({ ...bookingData, customer_phone: e.target.value })} required />
-          </div>
-          <Input label="Down Payment (DP)" value={displayCurrency(bookingData.down_payment)} onChange={e => handleCurrencyChange(setBookingData, bookingData, 'down_payment', e.target.value)} />
-          <Select
-            label="Sales Agent (Optional)"
-            value={bookingData.sales_agent_id}
-            onChange={e => setBookingData({ ...bookingData, sales_agent_id: e.target.value })}
-            options={[{ value: '', label: '-- Select Sales (Optional) --' }, ...salesAgents.map(a => ({ value: a.id, label: `${a.name} [${a.sales_code}] - ${a.Office?.name || 'Unknown'}` }))]}
-          />
-          <textarea
-            className="input min-h-[80px] p-3 text-xs"
-            placeholder="Additional notes / information..."
-            value={bookingData.notes || ''}
-            onChange={e => setBookingData({ ...bookingData, notes: e.target.value })}
-          />
+        {/* Tab Switcher */}
+        <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-2xl mb-6 w-fit">
+          <button
+            onClick={() => setActiveTab('main')}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'main' ? 'bg-white dark:bg-gray-700 text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+          >
+            <Tag size={14} /> Reservation Info
+          </button>
+          <button
+            onClick={() => setActiveTab('documents')}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'documents' ? 'bg-white dark:bg-gray-700 text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+          >
+            <FileText size={14} /> Legal Documents
+          </button>
+        </div>
 
-          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
-            <div className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all cursor-pointer" onClick={() => {
-              const newVal = !printReceipt;
-              setPrintReceipt(newVal);
-              localStorage.setItem('pref_print_receipt', newVal);
-            }}>
-              <input type="checkbox" checked={printReceipt} onChange={() => { }} className="w-4 h-4 rounded text-blue-600" />
-              <span className="text-[9px] font-black text-gray-400 uppercase leading-none">Print Reservation Receipt</span>
+        {activeTab === 'main' ? (
+          <form onSubmit={handleBookingSubmit} className="space-y-4">
+            <Input label="Customer Name" value={bookingData.customer_name} onChange={e => setBookingData({ ...bookingData, customer_name: e.target.value })} required />
+            <div className="grid grid-cols-2 gap-4">
+              <Input label="NIK (ID Number)" placeholder="16-digit NIK" value={bookingData.nik || ''} onChange={e => setBookingData({ ...bookingData, nik: e.target.value.replace(/\D/g, '').slice(0, 16) })} required />
+              <Input label="Phone Number" placeholder="+62..." value={bookingData.customer_phone} onChange={e => setBookingData({ ...bookingData, customer_phone: e.target.value })} required />
             </div>
-            <div className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all cursor-pointer" onClick={() => {
-              const newVal = !printInvoice;
-              setPrintInvoice(newVal);
-              localStorage.setItem('pref_print_invoice', newVal);
-            }}>
-              <input type="checkbox" checked={printInvoice} onChange={() => { }} className="w-4 h-4 rounded text-blue-600" />
-              <span className="text-[9px] font-black text-gray-400 uppercase leading-none">Print Settlement Invoice</span>
+            <Input label="Down Payment (DP)" value={displayCurrency(bookingData.down_payment)} onChange={e => handleCurrencyChange(setBookingData, bookingData, 'down_payment', e.target.value)} />
+            <Select
+              label="Sales Agent (Optional)"
+              value={bookingData.sales_agent_id}
+              onChange={e => setBookingData({ ...bookingData, sales_agent_id: e.target.value })}
+              options={[{ value: '', label: '-- Select Sales (Optional) --' }, ...salesAgents.map(a => ({ value: a.id, label: `${a.name} [${a.sales_code}] - ${a.Office?.name || 'Unknown'}` }))]}
+            />
+            <textarea
+              className="input min-h-[80px] p-3 text-xs"
+              placeholder="Additional notes / information..."
+              value={bookingData.notes || ''}
+              onChange={e => setBookingData({ ...bookingData, notes: e.target.value })}
+            />
+
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all cursor-pointer" onClick={() => {
+                const newVal = !printReceipt;
+                setPrintReceipt(newVal);
+                localStorage.setItem('pref_print_receipt', newVal);
+              }}>
+                <input type="checkbox" checked={printReceipt} readOnly className="w-4 h-4 rounded text-blue-600" />
+                <span className="text-[9px] font-black text-gray-400 uppercase leading-none">Print Reservation Receipt</span>
+              </div>
+              <div className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all cursor-pointer" onClick={() => {
+                const newVal = !printInvoice;
+                setPrintInvoice(newVal);
+                localStorage.setItem('pref_print_invoice', newVal);
+              }}>
+                <input type="checkbox" checked={printInvoice} readOnly className="w-4 h-4 rounded text-blue-600" />
+                <span className="text-[9px] font-black text-gray-400 uppercase leading-none">Print Settlement Invoice</span>
+              </div>
+            </div>
+
+            <button type="submit" className="btn-primary w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-black border-none uppercase text-xs font-black tracking-widest shadow-xl">UPDATE RESERVATION</button>
+          </form>
+        ) : (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex items-center gap-3"><div className="w-1 h-5 bg-blue-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Customer & Transaction Documents</h4></div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {documentTypes.map((type) => {
+                const existingDoc = bookingDocuments.find(d => d.document_type_id === type.id);
+                return (
+                  <div key={type.id} className={`p-5 rounded-3xl border transition-all ${existingDoc ? 'bg-white dark:bg-gray-800 border-green-100 dark:border-green-900/30 shadow-lg shadow-green-500/5' : 'bg-gray-50/50 dark:bg-gray-800/20 border-gray-100 dark:border-gray-800'}`}>
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${existingDoc ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                          <FileText size={20} />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-tight">{type.name}</p>
+                            {type.is_mandatory && <span className="text-[8px] font-black text-red-500 uppercase tracking-widest">Wajib</span>}
+                          </div>
+                          <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{existingDoc ? `Uploaded: ${new Date(existingDoc.created_at).toLocaleDateString('id-ID')}` : 'Belum ada file'}</p>
+                        </div>
+                      </div>
+                      {existingDoc && (
+                        <button onClick={() => handleDeleteDocument(bookingData.id, existingDoc.id)} className="p-2 hover:bg-red-50 text-red-500 rounded-xl transition-colors">
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+
+                    {existingDoc ? (
+                      <div className="flex items-center gap-3 mt-2">
+                         <button 
+                            onClick={() => window.open(`${IMAGE_BASE_URL}${existingDoc.file_path}`, '_blank')}
+                            className="flex-1 py-2.5 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white rounded-xl text-[9px] font-black uppercase transition-all flex items-center justify-center gap-2"
+                         >
+                           <Eye size={14} /> View Document
+                         </button>
+                      </div>
+                    ) : (
+                      <label className={`w-full py-6 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all ${isUploadingDoc ? 'opacity-50 pointer-events-none' : 'hover:border-blue-500 hover:bg-blue-50/50 border-gray-200 dark:border-gray-700'}`}>
+                        <Upload size={20} className="text-gray-300 mb-2" />
+                        <p className="text-[9px] font-black text-gray-400 uppercase">Klik untuk unggah file</p>
+                        <input 
+                          type="file" 
+                          className="hidden" 
+                          accept=".jpg,.jpeg,.png,.pdf" 
+                          onChange={(e) => handleUploadDocument(bookingData.id, type.id, e.target.files[0])}
+                          disabled={isUploadingDoc}
+                        />
+                      </label>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
-
-          <button type="submit" className="btn-primary w-full py-4 bg-indigo-600 border-none uppercase text-xs font-black tracking-widest">UPDATE RESERVATION</button>
-        </form>
+        )}
       </Modal>
+
     </div>
   );
 };

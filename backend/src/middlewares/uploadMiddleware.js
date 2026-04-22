@@ -4,12 +4,13 @@ const multer = require('multer');
 const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith('image/')) {
+  if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
     cb(null, true);
   } else {
-    cb(new Error('Hanya file gambar yang diperbolehkan!'), false);
+    cb(new Error('Hanya file gambar (JPG, PNG) atau PDF yang diperbolehkan!'), false);
   }
 };
+
 
 const upload = multer({ 
   storage: storage,

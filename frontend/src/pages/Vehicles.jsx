@@ -7,7 +7,7 @@ import {
   ChevronRight, ChevronLeft, ArrowUpDown, Bookmark, Smartphone, User as UserIcon,
   CreditCard, XCircle, CheckCircle, Clock, Camera, Image as ImageIcon, X, Maximize2, Users,
   PlusCircle, TrendingUp, Download, FileSpreadsheet, Palette, Gauge, Wallet, Wrench, History,
-  ChevronsLeft, ChevronsRight, Hash, CheckCircle2
+  ChevronsLeft, ChevronsRight, Hash, CheckCircle2, FileText, Upload
 } from 'lucide-react';
 import Modal from '../components/Modal';
 
@@ -30,7 +30,12 @@ const Vehicles = () => {
   const [offices, setOffices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('main');
+  const [documentTypes, setDocumentTypes] = useState([]);
+  const [vehicleDocuments, setVehicleDocuments] = useState([]);
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState(null);
+
   const [notification, setNotification] = useState({ status: 'idle', message: '' });
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [isViewOnly, setIsViewOnly] = useState(false);
@@ -134,20 +139,64 @@ const Vehicles = () => {
 
   const fetchMetadata = async () => {
     try {
-      const [b, h, t, o, s] = await Promise.all([
+      const [b, h, t, o, s, dt] = await Promise.all([
         api.get('/vehicles/brands'),
         api.get('/vehicles/model-history'),
         api.get('/vehicles/type-history'),
         isHeadOffice ? api.get('/offices') : Promise.resolve({ data: [] }),
-        api.get('/sales-agents/active', { params: { officeId: user?.office_id } })
+        api.get('/sales-agents/active', { params: { officeId: user?.office_id } }),
+        api.get('/documents/types', { params: { category: 'Vehicle' } })
       ]);
       setBrands(b.data);
       setModelHistory(h.data);
       setTypeHistory(t.data);
       if (isHeadOffice) setOffices(formatOfficeHierarchy(o.data));
       setSalesAgents(s.data);
+      setDocumentTypes(dt.data);
     } catch (e) { console.error(e); }
   };
+
+  const fetchVehicleDocuments = async (vehicleId) => {
+    try {
+      const r = await api.get(`/documents/vehicle/${vehicleId}`);
+      setVehicleDocuments(r.data);
+    } catch (e) { console.error('Fetch docs error:', e); }
+  };
+
+  const handleUploadDocument = async (vehicleId, typeId, file) => {
+    if (!file) return;
+    setIsUploadingDoc(true);
+    notify('loading', 'Uploading document...');
+    try {
+      const formData = new FormData();
+      formData.append('document', file);
+      formData.append('document_type_id', typeId);
+      await api.post(`/documents/vehicle/${vehicleId}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      notify('success', 'Document uploaded successfully');
+      fetchVehicleDocuments(vehicleId);
+    } catch (err) {
+      console.error('Upload doc error:', err);
+      notify('error', 'Failed to upload document');
+    } finally {
+      setIsUploadingDoc(false);
+    }
+  };
+
+  const handleDeleteDocument = async (vehicleId, docId) => {
+    if (!window.confirm('Hapus dokumen ini?')) return;
+    notify('loading', 'Deleting document...');
+    try {
+      await api.delete(`/documents/vehicle/${vehicleId}/${docId}`);
+      notify('success', 'Document deleted');
+      fetchVehicleDocuments(vehicleId);
+    } catch (err) {
+      console.error('Delete doc error:', err);
+      notify('error', 'Failed to delete document');
+    }
+  };
+
 
   const fetchVehicles = async (page = currentPage, currentSearch = search) => {
     setLoading(true);
@@ -186,6 +235,8 @@ const Vehicles = () => {
     setIsViewOnly(viewOnly);
     setEditingVehicle(vehicle);
     setSelectedFiles([]);
+    setActiveTab('main');
+    setVehicleDocuments([]);
     if (vehicle) {
       setFormData({
         ...vehicle,
@@ -205,7 +256,9 @@ const Vehicles = () => {
         cancellation_reason: (vehicle.Bookings?.[0]?.cancellation_reason || vehicle.cancellation_reason) || ''
       });
       fetchBookingHistory(vehicle.id);
+      fetchVehicleDocuments(vehicle.id);
     } else {
+
       setFormData({
         type: 'Motor', brand: '', model: '', year: (new Date().getFullYear()).toString(),
         plate_number: '', price: '', status: 'Available',
@@ -709,153 +762,238 @@ const Vehicles = () => {
 
       {/* MASTER VEHICLE FORM MODAL */}
       <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setIsViewOnly(false); }} title="Master Vehicle Overview" maxWidth="max-w-5xl">
-        <form onSubmit={handleSubmit} className="space-y-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-8">
-              <div className="space-y-6">
-                <div className="flex items-center gap-3"><div className="w-1 h-5 bg-blue-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Detail Spesifikasi</h4></div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <Select
-                    label="Category"
-                    value={formData.type}
-                    onChange={e => setFormData({ ...formData, type: e.target.value })}
-                    options={[
-                      { value: 'Mobil', label: 'Mobil' },
-                      { value: 'Motor', label: 'Motor' }
-                    ]}
-                    required
-                    disabled={isViewOnly}
-                  />
-                  <Select label="Brand / Merk" value={formData.brand} onChange={e => setFormData({ ...formData, brand: e.target.value })} options={brands.map(b => ({ value: b.name, label: b.name }))} required disabled={isViewOnly} />
-                  <Input label="Model / Type" value={formData.model} onChange={e => setFormData({ ...formData, model: e.target.value })} required readOnly={isViewOnly} />
-                  <Input label="Plate Number" value={formData.plate_number} onChange={e => setFormData({ ...formData, plate_number: sanitizePlate(e.target.value) })} required readOnly={isViewOnly} />
-                  <Select label="Year" value={formData.year} onChange={e => setFormData({ ...formData, year: e.target.value })} options={Array.from({ length: 40 }, (_, i) => ({ value: (new Date().getFullYear() - i).toString(), label: (new Date().getFullYear() - i).toString() }))} required disabled={isViewOnly} />
-                  <Select label="Transmission" value={formData.transmission} onChange={e => setFormData({ ...formData, transmission: e.target.value })} options={[{ value: 'Manual', label: 'Manual' }, { value: 'Automatic', label: 'Automatic' }, { value: 'CVT', label: 'CVT' }, { value: 'Triptonic', label: 'Triptonic' }]} disabled={isViewOnly} />
-                  <Select label="Fuel Type" value={formData.fuel_type} onChange={e => setFormData({ ...formData, fuel_type: e.target.value })} options={[{ value: 'Bensin', label: 'Bensin' }, { value: 'Diesel', label: 'Diesel / Solar' }, { value: 'Electric', label: 'Electric (EV)' }, { value: 'Hybrid', label: 'Hybrid' }]} disabled={isViewOnly} />
-                  <Input label="Color" value={formData.color} onChange={e => setFormData({ ...formData, color: e.target.value })} readOnly={isViewOnly} />
-                  <Input label="Odometer (KM)" value={displayCurrency(formData.odometer)} onChange={e => handleCurrencyChange(setFormData, formData, 'odometer', e.target.value)} readOnly={isViewOnly} />
-                  <Input label="Sales Price" value={displayCurrency(formData.price)} onChange={e => handleCurrencyChange(setFormData, formData, 'price', e.target.value)} required readOnly={isViewOnly} />
-                  <Select label="Unit Status" value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })} options={[{ value: 'Available', label: 'Available' }, { value: 'Sold', label: 'Sold' }, { value: 'Booked', label: 'Booked' }]} disabled={isViewOnly} />
-                </div>
-              </div>
+        {/* Tab Switcher */}
+        <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-2xl mb-6 w-fit">
+          <button
+            onClick={() => setActiveTab('main')}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'main' ? 'bg-white dark:bg-gray-700 text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+          >
+            <Car size={14} /> General & Media
+          </button>
+          <button
+            onClick={() => setActiveTab('documents')}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'documents' ? 'bg-white dark:bg-gray-700 text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+          >
+            <FileText size={14} /> Legal Documents
+          </button>
+        </div>
 
-              <div className="space-y-6">
-                <div className="flex items-center gap-3"><div className="w-1 h-5 bg-green-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Financial & Inventory</h4></div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <Input label="Purchase Price" icon={Wallet} value={displayCurrency(formData.purchase_price)} onChange={e => handleCurrencyChange(setFormData, formData, 'purchase_price', e.target.value)} readOnly={isViewOnly} />
-                  <Input label="Service Cost" icon={Wrench} value={displayCurrency(formData.service_cost)} onChange={e => handleCurrencyChange(setFormData, formData, 'service_cost', e.target.value)} readOnly={isViewOnly} />
-                  <Input label="Entry Date" type="date" value={formData.entry_date} onChange={e => setFormData({ ...formData, entry_date: e.target.value })} readOnly={isViewOnly} />
-                  {(formData.status === 'Sold' || formData.sold_date) && <Input label="Sold Date" type="date" value={formData.sold_date} onChange={e => setFormData({ ...formData, sold_date: e.target.value })} readOnly={isViewOnly} />}
-                  {isHeadOffice ? (
+        {activeTab === 'main' ? (
+          <form onSubmit={handleSubmit} className="space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2 space-y-8">
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3"><div className="w-1 h-5 bg-blue-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Detail Spesifikasi</h4></div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <Select
-                      label="Branch Office"
-                      value={formData.office_id}
-                      onChange={e => setFormData({ ...formData, office_id: e.target.value })}
+                      label="Category"
+                      value={formData.type}
+                      onChange={e => setFormData({ ...formData, type: e.target.value })}
                       options={[
-                        { value: '', label: '-- Select Branch --' },
-                        ...offices.map(o => ({ value: o.id, label: o.displayName }))
+                        { value: 'Mobil', label: 'Mobil' },
+                        { value: 'Motor', label: 'Motor' }
                       ]}
                       required
                       disabled={isViewOnly}
                     />
-                  ) : <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[8px] text-gray-400 font-black uppercase">Current Branch</p><p className="text-[10px] font-bold">{user?.Office?.name}</p></div>}
-                </div>
-                <textarea className="input h-20 p-3 text-xs" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} placeholder="Notes..." readOnly={isViewOnly} />
-                {(formData.status === 'Available' && formData.cancellation_reason) && (
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-red-600 uppercase tracking-widest ml-1">Last Cancellation Remark</label>
-                    <textarea 
-                      className="input h-20 p-3 text-xs border-red-100 dark:border-red-900/30 bg-red-50/10" 
-                      value={formData.cancellation_reason} 
-                      onChange={e => setFormData({ ...formData, cancellation_reason: e.target.value })} 
-                      placeholder="Cancellation reason..." 
-                      readOnly={isViewOnly} 
-                    />
+                    <Select label="Brand / Merk" value={formData.brand} onChange={e => setFormData({ ...formData, brand: e.target.value })} options={brands.map(b => ({ value: b.name, label: b.name }))} required disabled={isViewOnly} />
+                    <Input label="Model / Type" value={formData.model} onChange={e => setFormData({ ...formData, model: e.target.value })} required readOnly={isViewOnly} />
+                    <Input label="Plate Number" value={formData.plate_number} onChange={e => setFormData({ ...formData, plate_number: sanitizePlate(e.target.value) })} required readOnly={isViewOnly} />
+                    <Select label="Year" value={formData.year} onChange={e => setFormData({ ...formData, year: e.target.value })} options={Array.from({ length: 40 }, (_, i) => ({ value: (new Date().getFullYear() - i).toString(), label: (new Date().getFullYear() - i).toString() }))} required disabled={isViewOnly} />
+                    <Select label="Transmission" value={formData.transmission} onChange={e => setFormData({ ...formData, transmission: e.target.value })} options={[{ value: 'Manual', label: 'Manual' }, { value: 'Automatic', label: 'Automatic' }, { value: 'CVT', label: 'CVT' }, { value: 'Triptonic', label: 'Triptonic' }]} disabled={isViewOnly} />
+                    <Select label="Fuel Type" value={formData.fuel_type} onChange={e => setFormData({ ...formData, fuel_type: e.target.value })} options={[{ value: 'Bensin', label: 'Bensin' }, { value: 'Diesel', label: 'Diesel / Solar' }, { value: 'Electric', label: 'Electric (EV)' }, { value: 'Hybrid', label: 'Hybrid' }]} disabled={isViewOnly} />
+                    <Input label="Color" value={formData.color} onChange={e => setFormData({ ...formData, color: e.target.value })} readOnly={isViewOnly} />
+                    <Input label="Odometer (KM)" value={displayCurrency(formData.odometer)} onChange={e => handleCurrencyChange(setFormData, formData, 'odometer', e.target.value)} readOnly={isViewOnly} />
+                    <Input label="Sales Price" value={displayCurrency(formData.price)} onChange={e => handleCurrencyChange(setFormData, formData, 'price', e.target.value)} required readOnly={isViewOnly} />
+                    <Select label="Unit Status" value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })} options={[{ value: 'Available', label: 'Available' }, { value: 'Sold', label: 'Sold' }, { value: 'Booked', label: 'Booked' }]} disabled={isViewOnly} />
                   </div>
-                )}
-              </div>
-            </div>
+                </div>
 
-            <div className="space-y-8">
-              <div className="space-y-6">
-                <div className="flex items-center gap-2"><div className="w-1 h-5 bg-indigo-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Media Gallery</h4></div>
-                <div className="grid grid-cols-2 gap-2">
-                  {editingVehicle?.images?.map((img) => (
-                    <div key={img.id} className="relative group aspect-square rounded-xl overflow-hidden bg-gray-100">
-                      <img src={`${IMAGE_BASE_URL}${img.image_url}`} className="w-full h-full object-cover" />
-                      {img.is_primary && <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-blue-600 text-white text-[7px] font-black uppercase rounded">Primary</div>}
-                      {!isViewOnly && (
-                        <div className="absolute top-1 right-1 flex flex-col gap-1 sm:top-auto sm:right-auto sm:inset-0 sm:bg-black/40 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity items-center justify-center flex-row">
-                          <button type="button" onClick={() => handleSetPrimaryImage(img.id)} className="p-2 bg-white text-blue-600 rounded-lg shadow-lg sm:shadow-none"><CheckCircle size={14} /></button>
-                          <button type="button" onClick={() => handleDeleteImage(img.id)} className="p-2 bg-white text-red-600 rounded-lg shadow-lg sm:shadow-none"><Trash2 size={14} /></button>
-                        </div>
-                      )}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3"><div className="w-1 h-5 bg-green-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Financial & Inventory</h4></div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <Input label="Purchase Price" icon={Wallet} value={displayCurrency(formData.purchase_price)} onChange={e => handleCurrencyChange(setFormData, formData, 'purchase_price', e.target.value)} readOnly={isViewOnly} />
+                    <Input label="Service Cost" icon={Wrench} value={displayCurrency(formData.service_cost)} onChange={e => handleCurrencyChange(setFormData, formData, 'service_cost', e.target.value)} readOnly={isViewOnly} />
+                    <Input label="Entry Date" type="date" value={formData.entry_date} onChange={e => setFormData({ ...formData, entry_date: e.target.value })} readOnly={isViewOnly} />
+                    {(formData.status === 'Sold' || formData.sold_date) && <Input label="Sold Date" type="date" value={formData.sold_date} onChange={e => setFormData({ ...formData, sold_date: e.target.value })} readOnly={isViewOnly} />}
+                    {isHeadOffice ? (
+                      <Select
+                        label="Branch Office"
+                        value={formData.office_id}
+                        onChange={e => setFormData({ ...formData, office_id: e.target.value })}
+                        options={[
+                          { value: '', label: '-- Select Branch --' },
+                          ...offices.map(o => ({ value: o.id, label: o.displayName }))
+                        ]}
+                        required
+                        disabled={isViewOnly}
+                      />
+                    ) : <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[8px] text-gray-400 font-black uppercase">Current Branch</p><p className="text-[10px] font-bold">{user?.Office?.name}</p></div>}
+                  </div>
+                  <textarea className="input h-20 p-3 text-xs" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} placeholder="Notes..." readOnly={isViewOnly} />
+                  {(formData.status === 'Available' && formData.cancellation_reason) && (
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-red-600 uppercase tracking-widest ml-1">Last Cancellation Remark</label>
+                      <textarea 
+                        className="input h-20 p-3 text-xs border-red-100 dark:border-red-900/30 bg-red-50/10" 
+                        value={formData.cancellation_reason} 
+                        onChange={e => setFormData({ ...formData, cancellation_reason: e.target.value })} 
+                        placeholder="Cancellation reason..." 
+                        readOnly={isViewOnly} 
+                      />
                     </div>
-                  ))}
-                  {selectedFiles.map((file, index) => (
-                    <div key={index} className="relative group aspect-square rounded-xl overflow-hidden bg-gray-100 opacity-90 border border-green-500/30 shadow-sm border-dashed">
-                      <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" />
-                      <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-green-600 text-white text-[7px] font-black uppercase rounded">Baru</div>
-                      <div className="absolute top-1 right-1 flex flex-col gap-1 sm:top-auto sm:right-auto sm:inset-0 sm:bg-black/40 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity items-center justify-center flex-row">
-                        <button type="button" onClick={() => setSelectedFiles(selectedFiles.filter((_, i) => i !== index))} className="p-2 bg-white text-red-600 rounded-lg shadow-lg sm:shadow-none"><Trash2 size={14} /></button>
-                      </div>
-                    </div>
-                  ))}
-                  {!isViewOnly && ((editingVehicle?.images?.length || 0) + selectedFiles.length) < 10 && (
-                    <label className="aspect-square rounded-xl border-2 border-dashed border-gray-200 hover:border-blue-500 flex flex-col items-center justify-center transition-all cursor-pointer bg-gray-50/50 hover:bg-blue-50/20"><Camera size={18} className="text-gray-300" /><input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} /></label>
                   )}
                 </div>
               </div>
 
-              {bookingHistory.length > 0 && (
+              <div className="space-y-8">
                 <div className="space-y-6">
-                  <div className="flex items-center gap-2"><div className="w-1 h-5 bg-amber-500 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Recent Activity</h4></div>
-                  <div className="space-y-3 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
-                    {bookingHistory.map(bh => (
-                      <div key={bh.id} className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-row sm:items-center justify-between gap-4 transition-all hover:bg-white dark:hover:bg-gray-800">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase ${bh.status === 'Cancelled' ? 'bg-red-100 text-red-600' : bh.status === 'Sold' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>{bh.status}</span>
-                            <span className="text-[9px] text-gray-400 font-bold">{new Date(bh.booking_date).toLocaleDateString('id-ID')}</span>
+                  <div className="flex items-center gap-2"><div className="w-1 h-5 bg-indigo-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Media Gallery</h4></div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {editingVehicle?.images?.map((img) => (
+                      <div key={img.id} className="relative group aspect-square rounded-xl overflow-hidden bg-gray-100">
+                        <img src={`${IMAGE_BASE_URL}${img.image_url}`} className="w-full h-full object-cover" />
+                        {img.is_primary && <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-blue-600 text-white text-[7px] font-black uppercase rounded">Primary</div>}
+                        {!isViewOnly && (
+                          <div className="absolute top-1 right-1 flex flex-col gap-1 sm:top-auto sm:right-auto sm:inset-0 sm:bg-black/40 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity items-center justify-center flex-row">
+                            <button type="button" onClick={() => handleSetPrimaryImage(img.id)} className="p-2 bg-white text-blue-600 rounded-lg shadow-lg sm:shadow-none"><CheckCircle size={14} /></button>
+                            <button type="button" onClick={() => handleDeleteImage(img.id)} className="p-2 bg-white text-red-600 rounded-lg shadow-lg sm:shadow-none"><Trash2 size={14} /></button>
                           </div>
-                          <p className="font-black truncate text-gray-900 dark:text-gray-100 text-sm">{bh.customer_name}</p>
-                          <p className="text-[10px] text-gray-400 font-bold uppercase">Agent: {bh.salesAgent?.name || 'Unknown'} ({bh.salesAgent?.sales_code || 'N/A'})</p>
-                        </div>
-                        <div className="flex flex-col items-end gap-3 shrink-0">
-                          <p className="font-black text-blue-600 text-xs">{formatPrice(bh.down_payment)}</p>
-                          {bh.delivery_photo && (
-                            <div className="group/photo relative">
-                              <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden border-2 border-green-500/20 shadow-sm">
-                                <img 
-                                  src={`${IMAGE_BASE_URL}${bh.delivery_photo}`} 
-                                  className="w-full h-full object-cover cursor-zoom-in" 
-                                  alt="Deal Proof"
-                                  onClick={() => window.open(`${IMAGE_BASE_URL}${bh.delivery_photo}`, '_blank')}
-                                />
-                              </div>
-                              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 shadow-sm" title="Handover Photo Available"></div>
-                            </div>
-                          )}
-                          {bh.status === 'Active' && (
-                            <button
-                              type="button"
-                              onClick={() => openBookingModal(editingVehicle, bh)}
-                              className="px-4 py-2 bg-white dark:bg-gray-900 border border-blue-100 dark:border-blue-900/30 text-blue-600 text-[10px] font-black uppercase rounded-xl hover:bg-blue-600 hover:text-white transition-all shadow-sm"
-                            >
-                              Edit
-                            </button>
-                          )}
+                        )}
+                      </div>
+                    ))}
+                    {selectedFiles.map((file, index) => (
+                      <div key={index} className="relative group aspect-square rounded-xl overflow-hidden bg-gray-100 opacity-90 border border-green-500/30 shadow-sm border-dashed">
+                        <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" />
+                        <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-green-600 text-white text-[7px] font-black uppercase rounded">Baru</div>
+                        <div className="absolute top-1 right-1 flex flex-col gap-1 sm:top-auto sm:right-auto sm:inset-0 sm:bg-black/40 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity items-center justify-center flex-row">
+                          <button type="button" onClick={() => setSelectedFiles(selectedFiles.filter((_, i) => i !== index))} className="p-2 bg-white text-red-600 rounded-lg shadow-lg sm:shadow-none"><Trash2 size={14} /></button>
                         </div>
                       </div>
                     ))}
+                    {!isViewOnly && ((editingVehicle?.images?.length || 0) + selectedFiles.length) < 10 && (
+                      <label className="aspect-square rounded-xl border-2 border-dashed border-gray-200 hover:border-blue-500 flex flex-col items-center justify-center transition-all cursor-pointer bg-gray-50/50 hover:bg-blue-50/20"><Camera size={18} className="text-gray-300" /><input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} /></label>
+                    )}
                   </div>
                 </div>
-              )}
+
+                {bookingHistory.length > 0 && (
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-2"><div className="w-1 h-5 bg-amber-500 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Recent Activity</h4></div>
+                    <div className="space-y-3 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+                      {bookingHistory.map(bh => (
+                        <div key={bh.id} className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-row sm:items-center justify-between gap-4 transition-all hover:bg-white dark:hover:bg-gray-800">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase ${bh.status === 'Cancelled' ? 'bg-red-100 text-red-600' : bh.status === 'Sold' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>{bh.status}</span>
+                              <span className="text-[9px] text-gray-400 font-bold">{new Date(bh.booking_date).toLocaleDateString('id-ID')}</span>
+                            </div>
+                            <p className="font-black truncate text-gray-900 dark:text-gray-100 text-sm">{bh.customer_name}</p>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase">Agent: {bh.salesAgent?.name || 'Unknown'} ({bh.salesAgent?.sales_code || 'N/A'})</p>
+                          </div>
+                          <div className="flex flex-col items-end gap-3 shrink-0">
+                            <p className="font-black text-blue-600 text-xs">{formatPrice(bh.down_payment)}</p>
+                            {bh.delivery_photo && (
+                              <div className="group/photo relative">
+                                <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden border-2 border-green-500/20 shadow-sm">
+                                  <img 
+                                    src={`${IMAGE_BASE_URL}${bh.delivery_photo}`} 
+                                    className="w-full h-full object-cover cursor-zoom-in" 
+                                    alt="Deal Proof"
+                                    onClick={() => window.open(`${IMAGE_BASE_URL}${bh.delivery_photo}`, '_blank')}
+                                  />
+                                </div>
+                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800 shadow-sm" title="Handover Photo Available"></div>
+                              </div>
+                            )}
+                            {bh.status === 'Active' && (
+                              <button
+                                type="button"
+                                onClick={() => openBookingModal(editingVehicle, bh)}
+                                className="px-4 py-2 bg-white dark:bg-gray-900 border border-blue-100 dark:border-blue-900/30 text-blue-600 text-[10px] font-black uppercase rounded-xl hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                              >
+                                Edit
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
+            {!isViewOnly && <div className="pt-6 border-t border-gray-100 text-right"><button type="submit" className="btn-primary px-8 py-3 bg-blue-600 border-none text-[10px] font-black uppercase tracking-widest shadow-xl">Save Master Changes</button></div>}
+          </form>
+        ) : (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+             <div className="flex items-center gap-3"><div className="w-1 h-5 bg-blue-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Pusat Dokumen Legalitas</h4></div>
+             
+             {!editingVehicle ? (
+               <div className="p-12 text-center bg-gray-50 dark:bg-gray-800/20 rounded-[32px] border-2 border-dashed border-gray-200 dark:border-gray-700">
+                  <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center text-blue-500 mx-auto mb-4">
+                    <Info size={32} />
+                  </div>
+                  <h3 className="text-sm font-black text-gray-900 dark:text-white uppercase mb-2">Simpan Unit Terlebih Dahulu</h3>
+                  <p className="text-xs text-gray-500 max-w-xs mx-auto">Anda harus menyimpan data unit baru sebelum dapat mengunggah dokumen legalitas.</p>
+               </div>
+             ) : (
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 {documentTypes.map((type) => {
+                   const existingDoc = vehicleDocuments.find(d => d.document_type_id === type.id);
+                   return (
+                     <div key={type.id} className={`p-5 rounded-3xl border transition-all ${existingDoc ? 'bg-white dark:bg-gray-800 border-green-100 dark:border-green-900/30 shadow-lg shadow-green-500/5' : 'bg-gray-50/50 dark:bg-gray-800/20 border-gray-100 dark:border-gray-800'}`}>
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${existingDoc ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                              <FileText size={20} />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-tight">{type.name}</p>
+                                {type.is_mandatory && <span className="text-[8px] font-black text-red-500 uppercase tracking-widest">Wajib</span>}
+                              </div>
+                              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{existingDoc ? `Uploaded: ${new Date(existingDoc.created_at).toLocaleDateString('id-ID')}` : 'Belum ada file'}</p>
+                            </div>
+                          </div>
+                          {existingDoc && (
+                            <button onClick={() => handleDeleteDocument(editingVehicle.id, existingDoc.id)} className="p-2 hover:bg-red-50 text-red-500 rounded-xl transition-colors">
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </div>
+
+                        {existingDoc ? (
+                          <div className="flex items-center gap-3 mt-2">
+                             <button 
+                                onClick={() => window.open(`${IMAGE_BASE_URL}${existingDoc.file_path}`, '_blank')}
+                                className="flex-1 py-2.5 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white rounded-xl text-[9px] font-black uppercase transition-all flex items-center justify-center gap-2"
+                             >
+                               <Eye size={14} /> View Document
+                             </button>
+                          </div>
+                        ) : (
+                          <label className={`w-full py-6 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all ${isUploadingDoc ? 'opacity-50 pointer-events-none' : 'hover:border-blue-500 hover:bg-blue-50/50 border-gray-200 dark:border-gray-700'}`}>
+                            <Upload size={20} className="text-gray-300 mb-2" />
+                            <p className="text-[9px] font-black text-gray-400 uppercase">Klik untuk unggah file</p>
+                            <input 
+                              type="file" 
+                              className="hidden" 
+                              accept=".jpg,.jpeg,.png,.pdf" 
+                              onChange={(e) => handleUploadDocument(editingVehicle.id, type.id, e.target.files[0])}
+                              disabled={isUploadingDoc}
+                            />
+                          </label>
+                        )}
+                     </div>
+                   );
+                 })}
+               </div>
+             )}
           </div>
-          {!isViewOnly && <div className="pt-6 border-t border-gray-100 text-right"><button type="submit" className="btn-primary px-8 py-3 bg-blue-600 border-none text-[10px] font-black uppercase tracking-widest shadow-xl">Save Master Changes</button></div>}
-        </form>
+        )}
       </Modal>
+
 
       <Modal isOpen={isConfirmActionModalOpen} onClose={() => { setIsConfirmActionModalOpen(false); setDealPhoto(null); }} title="Transaction Confirmation">
         <div className="space-y-6 pt-2">

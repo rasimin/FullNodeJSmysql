@@ -45,6 +45,8 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/sales-agents', salesAgentRoutes);
 app.use('/api/settings', settingRoutes);
 app.use('/api/locations', locationRoutes);
+app.use('/api/documents', require('./routes/documentRoutes'));
+
 
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Admin Dashboard API' });
