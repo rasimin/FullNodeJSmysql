@@ -174,6 +174,7 @@ exports.getAllBookings = async (req, res) => {
     
     if (search) {
       condition[Op.or] = [
+        { id: { [Op.like]: `%${search}%` } },
         { customer_name: { [Op.like]: `%${search}%` } },
         { customer_phone: { [Op.like]: `%${search}%` } },
         { '$Vehicle.brand$': { [Op.like]: `%${search}%` } },

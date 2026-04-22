@@ -196,8 +196,8 @@ const exportBookingPdf = async (req, res) => {
     doc.pipe(res);
 
     const isInvoice = type === 'dp-invoice';
-    const title = isInvoice ? 'FINAL SETTLEMENT INVOICE' : 'VEHICLE DOWN PAYMENT RECEIPT';
-    const subTitle = isInvoice ? 'Payment Request for Remaining Vehicle Balance' : 'Official Vehicle Down Payment & Security Deposit Statement';
+    const title = isInvoice ? 'FINAL SETTLEMENT INVOICE' : 'UNIT DOWN PAYMENT RECEIPT';
+    const subTitle = isInvoice ? 'Payment Request for Remaining Unit Balance' : 'Official Unit Down Payment & Security Deposit Statement';
     const shortId = booking.id ? String(booking.id).split('-')[0].toUpperCase() : 'N/A';
 
     // Header: Modern Centered Design
@@ -254,7 +254,7 @@ const exportBookingPdf = async (req, res) => {
     const rightValueX = 390;
     const rightColWidth = 160; // Constraint width for value wrapping
 
-    doc.fontSize(10).font('Helvetica-Bold').fillColor('#1e40af').text('VEHICLE SPECIFICATIONS', rightLabelX, startY);
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#1e40af').text('UNIT SPECIFICATIONS', rightLabelX, startY);
     doc.rect(320, startY + 12, 40, 2).fill('#1e40af'); // Underline accent
     doc.font('Helvetica').fontSize(10).fillColor('#000');
 
@@ -288,7 +288,7 @@ const exportBookingPdf = async (req, res) => {
       const dp = parseFloat(booking.down_payment || 0);
       const total = price - dp;
 
-      doc.text('Vehicle Agreed Selling Price', 65, tableTop + 35);
+      doc.text('Unit Agreed Selling Price', 65, tableTop + 35);
       doc.font('Helvetica-Bold').text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(price), 350, tableTop + 35, { align: 'right', width: 190 });
 
       doc.font('Helvetica').text('Less: Down Payment (Already Paid)', 65, tableTop + 55);
@@ -299,7 +299,7 @@ const exportBookingPdf = async (req, res) => {
       doc.fontSize(11).font('Helvetica-Bold').fillColor('#b91c1c').text('REMAINING BALANCE PAYABLE', 65, tableTop + 85);
       doc.text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(total), 350, tableTop + 85, { align: 'right', width: 190 });
     } else {
-      doc.text('Vehicle Down Payment', 65, tableTop + 35);
+      doc.text('Unit Down Payment', 65, tableTop + 35);
       doc.fontSize(12).font('Helvetica-Bold').text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(booking.down_payment || 0), 350, tableTop + 35, { align: 'right', width: 190 });
     }
 
@@ -317,7 +317,7 @@ const exportBookingPdf = async (req, res) => {
 
     // Disclaimer Note
     const disclaimer = isInvoice
-      ? 'This invoice is for the final settlement of the vehicle purchase. Please ensure payment is made before the delivery date.'
+      ? 'This invoice is for the final settlement of the unit purchase. Please ensure payment is made before the delivery date.'
       : 'This document serves as a formal acknowledgement of the reservation payment. The unit is reserved for the client pending final settlement.';
 
     doc.fontSize(8).font('Helvetica-Oblique').fillColor('#94a3b8').text(disclaimer, 50, doc.y, { align: 'center', width: 500 });
@@ -361,7 +361,7 @@ const exportSaleInvoicePdf = async (req, res) => {
     res.setHeader('Content-Type', 'application/pdf');
     doc.pipe(res);
 
-    const title = isProof === 'true' ? 'OFFICIAL BILL OF SALE' : 'FINAL SETTLEMENT INVOICE';
+    const title = isProof === 'true' ? 'SALES RECEIPT' : 'FINAL SETTLEMENT INVOICE';
     const shortId = booking.id ? String(booking.id).split('-')[0].toUpperCase() : 'N/A';
 
     // Header: Modern Centered Design
@@ -382,7 +382,7 @@ const exportSaleInvoicePdf = async (req, res) => {
       doc.fontSize(8).font('Helvetica').fillColor('#4b5563').text(`Phone: ${booking.Office.phone}`, { align: 'left' });
     }
     doc.moveDown(1);
-    doc.fontSize(10).font('Helvetica').fillColor('#4b5563').text('Vehicle Ownership Transfer & Payment Settlement', { align: 'left' });
+    doc.fontSize(10).font('Helvetica').fillColor('#4b5563').text('Unit Ownership Transfer & Payment Settlement', { align: 'left' });
     doc.moveDown(2);
 
     // Info Grid (Purchaser & Vehicle)
@@ -418,7 +418,7 @@ const exportSaleInvoicePdf = async (req, res) => {
     const rightValueX = 390;
     const rightColWidth = 160;
 
-    doc.fontSize(10).font('Helvetica-Bold').fillColor('#1e40af').text('VEHICLE DESCRIPTION', rightLabelX, startY);
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#1e40af').text('UNIT DESCRIPTION', rightLabelX, startY);
     doc.rect(320, startY + 12, 40, 2).fill('#1e40af'); // Underline accent
     doc.font('Helvetica').fontSize(10).fillColor('#000');
 
@@ -458,7 +458,7 @@ const exportSaleInvoicePdf = async (req, res) => {
     doc.text('AMOUNT (IDR)', 430, tableTop + 7);
 
     doc.fillColor('#000').font('Helvetica').fontSize(10);
-    doc.text('Vehicle Agreed Selling Price', 65, tableTop + 35);
+    doc.text('Unit Agreed Selling Price', 65, tableTop + 35);
     doc.font('Helvetica-Bold').text(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(price), 350, tableTop + 35, { align: 'right', width: 190 });
 
     doc.font('Helvetica').text('Less: Down Payment', 65, tableTop + 55);
@@ -484,7 +484,7 @@ const exportSaleInvoicePdf = async (req, res) => {
       doc.moveDown(4.5);
 
       doc.rect(50, doc.y, 500, 22).fill('#f0fdf4');
-      doc.fillColor('#166534').fontSize(9).font('Helvetica-Bold').text('OFFICIAL PROOF OF VEHICLE OWNERSHIP TRANSFER', 50, doc.y + 6, { align: 'center', width: 500 });
+      doc.fillColor('#166534').fontSize(9).font('Helvetica-Bold').text('OFFICIAL PROOF OF UNIT OWNERSHIP TRANSFER', 50, doc.y + 6, { align: 'center', width: 500 });
       doc.moveDown(1.5);
     } else {
       doc.moveDown(2);
@@ -492,7 +492,7 @@ const exportSaleInvoicePdf = async (req, res) => {
 
     // Disclaimer
     const disclaimer = isProof === 'true'
-      ? 'This document serves as the final proof of transaction and vehicle ownership transfer. All payments have been verified.'
+      ? 'This document serves as the final proof of transaction and unit ownership transfer. All payments have been verified.'
       : 'Please ensure the remaining balance is settled before the agreed delivery date to avoid reservation cancellation.';
 
     doc.fontSize(8).font('Helvetica-Oblique').fillColor('#94a3b8').text(disclaimer, 50, doc.y, { align: 'center', width: 500 });
@@ -527,7 +527,7 @@ const exportSaleInvoicePdf = async (req, res) => {
           });
 
           doc.moveDown(2);
-          doc.fontSize(9).font('Helvetica-Oblique').fillColor('#64748b').text('This photograph serves as formal visual confirmation of the vehicle handover process to the authorized purchaser.', { align: 'center', width: 400 });
+          doc.fontSize(9).font('Helvetica-Oblique').fillColor('#64748b').text('This photograph serves as formal visual confirmation of the unit handover process to the authorized purchaser.', { align: 'center', width: 400 });
         }
       } catch (imgErr) {
         console.error('Error adding photo to PDF:', imgErr);
@@ -772,7 +772,7 @@ const exportFinancialReportPdf = async (req, res) => {
     });
 
     drawTable(
-      ['Type', 'Vehicle Description', 'Sold Date', 'Revenue', 'Margin'],
+      ['Type', 'Unit Description', 'Sold Date', 'Revenue', 'Margin'],
       salesRows,
       salesWidths,
       { align: ['center', 'left', 'left', 'right', 'right'] }
@@ -796,7 +796,7 @@ const exportFinancialReportPdf = async (req, res) => {
     });
 
     drawTable(
-      ['Type', 'Vehicle Description', 'Entry Date', 'Acquisition', 'Service Cost'],
+      ['Type', 'Unit Description', 'Entry Date', 'Acquisition', 'Service Cost'],
       purchaseRows,
       purchaseWidths,
       { align: ['center', 'left', 'left', 'right', 'right'] }

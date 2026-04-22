@@ -110,8 +110,8 @@ const Vehicles = () => {
         const res = await api.get(`/export/bookings/${bookingId}?type=${docType}`, { responseType: 'blob' });
         url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
       } else if (type === 'deal-proof') {
-        label = 'Official Bill of Sale';
-        filename = `Official_Bill_of_Sale${customerSuffix}.pdf`;
+        label = 'Sales Receipt';
+        filename = `Sales_Receipt${customerSuffix}.pdf`;
         const res = await api.get(`/export/sales/${bookingId}/invoice?isProof=true`, { responseType: 'blob' });
         url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
       }
@@ -1108,7 +1108,7 @@ const Vehicles = () => {
                   localStorage.setItem('pref_print_deal', newVal);
                 }}>
                   <input type="checkbox" checked={printDealProof} onChange={() => {}} className="w-4 h-4 rounded text-blue-600" />
-                  <span className="text-[10px] font-black text-gray-400 uppercase">Print Bill of Sale after save</span>
+                  <span className="text-[10px] font-black text-gray-400 uppercase">Print Sales Receipt after save</span>
                 </div>
 
                 <button onClick={handleConfirmSale} className="w-full py-4 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-black shadow-xl shadow-green-500/20 transition-all active:scale-95 uppercase text-xs tracking-widest">CLOSE DEAL NOW</button>

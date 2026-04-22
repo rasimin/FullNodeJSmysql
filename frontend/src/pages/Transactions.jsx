@@ -170,8 +170,8 @@ const Transactions = () => {
         url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
       } else if (type === 'sale-invoice' || type === 'deal-proof') {
         const isProof = type === 'deal-proof';
-        label = isProof ? 'Official Bill of Sale' : 'Final Settlement Invoice';
-        filename = isProof ? `Official_Bill_of_Sale${customerSuffix}.pdf` : `Settlement_Invoice${customerSuffix}.pdf`;
+        label = isProof ? 'Sales Receipt' : 'Final Settlement Invoice';
+        filename = isProof ? `Sales_Receipt${customerSuffix}.pdf` : `Final_Settlement_Invoice${customerSuffix}.pdf`;
 
         const res = await api.get(`/export/sales/${bookingId}/invoice${isProof ? '?isProof=true' : ''}`, { responseType: 'blob' });
         url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
@@ -356,7 +356,7 @@ const Transactions = () => {
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
-              type="text" placeholder="Search customer or unit..."
+              type="text" placeholder="Search ID, customer or unit..."
               className="input pl-10 h-11 text-xs"
               value={search} onChange={(e) => setSearch(e.target.value)}
             />
@@ -470,9 +470,24 @@ const Transactions = () => {
                               <p className="text-xs font-bold text-gray-900 dark:text-white">{new Date(t.booking_date).toLocaleDateString('id-ID')}</p>
                               <p className="text-[9px] text-gray-300 font-bold uppercase truncate max-w-[80px]">ID: {t.id.split('-')[0]}</p>
                             </div>
-                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              {s === 'active' && <button onClick={() => openBookingModal(t)} className="btn-edit !p-1" title="Edit"><Edit size={12} /></button>}
+                            <div className="flex gap-1 transition-opacity">
                               <button onClick={() => { setSelectedTransaction(t); setIsDeleteModalOpen(true); }} className="btn-delete !p-1" title="Trash"><Trash2 size={12} /></button>
+                              {s === 'active' && (
+                                <>
+                                  <button onClick={() => openBookingModal(t)} className="btn-edit !p-1" title="Edit"><Edit size={12} /></button>
+                                  <button 
+                                    onClick={() => { 
+                                      setSelectedTransaction(t); 
+                                      setCancellationReason(''); 
+                                      setIsCancelModalOpen(true); 
+                                    }}
+                                    className="btn-icon !p-1 text-red-500 hover:bg-red-50" 
+                                    title="Cancel Booking"
+                                  >
+                                    <XCircle size={12} />
+                                  </button>
+                                </>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -538,22 +553,9 @@ const Transactions = () => {
                               <>
                                 <button onClick={() => handlePrintDoc(t.id, 'receipt')} className="btn-icon hover:text-indigo-600 hover:bg-indigo-50" title="Print Receipt"><Printer size={12} /></button>
                                 <button onClick={() => handlePrintDoc(t.id, 'sale-invoice')} className="btn-icon hover:text-amber-600 hover:bg-amber-50" title="Print Invoice"><FileSpreadsheet size={12} /></button>
-                                {s === 'active' && (
-                                  <button 
-                                    onClick={() => { 
-                                      setSelectedTransaction(t); 
-                                      setCancellationReason(''); // Reset
-                                      setIsCancelModalOpen(true); 
-                                    }}
-                                    className="btn-icon hover:text-red-600 hover:bg-red-50" 
-                                    title="Cancel Booking"
-                                  >
-                                    <XCircle size={12} />
-                                  </button>
-                                )}
                               </>
                             )}
-                            {s === 'sold' && <button onClick={() => handlePrintDoc(t.id, 'deal-proof')} className="btn-icon hover:text-green-600 hover:bg-green-50" title="Print Bill of Sale"><CheckCircle size={12} /></button>}
+                            {s === 'sold' && <button onClick={() => handlePrintDoc(t.id, 'deal-proof')} className="btn-icon hover:text-green-600 hover:bg-green-50" title="Print Sales Receipt"><CheckCircle size={12} /></button>}
                           </div>
                         </td>
                       </tr>
@@ -662,6 +664,7 @@ const Transactions = () => {
                     {/* Footer: All Actions */}
                     <div className="p-2.5 px-4 bg-gray-50 dark:bg-gray-800/20 border-t border-gray-50 dark:border-gray-800 flex justify-between items-center">
                       <div className="flex gap-1.5">
+                        <button onClick={() => { setSelectedTransaction(t); setIsDeleteModalOpen(true); }} className="btn-delete !bg-white dark:!bg-gray-800 !p-1.5 shadow-sm" title="Trash"><Trash2 size={14} /></button>
                         {s === 'active' && (
                           <>
                             <button onClick={() => openBookingModal(t)} className="btn-edit !bg-white dark:!bg-gray-800 !p-1.5 shadow-sm" title="Edit"><Edit size={14} /></button>
@@ -672,7 +675,6 @@ const Transactions = () => {
                              }} className="btn-icon !bg-white dark:!bg-gray-800 !p-1.5 !text-red-500 hover:!bg-red-50 shadow-sm" title="Cancel Booking"><XCircle size={14} /></button>
                           </>
                         )}
-                        <button onClick={() => { setSelectedTransaction(t); setIsDeleteModalOpen(true); }} className="btn-delete !bg-white dark:!bg-gray-800 !p-1.5 shadow-sm" title="Trash"><Trash2 size={14} /></button>
                       </div>
                       <div className="flex gap-1">
                         {(s === 'active' || s === 'sold') && (
@@ -681,7 +683,7 @@ const Transactions = () => {
                             <button onClick={() => handlePrintDoc(t.id, 'sale-invoice')} className="p-1.5 bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 rounded-lg hover:bg-amber-600 dark:hover:bg-amber-600 hover:text-white transition-all shadow-sm" title="Print Final Invoice"><FileSpreadsheet size={14} /></button>
                           </>
                         )}
-                        {s === 'sold' && <button onClick={() => handlePrintDoc(t.id, 'deal-proof')} className="p-1.5 bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400 rounded-lg hover:bg-green-600 dark:hover:bg-green-600 hover:text-white transition-all shadow-sm" title="Print Bill of Sale"><CheckCircle2 size={14} /></button>}
+                        {s === 'sold' && <button onClick={() => handlePrintDoc(t.id, 'deal-proof')} className="p-1.5 bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400 rounded-lg hover:bg-green-600 dark:hover:bg-green-600 hover:text-white transition-all shadow-sm" title="Print Sales Receipt"><CheckCircle2 size={14} /></button>}
                       </div>
                     </div>
                   </motion.div>
