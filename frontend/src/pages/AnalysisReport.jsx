@@ -7,14 +7,14 @@ import {
 import {
   TrendingUp, Package, DollarSign, ShoppingCart, 
   ArrowUpRight, BarChart2, PieChart as PieIcon,
-  Activity, Calendar, Filter, Download, Briefcase, Wallet, Eye, EyeOff, XCircle, FileText
+  Activity, Filter, Eye, EyeOff, History, X, Search, ChevronLeft, ChevronRight, FileSpreadsheet
 } from 'lucide-react';
-import PdfViewerModal from '../components/PdfViewerModal';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { formatOfficeHierarchy } from '../utils/hierarchy';
 import { API_URL, IMAGE_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import DynamicIsland from '../components/DynamicIsland';
+import Pagination from '../components/ui/Pagination';
 
 const AnalysisReport = () => {
   const { user } = useAuth();
@@ -22,43 +22,58 @@ const AnalysisReport = () => {
   const [loading, setLoading] = useState(true);
   const [selectedOffice, setSelectedOffice] = useState('');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
-  const [isChangingYear, setIsChangingYear] = useState(false);
+
   const [showFullAmount, setShowFullAmount] = useState(false);
   const [offices, setOffices] = useState([]);
   const [notification, setNotification] = useState({ status: 'idle', message: '' });
   
-  // PDF Modal State
-  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
-  const [pdfDocuments, setPdfDocuments] = useState([]);
+  // Aging Modal States
+  const [isAgingModalOpen, setIsAgingModalOpen] = useState(false);
+  const [agingSearch, setAgingSearch] = useState('');
+  const [agingCategory, setAgingCategory] = useState('all');
+  const [chartWidth, setChartWidth] = useState(1000);
+  const [agingPage, setAgingPage] = useState(1);
+  const agingItemsPerPage = 10;
+
+  // Auto-select oldest category when modal opens
+  useEffect(() => {
+    if (isAgingModalOpen && data?.currentStock?.inventoryAging) {
+      const categories = ['Di Atas 90 Hari', '61-90 Hari', '31-60 Hari', '0-30 Hari'];
+      const agingData = data.currentStock.inventoryAging;
+      
+      const autoSelected = categories.find(cat => agingData[cat] > 0);
+      
+      if (autoSelected) {
+        setAgingCategory(autoSelected);
+      } else {
+        setAgingCategory('all');
+      }
+      setAgingPage(1);
+      setAgingSearch('');
+    }
+  }, [isAgingModalOpen, data?.currentStock?.inventoryAging]);
+
+  useEffect(() => {
+    const updateWidth = () => {
+      const container = document.getElementById('volume-chart-container');
+      if (container) {
+        const padding = window.innerWidth < 500 ? 16 : 48;
+        setChartWidth(container.offsetWidth - padding);
+      }
+    };
+    
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, [data]);
+
 
   const notify = (status, message, delay = 2000) => {
     setNotification({ status, message });
     if (status !== 'loading') setTimeout(() => setNotification({ status: 'idle' }), delay);
   };
 
-  const handleGenerateDetailedReport = async () => {
-    notify('loading', 'Menghasilkan Laporan Keuangan Detail...');
-    try {
-      const res = await api.get('/export/financial-report', {
-        params: { year: selectedYear, officeId: selectedOffice },
-        responseType: 'blob'
-      });
-      
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
-      const filename = `Financial_Report_${selectedYear}_${selectedOffice || 'All'}.pdf`;
-      
-      setPdfDocuments([{
-        title: `Detail Keuangan - ${selectedYear === 'all' ? 'Semua Waktu' : selectedYear}`,
-        url,
-        filename
-      }]);
-      setIsPdfModalOpen(true);
-      notify('success', 'Laporan berhasil dibuat!');
-    } catch (err) {
-      console.error('Failed to generate PDF report', err);
-      notify('error', 'Gagal menghasilkan laporan PDF');
-    }
-  };
+
 
   // Robust check for Head Office / Super Admin permissions
   const isHeadOffice = 
@@ -127,6 +142,52 @@ const AnalysisReport = () => {
     return showFullAmount ? formatCurrency(num) : formatShort(num);
   };
 
+  // Filter and Paginate Aging Data
+  const filteredAgingData = data?.currentStock?.allAvailableUnits?.filter(unit => {
+    const matchesSearch = 
+      unit.brand?.toLowerCase().includes(agingSearch.toLowerCase()) ||
+      unit.model?.toLowerCase().includes(agingSearch.toLowerCase()) ||
+      unit.plate_number?.toLowerCase().includes(agingSearch.toLowerCase());
+    
+    const matchesCategory = agingCategory === 'all' || unit.agingCategory === agingCategory;
+    
+    return matchesSearch && matchesCategory;
+  }) || [];
+
+  const handleExportExcel = () => {
+    if (filteredAgingData.length === 0) {
+      return notify('error', 'Tidak ada data untuk diekspor');
+    }
+
+    const headers = ['Merk/Model', 'Plat Nomor', 'Usia (Hari)', 'Harga Jual', 'Harga Modal', 'Tanggal Masuk', 'Kategori Aging'];
+    const rows = filteredAgingData.map(unit => [
+      `"${unit.brand} ${unit.model}"`,
+      `"${unit.plate_number}"`,
+      unit.days,
+      unit.price,
+      Number(unit.purchase_price) + Number(unit.service_cost),
+      `"${new Date(unit.entry_date).toLocaleDateString('id-ID')}"`,
+      `"${unit.agingCategory}"`
+    ]);
+
+    const csvContent = "\ufeff" + [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Data_Aging_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    notify('success', 'Data berhasil diekspor ke format Excel (CSV)');
+  };
+
+  const totalAgingPages = Math.ceil(filteredAgingData.length / agingItemsPerPage);
+  const paginatedAgingData = filteredAgingData.slice(
+    (agingPage - 1) * agingItemsPerPage,
+    agingPage * agingItemsPerPage
+  );
+
   if (loading && !data) return (
     <div className="flex items-center justify-center min-h-[400px]">
       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -176,12 +237,7 @@ const AnalysisReport = () => {
                 </select>
               </div>
             )}
-            <button 
-              onClick={handleGenerateDetailedReport}
-              className="px-4 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/25"
-            >
-                <FileText size={14} /> Laporan PDF Keuangan
-            </button>
+
             <button onClick={fetchData} className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
                 <Activity size={14} className="text-blue-500" /> Perbarui Data
             </button>
@@ -228,180 +284,108 @@ const AnalysisReport = () => {
         />
       </div>
 
-      {/* Financial Performance Summary Group */}
-      <div className="card p-6 border border-gray-200 dark:border-gray-800 bg-slate-50/50 dark:bg-gray-900/20 shadow-inner">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <div>
-            <h2 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
-              <BarChart2 size={18} className="text-blue-500" /> Ringkasan Performa Keuangan
-            </h2>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mt-1">Data akumulasi berdasarkan tahun fiskal</p>
+
+
+
+
+      <div className="grid grid-cols-1 gap-6">
+        {/* Unit Performance Chart - Full Width Highlight */}
+        <div className="card p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
+              <ShoppingCart size={16} className="text-blue-500" /> Performa Volume Unit (6 Bulan)
+            </h3>
           </div>
-          
-          {!isChangingYear ? (
-            <button 
-              onClick={() => setIsChangingYear(true)}
-              className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 rounded-xl px-4 py-2 self-end shadow-sm hover:bg-blue-100 dark:hover:bg-blue-800/40 transition-all group"
-            >
-              <Calendar size={14} className="text-blue-500 group-hover:scale-110 transition-transform" />
-              <span className="text-[11px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400">
-                {selectedYear === 'all' ? 'Semua Catatan' : `Tahun Fiskal ${selectedYear}`}
-              </span>
-              <ArrowUpRight size={12} className="text-blue-300 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </button>
-          ) : (
-            <div className="flex items-center gap-2 bg-white dark:bg-gray-800 border-2 border-blue-400 rounded-xl px-3 py-1.5 self-end shadow-lg animate-in fade-in zoom-in duration-200">
-              <select
-                autoFocus
-                className="bg-transparent border-none text-[11px] font-black uppercase tracking-widest focus:ring-0 outline-none cursor-pointer text-gray-900 dark:text-white"
-                value={selectedYear}
-                onChange={(e) => {
-                  setSelectedYear(e.target.value);
-                  setIsChangingYear(false);
-                }}
-                onBlur={() => setIsChangingYear(false)}
-              >
-                <option value="all" className="dark:bg-gray-800">Semua Catatan</option>
-                {Array.from({length: 5}, (_, i) => new Date().getFullYear() - i).map(y => (
-                  <option key={y} value={y} className="dark:bg-gray-800">Tahun Fiskal {y}</option>
-                ))}
-              </select>
+          <div className="flex flex-col xl:flex-row gap-6 items-stretch">
+            <div id="volume-chart-container" className="flex-1 w-full overflow-hidden">
+              {data?.trends?.units?.length > 0 ? (
+                <ComposedChart 
+                  width={chartWidth}
+                  height={chartWidth < 500 ? 220 : 350}
+                  data={data.trends.units} 
+                  margin={chartWidth < 500 ? { top: 10, right: 0, left: -35, bottom: 0 } : { top: 20, right: 30, left: 20, bottom: 5 }}
+                >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
+                    <XAxis 
+                      dataKey="month" 
+                      stroke="#94a3b8" 
+                      fontSize={chartWidth < 500 ? 8 : 10} 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tickFormatter={(val) => chartWidth < 500 ? val.split('-')[1] : val}
+                    />
+                    <YAxis stroke="#94a3b8" fontSize={chartWidth < 500 ? 8 : 10} axisLine={false} tickLine={false} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', fontSize: '10px', color: '#fff' }}
+                      itemStyle={{ color: '#fff' }}
+                    />
+                    <Legend 
+                      iconType="circle" 
+                      wrapperStyle={{ paddingTop: '20px', fontSize: chartWidth < 500 ? '8px' : '10px', fontWeight: 'bold', textTransform: 'uppercase' }} 
+                      payload={[
+                        { value: 'Unit Terjual', type: 'circle', color: '#3b82f6' },
+                        { value: 'Unit Dibeli', type: 'circle', color: '#f59e0b' }
+                      ]}
+                    />
+                    <Bar name="Unit Terjual" dataKey="sold" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={chartWidth < 500 ? 14 : 40} isAnimationActive={false}>
+                      <LabelList dataKey="sold" position="top" fill="#3b82f6" fontSize={chartWidth < 500 ? 8 : 10} fontWeight="bold" />
+                    </Bar>
+                    <Bar name="Unit Dibeli" dataKey="bought" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={chartWidth < 500 ? 14 : 40} isAnimationActive={false}>
+                      <LabelList dataKey="bought" position="top" fill="#f59e0b" fontSize={chartWidth < 500 ? 8 : 10} fontWeight="bold" />
+                    </Bar>
+                    <Line type="monotone" dataKey="sold" stroke="#3b82f6" strokeWidth={2} dot={false} strokeOpacity={0.4} strokeDasharray="5 5" legendType="none" />
+                    <Line type="monotone" dataKey="bought" stroke="#f59e0b" strokeWidth={2} dot={false} strokeOpacity={0.4} strokeDasharray="5 5" legendType="none" />
+                  </ComposedChart>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-xs text-gray-400 font-bold uppercase">Data tidak tersedia</div>
+              )}
             </div>
-          )}
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Cumulative Sales Summary */}
-          <div className="bg-gradient-to-br from-green-50/50 to-white border border-green-100 dark:from-green-900/10 dark:to-gray-800 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm flex flex-col">
-              <div className="h-1.5 bg-green-500" />
-              <div className="p-6 flex-1">
-                  <div className="flex justify-between items-start mb-6">
-                    <h3 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-2">
-                        <div className="p-1.5 bg-green-100 dark:bg-green-900/40 rounded-lg"><Briefcase size={14} className="text-green-600" /></div> Ringkasan Penjualan
-                    </h3>
-                    <span className="px-2 py-0.5 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-[8px] font-black rounded uppercase">Aliran Pendapatan</span>
+            {/* Monthly Summary Sideboxes */}
+            <div className="w-full xl:w-72 flex flex-col gap-4 mt-4 xl:mt-0">
+               {/* Sold Summary */}
+               <div className="bg-blue-50/50 dark:bg-blue-500/5 border border-blue-100 dark:border-blue-500/20 rounded-3xl p-6 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/10 rounded-full -mr-12 -mt-12 blur-2xl group-hover:bg-blue-500/20 transition-all" />
+                  <div className="relative z-10">
+                    <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">Terjual Bulan Ini</p>
+                    <div className="flex items-baseline gap-2 mb-4">
+                      <h4 className="text-3xl font-black text-gray-900 dark:text-white">
+                        {data?.trends?.units?.[data.trends.units.length - 1]?.sold || 0}
+                      </h4>
+                      <span className="text-xs font-bold text-gray-400 uppercase">Unit</span>
+                    </div>
+                    <div className="pt-4 border-t border-blue-100 dark:border-blue-500/20">
+                      <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Total Nilai Penjualan</p>
+                      <p className="text-sm font-black text-blue-600 dark:text-blue-400">
+                        {displayAmount(data?.trends?.cashFlow?.[data.trends.cashFlow.length - 1]?.inflow || 0)}
+                      </p>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-6">
-                      <div className="space-y-1 border-r border-gray-100 dark:border-gray-700/50">
-                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Total Unit</p>
-                          <p className="text-2xl font-black text-gray-900 dark:text-white leading-none">{data?.overall?.sales?.units}</p>
-                          <p className="text-[8px] font-bold text-gray-400 uppercase">Transaksi Selesai</p>
-                      </div>
-                      <div className="space-y-1 border-r border-gray-100 dark:border-gray-700/50">
-                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Pendapatan Kotor</p>
-                          <p className="text-lg font-black text-blue-600 leading-none">{displayAmount(data?.overall?.sales?.revenue)}</p>
-                          <p className="text-[8px] font-bold text-gray-400 uppercase">Nilai Total</p>
-                      </div>
-                      <div className="space-y-1">
-                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Margin Bersih</p>
-                          <p className="text-lg font-black text-green-600 leading-none">{displayAmount(data?.overall?.sales?.margin)}</p>
-                          <p className="text-[8px] font-bold text-gray-400 uppercase">Total Profit</p>
-                      </div>
-                  </div>
-              </div>
-          </div>
+               </div>
 
-          {/* Cumulative Purchase Summary */}
-          <div className="bg-gradient-to-br from-blue-50/50 to-white border border-blue-100 dark:from-blue-900/10 dark:to-gray-800 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm flex flex-col">
-              <div className="h-1.5 bg-blue-500" />
-              <div className="p-6 flex-1">
-                  <div className="flex justify-between items-start mb-6">
-                    <h3 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-[0.2em] flex items-center gap-2">
-                        <div className="p-1.5 bg-blue-100 dark:bg-blue-900/40 rounded-lg"><ShoppingCart size={14} className="text-blue-600" /></div> Ringkasan Pembelian
-                    </h3>
-                    <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[8px] font-black rounded uppercase">Alokasi Modal</span>
+               {/* Bought Summary */}
+               <div className="bg-orange-50/50 dark:bg-orange-500/5 border border-orange-100 dark:border-orange-500/20 rounded-3xl p-6 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/10 rounded-full -mr-12 -mt-12 blur-2xl group-hover:bg-orange-500/20 transition-all" />
+                  <div className="relative z-10">
+                    <p className="text-[10px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest mb-1">Dibeli Bulan Ini</p>
+                    <div className="flex items-baseline gap-2 mb-4">
+                      <h4 className="text-3xl font-black text-gray-900 dark:text-white">
+                        {data?.trends?.units?.[data.trends.units.length - 1]?.bought || 0}
+                      </h4>
+                      <span className="text-xs font-bold text-gray-400 uppercase">Unit</span>
+                    </div>
+                    <div className="pt-4 border-t border-orange-100 dark:border-orange-500/20">
+                      <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Total Modal (Beli+Servis)</p>
+                      <p className="text-sm font-black text-orange-600 dark:text-orange-400">
+                        {displayAmount(data?.trends?.cashFlow?.[data.trends.cashFlow.length - 1]?.outflow || 0)}
+                      </p>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-6">
-                      <div className="space-y-1 border-r border-gray-100 dark:border-gray-700/50">
-                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Stok Masuk</p>
-                          <p className="text-2xl font-black text-gray-900 dark:text-white leading-none">{data?.overall?.purchases?.units}</p>
-                          <p className="text-[8px] font-bold text-gray-400 uppercase">Unit Baru</p>
-                      </div>
-                      <div className="space-y-1 border-r border-gray-100 dark:border-gray-700/50">
-                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Akuisisi</p>
-                          <p className="text-lg font-black text-red-600 leading-none">{displayAmount(data?.overall?.purchases?.cost)}</p>
-                          <p className="text-[8px] font-bold text-gray-400 uppercase">Modal Keluar</p>
-                      </div>
-                      <div className="space-y-1">
-                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Servis/Persiapan</p>
-                          <p className="text-lg font-black text-orange-600 leading-none">{displayAmount(data?.overall?.purchases?.service)}</p>
-                          <p className="text-[8px] font-bold text-gray-400 uppercase">Total Biaya</p>
-                      </div>
-                  </div>
-              </div>
-          </div>
-
-          {/* Cancellation Income Card */}
-          <div className="bg-gradient-to-br from-orange-50/50 to-white border border-orange-100 dark:from-orange-900/10 dark:to-gray-800 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm flex flex-col">
-              <div className="h-1.5 bg-orange-500" />
-              <div className="p-6 flex-1">
-                  <h3 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                      <div className="p-1.5 bg-orange-100 dark:bg-orange-900/40 rounded-lg"><XCircle size={14} className="text-orange-600" /></div> Pendapatan Pembatalan
-                  </h3>
-                  <div className="flex items-center justify-between bg-white dark:bg-gray-800/50 p-4 rounded-xl border border-orange-100/50 dark:border-orange-900/20">
-                      <div>
-                          <p className="text-[9px] font-black text-gray-400 uppercase mb-1">DP Tidak Kembali</p>
-                          <p className="text-3xl font-black text-orange-600 leading-none">{displayAmount(data?.currentStock?.cancelledDPIncome)}</p>
-                      </div>
-                      <div className="text-right">
-                          <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase leading-relaxed">
-                            Pendapatan Aman <br/>
-                            <span className="text-[8px] text-gray-400">Dari Pemesanan Batal</span>
-                          </p>
-                      </div>
-                  </div>
-              </div>
-          </div>
-
-          {/* Cash Flow Balance Card with Opening Balance */}
-          <div className="bg-gradient-to-br from-purple-50/50 to-white border border-purple-100 dark:from-purple-900/10 dark:to-gray-800 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm flex flex-col">
-              <div className="h-1.5 bg-purple-500" />
-              <div className="p-6 flex-1">
-                  <h3 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                      <div className="p-1.5 bg-purple-100 dark:bg-purple-900/40 rounded-lg"><Wallet size={14} className="text-purple-600" /></div> Saldo Arus Kas
-                  </h3>
-                  <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4 pb-2 border-b border-gray-100 dark:border-gray-700/50">
-                          <div>
-                              <p className="text-[9px] font-black text-gray-400 uppercase">Saldo Awal</p>
-                              <p className={`text-xs font-black ${data?.overall?.openingBalance >= 0 ? 'text-gray-900 dark:text-gray-200' : 'text-red-500'}`}>
-                                  {displayAmount(data?.overall?.openingBalance || 0)}
-                              </p>
-                          </div>
-                          <div className="text-right border-l border-gray-100 dark:border-gray-700/50 pl-4">
-                              <p className="text-[9px] font-black text-gray-400 uppercase">Arus Saat Ini</p>
-                              <p className={`text-xs font-black ${
-                                  (data?.overall?.sales?.revenue - (data?.overall?.purchases?.cost + data?.overall?.purchases?.service)) >= 0 
-                                  ? 'text-green-600' : 'text-red-600'
-                              }`}>
-                                  {displayAmount(data?.overall?.sales?.revenue - (data?.overall?.purchases?.cost + data?.overall?.purchases?.service))}
-                              </p>
-                          </div>
-                      </div>
-
-                      <div className="flex justify-between items-center">
-                          <div>
-                              <p className="text-[9px] font-black text-gray-400 uppercase mb-1">Posisi Kas Akhir</p>
-                              <p className={`text-3xl font-black leading-none ${
-                                  ((data?.overall?.openingBalance || 0) + (data?.overall?.sales?.revenue - (data?.overall?.purchases?.cost + data?.overall?.purchases?.service))) >= 0 
-                                  ? 'text-green-600' : 'text-red-600'
-                              }`}>
-                                  {displayAmount((data?.overall?.openingBalance || 0) + (data?.overall?.sales?.revenue - (data?.overall?.purchases?.cost + data?.overall?.purchases?.service)))}
-                              </p>
-                          </div>
-                          <div className="text-right">
-                              <div className="inline-block px-2 py-1 bg-purple-50 dark:bg-purple-900/20 rounded text-[8px] font-black text-purple-600 dark:text-purple-400 uppercase">
-                                {selectedYear === 'all' ? 'STATUS SELAMANYA' : `STATUS ${selectedYear}`}
-                              </div>
-                          </div>
-                      </div>
-                  </div>
-              </div>
+               </div>
+            </div>
           </div>
         </div>
       </div>
-
-
 
       <div className="grid grid-cols-1 gap-6">
         {/* Cash Flow Comparison Chart - Full Width Highlight */}
@@ -426,7 +410,14 @@ const AnalysisReport = () => {
                   contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', fontSize: '10px', color: '#fff' }}
                   itemStyle={{ color: '#fff' }}
                 />
-                <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }} />
+                 <Legend 
+                  iconType="circle" 
+                  wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }} 
+                  payload={[
+                    { value: 'Kas Masuk (Penjualan)', type: 'circle', color: '#10b981' },
+                    { value: 'Kas Keluar (Beli+Servis)', type: 'circle', color: '#ef4444' }
+                  ]}
+                />
                 <Bar name="Kas Masuk (Penjualan)" dataKey="inflow" fill="#10b981" radius={[4, 4, 0, 0]} barSize={40} isAnimationActive={false}>
                   <LabelList dataKey="inflow" position="top" formatter={formatShort} fill="#10b981" fontSize={9} fontWeight="bold" />
                 </Bar>
@@ -434,8 +425,8 @@ const AnalysisReport = () => {
                   <LabelList dataKey="outflow" position="top" formatter={formatShort} fill="#ef4444" fontSize={9} fontWeight="bold" />
                 </Bar>
                 {/* Subtle Trend Lines */}
-                <Line type="monotone" dataKey="inflow" stroke="#10b981" strokeWidth={2} dot={false} strokeOpacity={0.4} strokeDasharray="5 5" />
-                <Line type="monotone" dataKey="outflow" stroke="#ef4444" strokeWidth={2} dot={false} strokeOpacity={0.4} strokeDasharray="5 5" />
+                <Line type="monotone" dataKey="inflow" stroke="#10b981" strokeWidth={2} dot={false} strokeOpacity={0.4} strokeDasharray="5 5" legendType="none" />
+                <Line type="monotone" dataKey="outflow" stroke="#ef4444" strokeWidth={2} dot={false} strokeOpacity={0.4} strokeDasharray="5 5" legendType="none" />
               </ComposedChart>
             ) : (
               <div className="h-[300px] flex items-center justify-center text-xs text-gray-400 font-bold uppercase">Data tidak tersedia</div>
@@ -443,43 +434,121 @@ const AnalysisReport = () => {
           </div>
         </div>
       </div>
-      <div className="grid grid-cols-1 gap-6">
-        {/* Unit Performance Chart - Full Width Highlight */}
-        <div className="card p-6">
+
+      {/* Inventory Aging Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-1 card p-6">
+          <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+            <History size={16} className="text-orange-500" /> Usia Inventaris (Aging)
+          </h3>
+          <div className="flex flex-col items-center justify-center min-h-[320px] w-full">
+            {data?.currentStock?.inventoryAging ? (
+              <PieChart width={320} height={320}>
+                <Pie
+                  data={Object.keys(data.currentStock.inventoryAging).map(key => ({
+                    name: key,
+                    value: data.currentStock.inventoryAging[key]
+                  }))}
+                  cx="50%"
+                  cy="40%"
+                  innerRadius={65}
+                  outerRadius={90}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  <Cell fill="#10b981" />
+                  <Cell fill="#3b82f6" />
+                  <Cell fill="#f59e0b" />
+                  <Cell fill="#ef4444" />
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#1e293b', 
+                    border: 'none', 
+                    borderRadius: '12px', 
+                    fontSize: '10px', 
+                    color: '#fff',
+                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                  }}
+                  itemStyle={{ color: '#fff', fontSize: '10px', fontWeight: 'bold' }}
+                />
+                <Legend 
+                  verticalAlign="bottom" 
+                  align="center"
+                  iconType="circle" 
+                  wrapperStyle={{ fontSize: '9px', fontWeight: 'bold', textTransform: 'uppercase', paddingBottom: '20px' }} 
+                  formatter={(value) => (
+                    <span className="text-gray-600 dark:text-gray-300">
+                      {value} : <span className="text-blue-600 dark:text-cyan-400 font-black ml-1">{data?.currentStock?.inventoryAging[value] || 0}</span>
+                    </span>
+                  )}
+                />
+              </PieChart>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-xs text-gray-400 font-bold uppercase">Data tidak tersedia</div>
+            )}
+          </div>
+        </div>
+
+        <div className="lg:col-span-2 card p-6">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
-              <ShoppingCart size={16} className="text-blue-500" /> Performa Volume Unit (6 Bulan)
+              <Activity size={16} className="text-red-500" /> Unit Slow Moving (Tertua)
             </h3>
+            <button 
+              onClick={() => setIsAgingModalOpen(true)}
+              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-400 hover:text-blue-500"
+              title="Lihat Semua Detail Aging"
+            >
+              <ArrowUpRight size={18} />
+            </button>
           </div>
-          <div className="flex justify-center w-full overflow-hidden">
-            {data?.trends?.units?.length > 0 ? (
-              <ComposedChart 
-                width={1000} 
-                height={350} 
-                data={data.trends.units} 
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
-                <XAxis dataKey="month" stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={10} axisLine={false} tickLine={false} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', fontSize: '10px', color: '#fff' }}
-                  itemStyle={{ color: '#fff' }}
-                />
-                <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }} />
-                <Bar name="Unit Terjual" dataKey="sold" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={40} isAnimationActive={false}>
-                  <LabelList dataKey="sold" position="top" fill="#3b82f6" fontSize={10} fontWeight="bold" />
-                </Bar>
-                <Bar name="Unit Dibeli" dataKey="bought" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={40} isAnimationActive={false}>
-                  <LabelList dataKey="bought" position="top" fill="#f59e0b" fontSize={10} fontWeight="bold" />
-                </Bar>
-                {/* Subtle Trend Lines */}
-                <Line type="monotone" dataKey="sold" stroke="#3b82f6" strokeWidth={2} dot={false} strokeOpacity={0.4} strokeDasharray="5 5" />
-                <Line type="monotone" dataKey="bought" stroke="#f59e0b" strokeWidth={2} dot={false} strokeOpacity={0.4} strokeDasharray="5 5" />
-              </ComposedChart>
-            ) : (
-              <div className="h-[300px] flex items-center justify-center text-xs text-gray-400 font-bold uppercase">Data tidak tersedia</div>
-            )}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-gray-100 dark:border-gray-700">
+                  <th className="pb-3 text-[10px] font-black text-gray-400 uppercase">Unit</th>
+                  <th className="pb-3 text-[10px] font-black text-gray-400 uppercase text-center">Usia Stok</th>
+                  <th className="pb-3 text-[10px] font-black text-gray-400 uppercase text-right">Harga</th>
+                  <th className="pb-3 text-[10px] font-black text-gray-400 uppercase text-right">Tgl Masuk</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                {data?.currentStock?.slowMoving?.map((unit, idx) => (
+                  <tr key={idx} className="group hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
+                    <td className="py-3">
+                      <div className="text-[11px] font-black text-gray-900 dark:text-white uppercase">{unit.brand} {unit.model}</div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[9px] font-black bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-gray-500 uppercase tracking-wider border border-gray-200 dark:border-gray-700">
+                          {unit.plate_number}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="py-3 text-center">
+                      <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase ${
+                        unit.days > 90 ? 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400 border dark:border-red-500/30' :
+                        unit.days > 60 ? 'bg-orange-100 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400 border dark:border-orange-500/30' :
+                        'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 border dark:border-blue-500/30'
+                      }`}>
+                        {unit.days} Hari
+                      </span>
+                    </td>
+                    <td className="py-3 text-right">
+                      <div className="text-[10px] font-black text-gray-900 dark:text-white uppercase">Jual: {displayAmount(unit.price)}</div>
+                      <div className="text-[8px] font-bold text-orange-500 uppercase mt-0.5">Modal: {displayAmount(Number(unit.purchase_price) + Number(unit.service_cost))}</div>
+                    </td>
+                    <td className="py-3 text-right text-[9px] font-bold text-gray-400">
+                      {new Date(unit.entry_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </td>
+                  </tr>
+                ))}
+                {(!data?.currentStock?.slowMoving || data.currentStock.slowMoving.length === 0) && (
+                  <tr>
+                    <td colSpan="4" className="py-10 text-center text-xs text-gray-400 font-bold uppercase">Tidak ada data unit tersedia</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -556,114 +625,146 @@ const AnalysisReport = () => {
 
 
 
-      <div className="grid grid-cols-1 gap-6 mt-6">
-        {/* Sales Agent Leaderboard */}
-        <div className="card p-6 overflow-hidden">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
-              <TrendingUp size={16} className="text-blue-500" /> Papan Peringkat Agen Sales
-            </h3>
-            <span className="text-[10px] font-bold text-gray-400 uppercase">Performa Terbaik ({selectedYear === 'all' ? 'Semua Waktu' : selectedYear})</span>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-100 dark:border-gray-800">
-                  <th className="pb-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Peringkat</th>
-                  <th className="pb-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Agen</th>
-                  <th className="pb-4 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Unit Terjual</th>
-                  <th className="pb-4 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Nilai Jual</th>
-                  <th className="pb-4 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Performa</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
-                {data?.salesLeaderboard?.length > 0 ? (
-                  data.salesLeaderboard.map((agent, index) => {
-                    const maxSales = Math.max(...data.salesLeaderboard.map(a => Number(a.sales_total || 0)));
-                    const percentage = (Number(agent.sales_total || 0) / Math.max(1, maxSales)) * 100;
-                    
-                    return (
-                      <tr key={agent.sales_agent_id} className="group hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-all">
-                        <td className="py-4">
-                          <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black ${
-                            index === 0 ? 'bg-amber-100 text-amber-600' : 
-                            index === 1 ? 'bg-slate-100 text-slate-500' :
-                            index === 2 ? 'bg-orange-100 text-orange-600' :
-                            'bg-gray-50 text-gray-400 dark:bg-gray-800'
-                          }`}>
-                            #{index + 1}
-                          </div>
-                        </td>
-                        <td className="py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center overflow-hidden border border-blue-200 dark:border-blue-800">
-                              {agent.salesAgent?.avatar_url ? (
-                                <img 
-                                  src={agent.salesAgent.avatar_url.startsWith('http') 
-                                    ? agent.salesAgent.avatar_url 
-                                    : `${IMAGE_BASE_URL}${agent.salesAgent.avatar_url.startsWith('/') ? '' : '/'}${agent.salesAgent.avatar_url}`
-                                  } 
-                                  alt={agent.salesAgent?.name} 
-                                  className="w-full h-full object-cover" 
-                                  onError={(e) => {
-                                    e.target.onerror = null;
-                                    e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(agent.salesAgent?.name || 'SA');
-                                  }}
-                                />
-                              ) : (
-                                <span className="text-[10px] font-black text-blue-600">
-                                  {agent.salesAgent?.name?.substring(0, 2).toUpperCase() || 'SA'}
-                                </span>
-                              )}
-                            </div>
-                            <div>
-                              <p className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-tight">{agent.salesAgent?.name || 'Agen Tidak Diketahui'}</p>
-                              <p className="text-[9px] font-bold text-gray-400">ID: {agent.sales_agent_id || 'N/A'}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-4 text-center">
-                          <span className="px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-[10px] font-black">
-                            {agent.units_sold} UNITS
+
+
+
+      <AnimatePresence>
+        {isAgingModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-5xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col border border-gray-100 dark:border-gray-800"
+            >
+              {/* Modal Header */}
+              <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
+                    <History className="text-orange-500" /> Detail Usia Inventaris (Aging)
+                  </h2>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Daftar lengkap stok unit berdasarkan kategori usia</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={handleExportExcel}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-[10px] font-black uppercase transition-all shadow-lg shadow-green-500/20 active:scale-95"
+                    title="Export ke Excel"
+                  >
+                    <FileSpreadsheet size={16} /> Export Excel
+                  </button>
+                  <button 
+                    onClick={() => setIsAgingModalOpen(false)}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors text-gray-400 hover:text-red-500"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Filters */}
+              <div className="p-6 bg-gray-50/50 dark:bg-gray-800/30 border-b border-gray-100 dark:border-gray-800 flex flex-wrap gap-4 items-center justify-between">
+                <div className="relative flex-1 min-w-[250px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                  <input 
+                    type="text" 
+                    placeholder="Cari Brand, Model, atau Plat Nomor..." 
+                    value={agingSearch}
+                    onChange={(e) => { setAgingSearch(e.target.value); setAgingPage(1); }}
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm focus:ring-2 focus:ring-blue-500 transition-all"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Filter:</span>
+                  <div className="flex gap-1 bg-white dark:bg-gray-800 p-1 rounded-xl border border-gray-200 dark:border-gray-700">
+                    {['all', '0-30 Hari', '31-60 Hari', '61-90 Hari', 'Di Atas 90 Hari'].map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => { setAgingCategory(cat); setAgingPage(1); }}
+                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${
+                          agingCategory === cat 
+                          ? 'bg-blue-600 text-white shadow-md' 
+                          : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+                        }`}
+                      >
+                        {cat === 'all' ? 'Semua' : cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Content - Table */}
+              <div className="flex-1 overflow-auto">
+                <table className="w-full text-left border-separate border-spacing-0">
+                  <thead className="sticky top-0 z-20">
+                    <tr className="bg-white dark:bg-gray-900">
+                      <th className="pl-6 pr-4 py-4 bg-white dark:bg-gray-900 text-[10px] font-black text-gray-400 uppercase border-b border-gray-100 dark:border-gray-800">Unit & Plat Nomor</th>
+                      <th className="px-4 py-4 bg-white dark:bg-gray-900 text-[10px] font-black text-gray-400 uppercase text-center border-b border-gray-100 dark:border-gray-800">Usia Stok</th>
+                      <th className="px-4 py-4 bg-white dark:bg-gray-900 text-[10px] font-black text-gray-400 uppercase text-right border-b border-gray-100 dark:border-gray-800">Harga Jual</th>
+                      <th className="px-4 py-4 bg-white dark:bg-gray-900 text-[10px] font-black text-gray-400 uppercase text-right border-b border-gray-100 dark:border-gray-800">Harga Modal</th>
+                      <th className="pl-4 pr-6 py-4 bg-white dark:bg-gray-900 text-[10px] font-black text-gray-400 uppercase text-right border-b border-gray-100 dark:border-gray-800">Tgl Masuk</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                    {paginatedAgingData.map((unit, idx) => (
+                      <tr key={idx} className="group hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                        <td className="pl-6 pr-4 py-4 border-b border-gray-50 dark:border-gray-800/50">
+                          <div className="text-sm font-black text-gray-900 dark:text-white uppercase">{unit.brand} {unit.model}</div>
+                          <span className="text-[10px] font-black bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-gray-500 uppercase tracking-widest border border-gray-200 dark:border-gray-700 mt-1 inline-block">
+                            {unit.plate_number}
                           </span>
                         </td>
-                        <td className="py-4 text-right">
-                          <p className="text-xs font-black text-gray-900 dark:text-white">{displayAmount(agent.sales_total)}</p>
-                        </td>
-                        <td className="py-4 text-right min-w-[120px]">
-                          <div className="flex flex-col items-end gap-1">
-                            <span className="text-[9px] font-black text-gray-400">{Math.round(percentage)}%</span>
-                            <div className="w-24 bg-gray-100 dark:bg-gray-800 h-1.5 rounded-full overflow-hidden">
-                              <motion.div 
-                                initial={{ width: 0 }}
-                                animate={{ width: `${percentage}%` }}
-                                className={`h-full rounded-full ${
-                                  index === 0 ? 'bg-gradient-to-r from-blue-500 to-blue-400' : 'bg-gray-400'
-                                }`}
-                              />
-                            </div>
+                        <td className="px-4 py-4 text-center border-b border-gray-50 dark:border-gray-800/50">
+                          <div className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase ${
+                            unit.days > 90 ? 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400 border dark:border-red-500/30' :
+                            unit.days > 60 ? 'bg-orange-100 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400 border dark:border-orange-500/30' :
+                            'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 border dark:border-blue-500/30'
+                          }`}>
+                            {unit.days} Hari
                           </div>
                         </td>
+                        <td className="px-4 py-4 text-right text-sm font-black text-gray-900 dark:text-white border-b border-gray-50 dark:border-gray-800/50">
+                          {displayAmount(unit.price)}
+                        </td>
+                        <td className="px-4 py-4 text-right text-sm font-black text-orange-600 dark:text-orange-400 border-b border-gray-50 dark:border-gray-800/50">
+                          {displayAmount(Number(unit.purchase_price) + Number(unit.service_cost))}
+                        </td>
+                        <td className="pl-4 pr-6 py-4 text-right text-[10px] font-bold text-gray-400 border-b border-gray-50 dark:border-gray-800/50">
+                          {new Date(unit.entry_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </td>
                       </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan="5" className="py-10 text-center text-xs text-gray-400 font-bold uppercase">Tidak ada data penjualan untuk periode ini</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+                    ))}
+                    {paginatedAgingData.length === 0 && (
+                      <tr>
+                        <td colSpan="5" className="py-20 text-center text-gray-400 font-bold uppercase text-xs">Tidak ada unit yang sesuai dengan pencarian</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
-      <PdfViewerModal 
-        isOpen={isPdfModalOpen} 
-        onClose={() => setIsPdfModalOpen(false)} 
-        documents={pdfDocuments} 
-      />
+              {/* Modal Footer - Pagination */}
+              {totalAgingPages > 1 && (
+                <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/20">
+                  <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase">
+                      Menampilkan <span className="text-gray-900 dark:text-white">{Math.min(filteredAgingData.length, (agingPage-1) * agingItemsPerPage + 1)}</span> - <span className="text-gray-900 dark:text-white">{Math.min(filteredAgingData.length, agingPage * agingItemsPerPage)}</span> dari <span className="text-gray-900 dark:text-white">{filteredAgingData.length}</span> Unit
+                    </p>
+                    <div className="scale-90 origin-right">
+                      <Pagination 
+                        page={agingPage} 
+                        totalPages={totalAgingPages} 
+                        setPage={setAgingPage} 
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

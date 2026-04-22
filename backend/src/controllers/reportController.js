@@ -446,7 +446,7 @@ exports.getBusinessAnalysisReport = async (req, res) => {
     // 1. Current Live Stock Summary (Always all-time/current)
     const availableVehicles = await Vehicle.findAll({
       where: { ...where, status: 'Available' },
-      attributes: ['brand', 'price', 'purchase_price', 'service_cost'],
+      attributes: ['brand', 'model', 'plate_number', 'price', 'purchase_price', 'service_cost', 'entry_date'],
       raw: true
     });
 
@@ -486,6 +486,40 @@ exports.getBusinessAnalysisReport = async (req, res) => {
       count: brandDistribution[brand]
     })).sort((a, b) => b.count - a.count).slice(0, 10); 
 
+    // 2b. Inventory Aging (Added)
+    const now = new Date();
+    const inventoryAging = {
+      '0-30 Hari': 0,
+      '31-60 Hari': 0,
+      '61-90 Hari': 0,
+      'Di Atas 90 Hari': 0
+    };
+    
+    const allAvailableUnits = availableVehicles.map(v => {
+      const entryDate = new Date(v.entry_date);
+      const diffTime = Math.abs(now - entryDate);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      let agingCategory = '0-30 Hari';
+      if (diffDays <= 30) inventoryAging['0-30 Hari']++;
+      else if (diffDays <= 60) { inventoryAging['31-60 Hari']++; agingCategory = '31-60 Hari'; }
+      else if (diffDays <= 90) { inventoryAging['61-90 Hari']++; agingCategory = '61-90 Hari'; }
+      else { inventoryAging['Di Atas 90 Hari']++; agingCategory = 'Di Atas 90 Hari'; }
+
+      return {
+        brand: v.brand,
+        model: v.model,
+        plate_number: v.plate_number,
+        days: diffDays,
+        price: v.price,
+        purchase_price: v.purchase_price,
+        service_cost: v.service_cost,
+        entry_date: v.entry_date,
+        agingCategory
+      };
+    }).sort((a, b) => b.days - a.days);
+
+    const slowMoving = allAvailableUnits.slice(0, 5); // Still provide top 5 for the main dashboard view
     // 3. Monthly Trends (Always last 6 months based on current date, unless requested otherwise)
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5); 
@@ -601,7 +635,10 @@ exports.getBusinessAnalysisReport = async (req, res) => {
         potentialRevenue,
         potentialNetMargin,
         cancelledDPIncome,
-        unitsPerBrand
+        unitsPerBrand,
+        inventoryAging,
+        slowMoving,
+        allAvailableUnits
       },
       trends: {
         sales: soldTrendRaw.map(s => ({

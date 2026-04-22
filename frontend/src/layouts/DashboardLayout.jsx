@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { 
   LayoutDashboard, Users, Building2, ShieldCheck, LogOut, Shield,
-  Menu, X, History, FileText, Sun, Moon, ChevronLeft, ChevronRight, UserCircle, Car, Tags, BarChart2, BarChart3, Search, Rocket, MapPin, Activity
+  Menu, X, History, FileText, Sun, Moon, ChevronLeft, ChevronRight, UserCircle, Car, Tags, BarChart2, BarChart3, Search, Rocket, MapPin, Activity, DollarSign
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IMAGE_BASE_URL } from '../config';
@@ -57,8 +57,8 @@ const DashboardLayout = () => {
         title: 'LAPORAN & ANALITIK',
         items: [
           { to: '/', icon: Activity, label: 'Dashboard Utama' },
-          { to: '/standard-reports', icon: BarChart2, label: 'Laporan Umum' },
           { to: '/sales-report', icon: BarChart3, label: 'Laporan Penjualan' },
+          { to: '/finance-report', icon: DollarSign, label: 'Laporan Keuangan' },
         ]
       },
       {

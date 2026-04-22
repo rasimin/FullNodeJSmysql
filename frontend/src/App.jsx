@@ -23,6 +23,7 @@ import AdminSessions from './pages/AdminSessions';
 import LandingPage from './pages/LandingPage';
 import SalesReport from './pages/SalesReport';
 import AnalysisReport from './pages/AnalysisReport';
+import FinanceReport from './pages/FinanceReport';
 import Transactions from './pages/Transactions';
 import DashboardLayout from './layouts/DashboardLayout';
 
@@ -49,6 +50,7 @@ function App() {
                 <Route path="/locations" element={<LocationManagement />} />
                 <Route path="/audit-trails" element={<AuditTrail />} />
                 <Route path="/standard-reports" element={<Reports />} />
+                <Route path="/finance-report" element={<FinanceReport />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/security-settings" element={<SecuritySettings />} />
                 <Route path="/sessions" element={<Sessions />} />
