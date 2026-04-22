@@ -63,7 +63,7 @@ const RoleManagement = () => {
       />
 
       <div className="flex items-center justify-between">
-        <h1 className="text-base font-bold text-gray-900 dark:text-white">Role Management</h1>
+        <h1 className="text-base font-bold text-gray-900 dark:text-white">Hak Akses (Role)</h1>
         <button onClick={() => openModal()} className="btn-primary"><Plus size={15} /> Add Role</button>
       </div>
 

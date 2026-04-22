@@ -84,7 +84,7 @@ const Profile = () => {
     <div className="max-w-xl mx-auto space-y-5">
       <DynamicIsland status={notification.status} message={notification.message} />
 
-      <h1 className="text-base font-bold text-gray-900 dark:text-white">My Profile</h1>
+      <h1 className="text-base font-bold text-gray-900 dark:text-white">Profil Saya</h1>
 
       <div className="card p-6">
         <form onSubmit={handleSubmit} className="space-y-6">

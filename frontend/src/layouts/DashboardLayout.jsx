@@ -54,42 +54,42 @@ const DashboardLayout = () => {
   const getMenuGroups = () => {
     const groups = [
       {
-        title: 'WAWASAN DATA',
+        title: 'LAPORAN & ANALITIK',
         items: [
           { to: '/', icon: Activity, label: 'Dashboard Utama' },
-          { to: '/standard-reports', icon: BarChart2, label: 'Laporan Standar' },
-          { to: '/sales-report', icon: BarChart3, label: 'Performa Penjualan' },
+          { to: '/standard-reports', icon: BarChart2, label: 'Laporan Umum' },
+          { to: '/sales-report', icon: BarChart3, label: 'Laporan Penjualan' },
         ]
       },
       {
-        title: 'MANAJEMEN',
+        title: 'DATA MASTER',
         items: [
-          { to: '/brands', icon: Tags, label: 'Manajemen Merk' },
-          { to: '/vehicles', icon: Car, label: 'Kendaraan' },
-          { to: '/transactions', icon: FileText, label: 'Transaksi' },
-          { to: '/offices', icon: Building2, label: 'Manajemen Kantor' },
-          { to: '/sales-agents', icon: Users, label: 'Agen Sales' },
-          { to: '/locations', icon: MapPin, label: 'Data Wilayah' },
-          { to: '/catalog', icon: LayoutDashboard, label: 'Katalog Produk', target: '_blank' },
+          { to: '/brands', icon: Tags, label: 'Daftar Brand' },
+          { to: '/vehicles', icon: Car, label: 'Stok Kendaraan' },
+          { to: '/transactions', icon: FileText, label: 'Data Transaksi' },
+          { to: '/offices', icon: Building2, label: 'Daftar Kantor' },
+          { to: '/sales-agents', icon: Users, label: 'Tim Sales' },
+          { to: '/locations', icon: MapPin, label: 'Lokasi & Wilayah' },
+          { to: '/catalog', icon: LayoutDashboard, label: 'Katalog Showroom', target: '_blank' },
         ]
       },
       {
-        title: 'SISTEM & KEAMANAN',
+        title: 'ADMIN & KEAMANAN',
         items: []
       }
     ];
 
     // Add Security items based on role
     const securityItems = groups[2].items;
-    securityItems.push({ to: '/users', icon: Users, label: 'Manajemen Pengguna' });
+    securityItems.push({ to: '/users', icon: Users, label: 'Kelola User' });
     
     if (userRole === 'Super Admin' || userRole === 'Admin Pusat') {
       securityItems.push(
-        { to: '/security-settings', icon: Shield, label: 'Konfigurasi Keamanan' },
-        { to: '/admin-sessions', icon: Users, label: 'Monitor Sesi Aktif' },
-        { to: '/roles', icon: ShieldCheck, label: 'Manajemen Peran' },
-        { to: '/activities', icon: FileText, label: 'Log Aktivitas' },
-        { to: '/audit-trails', icon: History, label: 'Audit Trail' }
+        { to: '/security-settings', icon: Shield, label: 'Setelan Keamanan' },
+        { to: '/admin-sessions', icon: Users, label: 'Monitor Sesi' },
+        { to: '/roles', icon: ShieldCheck, label: 'Hak Akses (Role)' },
+        { to: '/activities', icon: FileText, label: 'Catatan Aktivitas' },
+        { to: '/audit-trails', icon: History, label: 'Jejak Audit' }
       );
     } else {
       securityItems.push(
@@ -209,7 +209,7 @@ const DashboardLayout = () => {
              <SidebarItem 
                to="/landing-page" 
                icon={Rocket} 
-               label="Halaman Depan (Showroom)" 
+               label="Lihat Showroom" 
                onClick={() => setSidebarOpen(false)}
                collapsed={isCollapsed}
                target="_blank"

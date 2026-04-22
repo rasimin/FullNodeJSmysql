@@ -401,7 +401,7 @@ const Catalog = () => {
         {!finalSearchTerm && (
           <header className="flex flex-col gap-3 pt-8 px-2 md:items-center md:text-center mb-12 animate-in fade-in duration-500">
             <h1 className="text-5xl md:text-7xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-none">
-              Katalog <span className="text-gray-400">Produk</span>
+              Katalog <span className="text-gray-400">Showroom</span>
             </h1>
             <p className="text-gray-500 dark:text-gray-400 text-lg font-light tracking-wide max-w-2xl">
               Temukan unit impian Anda dengan standar kualitas terbaik dan proses yang transparan.
@@ -413,7 +413,7 @@ const Catalog = () => {
           {finalSearchTerm && (
             <div className="flex justify-center -mb-5 relative z-0 animate-in fade-in slide-in-from-top-4 duration-500">
               <div className="bg-gray-100 dark:bg-[#1a1c26] border border-gray-200 dark:border-white/5 px-10 pt-2 pb-6 rounded-t-[24px]">
-                <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 tracking-[0.2em]">Katalog Produk</p>
+                <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 tracking-[0.2em]">Katalog Showroom</p>
               </div>
             </div>
           )}

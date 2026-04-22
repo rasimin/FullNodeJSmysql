@@ -81,7 +81,7 @@ const Reports = () => {
         <div className="w-full">
           <div className="flex justify-between items-start mb-6">
             <div>
-              <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Advanced Analytics</h1>
+              <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Laporan Umum</h1>
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Strategic Insights & Performance Data</p>
             </div>
             {isHeadOffice && (

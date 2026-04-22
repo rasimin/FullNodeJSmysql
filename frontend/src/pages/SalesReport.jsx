@@ -60,7 +60,7 @@ const SalesReport = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">Performa Penjualan</h1>
+          <h1 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">Laporan Penjualan</h1>
           <p className="text-xs text-gray-400 font-bold uppercase tracking-[0.2em] mt-1">Analisis Pendapatan, Unit & Margin</p>
         </div>
 

@@ -52,7 +52,7 @@ const ActivityLog = () => {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-bold text-gray-900 dark:text-white">Activity Logs</h1>
+        <h1 className="text-lg font-bold text-gray-900 dark:text-white">Catatan Aktivitas</h1>
         <div className="text-xs text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-900 px-3 py-1.5 rounded-full border border-gray-100 dark:border-gray-800">
           Showing {logs.length} activities
         </div>

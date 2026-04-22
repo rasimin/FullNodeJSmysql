@@ -52,7 +52,7 @@ const SecuritySettings = () => {
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <Shield className="text-blue-600" /> Security Configuration
+            <Shield className="text-blue-600" /> Setelan Keamanan
           </h1>
           <p className="text-sm text-gray-500 mt-1 uppercase font-bold tracking-widest text-[10px]">Manage session policies, brute-force protection, and access control.</p>
         </div>

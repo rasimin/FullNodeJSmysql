@@ -154,6 +154,11 @@ const UserManagement = () => {
       />
 
       <div className="flex flex-col gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Kelola User</h1>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Manajemen akun dan hak akses pengguna</p>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           <div className="relative">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -318,22 +323,22 @@ const UserManagement = () => {
       {/* Pagination Controls */}
       <Pagination page={page} totalPages={totalPages} setPage={setPage} />
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingUser ? 'Edit User' : 'Create User'}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingUser ? 'Edit Pengguna' : 'Tambah Pengguna Baru'}>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input label="Full Name" icon={User} required value={formData.name}
+          <Input label="Nama Lengkap" icon={User} required value={formData.name}
             onChange={e => setFormData({...formData, name: e.target.value})} placeholder="John Doe" />
-          <Input label="Username" icon={User} required value={formData.username}
+          <Input label="Nama Pengguna" icon={User} required value={formData.username}
             onChange={e => setFormData({...formData, username: e.target.value})} placeholder="johndoe123" />
-          <Input label="Email (Optional)" icon={Mail} type="email" value={formData.email}
+          <Input label="Email (Opsional)" icon={Mail} type="email" value={formData.email}
             onChange={e => setFormData({...formData, email: e.target.value})} placeholder="john@example.com" />
-          <Input label={editingUser ? 'Password (blank = keep)' : 'Password'} icon={Lock} type="password"
+          <Input label={editingUser ? 'Kata Sandi (kosongkan jika tidak diganti)' : 'Kata Sandi'} icon={Lock} type="password"
             required={!editingUser} value={formData.password}
             onChange={e => setFormData({...formData, password: e.target.value})} placeholder="••••••••" />
           <div className="grid grid-cols-2 gap-4">
-            <Select label="Role" icon={Shield} value={formData.role_id}
+            <Select label="Peran (Role)" icon={Shield} value={formData.role_id}
               onChange={e => setFormData({...formData, role_id: e.target.value})}
               options={roles.filter(r => isSuperAdmin || r.name !== 'Super Admin').map(r => ({ value: r.id, label: r.name }))} />
-            <Select label="Office" icon={Building2} value={formData.office_id}
+            <Select label="Kantor" icon={Building2} value={formData.office_id}
               onChange={e => setFormData({...formData, office_id: e.target.value})}
               options={offices.map(o => ({ value: o.id, label: o.displayName }))} />
           </div>
@@ -341,19 +346,19 @@ const UserManagement = () => {
             <input type="checkbox" checked={formData.is_active}
               onChange={e => setFormData({...formData, is_active: e.target.checked})}
               className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-            <span className="text-sm text-gray-700 dark:text-gray-300">Active Account</span>
+            <span className="text-sm text-gray-700 dark:text-gray-300">Akun Aktif</span>
           </label>
-          <button type="submit" className="btn-primary w-full py-2.5">{editingUser ? 'Save Changes' : 'Create User'}</button>
+          <button type="submit" className="btn-primary w-full py-2.5">{editingUser ? 'Simpan Perubahan' : 'Tambah Pengguna'}</button>
         </form>
       </Modal>
 
       {/* Sessions Modal */}
-      <Modal isOpen={isSessionsModalOpen} onClose={() => setIsSessionsModalOpen(false)} title="Active User Sessions" maxWidth="max-w-2xl">
+      <Modal isOpen={isSessionsModalOpen} onClose={() => setIsSessionsModalOpen(false)} title="Pantau Sesi Pengguna" maxWidth="max-w-2xl">
         <div className="space-y-4">
           {sessionsLoading ? (
-            <div className="p-10 text-center text-xs text-gray-400 font-bold uppercase animate-pulse">Fetching sessions...</div>
+            <div className="p-10 text-center text-xs text-gray-400 font-bold uppercase animate-pulse">Mengambil data sesi...</div>
           ) : userSessions.length === 0 ? (
-            <div className="p-10 text-center text-xs text-gray-400 font-bold uppercase">No active sessions for this user</div>
+            <div className="p-10 text-center text-xs text-gray-400 font-bold uppercase">Tidak ada sesi aktif untuk pengguna ini</div>
           ) : (
             <div className="grid gap-3">
               {userSessions.map(s => (
@@ -364,7 +369,7 @@ const UserManagement = () => {
                     </div>
                     <div>
                       <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-tight">{s.ip_address || 'Unknown IP'}</p>
-                      <p className="text-[9px] text-gray-400 font-bold flex items-center gap-1"><Clock size={10} /> {new Date(s.createdAt).toLocaleString('en-GB')}</p>
+                      <p className="text-[9px] text-gray-400 font-bold flex items-center gap-1"><Clock size={10} /> {new Date(s.createdAt).toLocaleString('id-ID')}</p>
                     </div>
                   </div>
                   <button 
@@ -377,7 +382,7 @@ const UserManagement = () => {
               ))}
             </div>
           )}
-          <button onClick={() => setIsSessionsModalOpen(false)} className="w-full py-3 bg-gray-100 dark:bg-gray-800 rounded-xl text-[10px] font-black uppercase">Close</button>
+          <button onClick={() => setIsSessionsModalOpen(false)} className="w-full py-3 bg-gray-100 dark:bg-gray-800 rounded-xl text-[10px] font-black uppercase">Tutup</button>
         </div>
       </Modal>
     </div>

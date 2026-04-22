@@ -365,7 +365,7 @@ const LocationManagement = () => {
 
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl md:rounded-3xl shadow-xl shadow-gray-200/50 dark:shadow-none relative z-0">
            <div className="px-3 py-3 md:px-6 md:py-5 border-b border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 md:gap-3 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md sticky top-0 z-10">
-              <h2 className="text-[10px] md:text-sm font-bold text-gray-900 dark:text-white uppercase tracking-tight">Wilayah Indonesia</h2>
+              <h2 className="text-[10px] md:text-sm font-bold text-gray-900 dark:text-white uppercase tracking-tight">Lokasi & Wilayah</h2>
               <div className="flex flex-wrap gap-1 md:gap-2 w-full sm:w-auto">
                 <button onClick={handleSync} disabled={isSyncing} className={`h-7 md:h-9 px-2 md:px-4 rounded-lg md:rounded-xl text-[8px] md:text-[10px] font-bold transition-all border flex items-center gap-1.5 md:gap-2 cursor-pointer ${isSyncing ? 'bg-gray-100 text-gray-400 border-gray-200' : 'bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900/50'}`}>
                    <RefreshCcw size={10} md={12} className={isSyncing ? 'animate-spin' : ''} />

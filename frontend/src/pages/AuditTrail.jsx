@@ -29,7 +29,7 @@ const AuditTrail = () => {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-base font-bold text-gray-900 dark:text-white">Audit Trails</h1>
+      <h1 className="text-base font-bold text-gray-900 dark:text-white">Jejak Audit</h1>
 
       <div className="card overflow-hidden">
         <div className="px-5 py-3.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/60 flex items-center gap-2">

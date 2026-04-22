@@ -338,7 +338,7 @@ const Transactions = () => {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Transaksi & Booking</h1>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Data Transaksi</h1>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Riwayat Keuangan & Dokumen</p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">

@@ -207,7 +207,7 @@ const OfficeManagement = () => {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Manajemen Kantor</h1>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Daftar Kantor</h1>
           <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Hierarki Organisasi Utama</p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">

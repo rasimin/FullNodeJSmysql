@@ -22,7 +22,7 @@ const Login = () => {
       await login(email, password);
       navigate('/');
     } catch {
-      setError('Invalid credentials');
+      setError('Kredensial tidak valid');
     } finally {
       setLoading(false);
     }
@@ -45,8 +45,8 @@ const Login = () => {
           <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center mb-4 shadow-sm">
             <Lock size={22} className="text-white" />
           </div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Sign in</h1>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Admin Dashboard</p>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Masuk Ke Akun</h1>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Panel Administrasi</p>
         </div>
 
         {/* Error */}
@@ -58,7 +58,7 @@ const Login = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Email / Username</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Email / Nama Pengguna</label>
             <input
               type="text" required value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -73,7 +73,7 @@ const Login = () => {
                 onClick={() => alert('Please contact your Super Admin to reset your password.')}
                 className="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400 hover:underline"
               >
-                Forgot Password?
+                Lupa Kata Sandi?
               </button>
             </div>
             <input
@@ -94,9 +94,9 @@ const Login = () => {
                   animate={{ rotate: 360 }}
                   transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }}
                 />
-                Signing in...
+                Masuk...
               </span>
-            ) : 'Sign In'}
+            ) : 'Masuk Sekarang'}
           </button>
         </form>
 

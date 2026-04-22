@@ -139,7 +139,7 @@ const AnalysisReport = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Laporan Analisis Bisnis</h1>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Dashboard Utama</h1>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Metrik Inventaris & Performa Langsung</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">

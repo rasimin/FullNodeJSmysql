@@ -166,7 +166,7 @@ const SalesAgents = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Manajemen Agen Sales</h1>
+          <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Tim Sales</h1>
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Kelola tim sales dan penempatan kantor mereka</p>
         </div>
         <div className="flex gap-2">

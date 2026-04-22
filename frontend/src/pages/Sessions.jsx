@@ -59,7 +59,7 @@ const Sessions = () => {
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Active Sessions</h1>
+          <h1 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Sesi Saya</h1>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Manage your logged-in devices</p>
         </div>
         <button 
