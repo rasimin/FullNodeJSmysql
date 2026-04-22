@@ -448,10 +448,10 @@ const Catalog = () => {
                         <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute right-0 top-full mt-3 w-48 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[20px] shadow-xl py-2 z-50 overflow-hidden">
                           <div className="px-4 py-3 border-b border-gray-50 dark:border-gray-800">
                             <p className="text-[10px] font-bold text-gray-900 dark:text-white truncate">{user?.name}</p>
-                            <p className="text-[8px] text-gray-400 uppercase tracking-widest mt-0.5">{userRole}</p>
+                            <p className="text-[8px] text-gray-400 uppercase tracking-widest mt-0.5">{user?.Role?.name || 'User'}</p>
                           </div>
                           <NavLink to="/profile" className="flex items-center gap-3 px-4 py-2 text-[10px] font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"> <UserCircle size={14} /> Profile </NavLink>
-                          <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2 text-[10px] font-bold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"> <LogOut size={14} /> Logout </button>
+                          <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-2 text-[10px] font-bold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"> <LogOut size={14} /> Logout </button>
                         </motion.div>
                       )}
                     </AnimatePresence>
