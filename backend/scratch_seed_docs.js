@@ -1,44 +1,25 @@
-const { sequelize, DocumentType } = require('./src/models');
+const { DocumentType } = require('./src/models');
 
-const seedDocumentTypes = async () => {
+async function seed() {
   try {
-    await sequelize.authenticate();
-    console.log('Database connected...');
-
-    // Sync individual tables to avoid dropping everything
-    await DocumentType.sync({ alter: true });
-    const { VehicleDocument, BookingDocument } = require('./src/models');
-    await VehicleDocument.sync({ alter: true });
-    await BookingDocument.sync({ alter: true });
-
     const types = [
-      // Vehicle Documents
-      { name: 'STNK (Surat Tanda Nomor Kendaraan)', code: 'STNK', category: 'Vehicle', is_mandatory: true },
-      { name: 'BPKB (Buku Pemilik Kendaraan Bermotor)', code: 'BPKB', category: 'Vehicle', is_mandatory: true },
-      { name: 'Faktur Kendaraan', code: 'FAKTUR', category: 'Vehicle', is_mandatory: false },
-      { name: 'Sertifikat NIK', code: 'NIK_CERT', category: 'Vehicle', is_mandatory: false },
-      
-      // Booking Documents
-      { name: 'KTP Pembeli', code: 'KTP', category: 'Booking', is_mandatory: true },
-      { name: 'Kartu Keluarga (KK)', code: 'KK', category: 'Booking', is_mandatory: false },
-      { name: 'Kwitansi Pelunasan', code: 'KWITANSI', category: 'Booking', is_mandatory: false },
-      { name: 'BAST (Berita Acara Serah Terima)', code: 'BAST', category: 'Booking', is_mandatory: true },
-      { name: 'Bukti Transfer / DP', code: 'PAYMENT_PROOF', category: 'Booking', is_mandatory: true }
+      { name: 'KTP Customer', code: 'KTP_CUST', category: 'Booking', is_mandatory: true, description: 'Kartu Tanda Penduduk Pembeli' },
+      { name: 'Kartu Keluarga', code: 'KK_CUST', category: 'Booking', is_mandatory: false, description: 'Kartu Keluarga Pembeli' },
+      { name: 'Bukti Transfer / DP', code: 'PAYMENT_PROOF', category: 'Booking', is_mandatory: false, description: 'Bukti Pembayaran DP atau Pelunasan' }
     ];
 
-    for (const type of types) {
+    for (const t of types) {
       await DocumentType.findOrCreate({
-        where: { code: type.code },
-        defaults: type
+        where: { code: t.code },
+        defaults: t
       });
     }
-
-    console.log('Document types seeded successfully!');
+    console.log('Booking Document Types seeded successfully!');
     process.exit(0);
   } catch (err) {
-    console.error('Error seeding document types:', err);
+    console.error('Seed Error:', err);
     process.exit(1);
   }
-};
+}
 
-seedDocumentTypes();
+seed();

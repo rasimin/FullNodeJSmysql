@@ -60,6 +60,10 @@ const Vehicles = () => {
   const [printInvoice, setPrintInvoice] = useState(localStorage.getItem('pref_print_invoice') === 'true');
   const [printDealProof, setPrintDealProof] = useState(() => localStorage.getItem('pref_print_deal') === 'true');
   const [cancellationReason, setCancellationReason] = useState('');
+  const [bookingDocumentTypes, setBookingDocumentTypes] = useState([]);
+  const [selectedBookingDocs, setSelectedBookingDocs] = useState({}); // { typeId: File }
+  const [formStep, setFormStep] = useState(1); // 1: Data, 2: Upload & Print
+  const [tempBookingId, setTempBookingId] = useState(null);
   const [dealPhoto, setDealPhoto] = useState(null);
 
   const [search, setSearch] = useState('');
@@ -141,13 +145,14 @@ const Vehicles = () => {
 
   const fetchMetadata = async () => {
     try {
-      const [b, h, t, o, s, dt] = await Promise.all([
+      const [b, h, t, o, s, dt, bdt] = await Promise.all([
         api.get('/vehicles/brands'),
         api.get('/vehicles/model-history'),
         api.get('/vehicles/type-history'),
         isHeadOffice ? api.get('/offices') : Promise.resolve({ data: [] }),
         api.get('/sales-agents/active', { params: { officeId: user?.office_id } }),
-        api.get('/documents/types', { params: { category: 'Vehicle' } })
+        api.get('/documents/types', { params: { category: 'Vehicle' } }),
+        api.get('/documents/types', { params: { category: 'Booking' } })
       ]);
       setBrands(b.data);
       setModelHistory(h.data);
@@ -155,6 +160,19 @@ const Vehicles = () => {
       if (isHeadOffice) setOffices(formatOfficeHierarchy(o.data));
       setSalesAgents(s.data);
       setDocumentTypes(dt.data);
+      // Deduplicate booking types by name to avoid showing redundant fields like "Kartu Keluarga" twice
+      const uniqueBookingTypes = bdt.data.reduce((acc, current) => {
+        const name = current.name.trim().toLowerCase();
+        // Remove common suffixes like (KK) for better comparison
+        const cleanName = name.replace(/\s*\(.*\)$/, '');
+        const exists = acc.find(item => {
+          const itemName = item.name.trim().toLowerCase().replace(/\s*\(.*\)$/, '');
+          return itemName === cleanName;
+        });
+        if (!exists) return [...acc, current];
+        return acc;
+      }, []);
+      setBookingDocumentTypes(uniqueBookingTypes);
     } catch (e) { console.error(e); }
   };
 
@@ -272,6 +290,28 @@ const Vehicles = () => {
       setBookingHistory([]);
     }
     setIsModalOpen(true);
+  };
+  
+  const handleUploadBookingDocs = async (bookingId) => {
+    const docTypeIds = Object.keys(selectedBookingDocs);
+    if (docTypeIds.length === 0) return;
+    
+    for (const typeId of docTypeIds) {
+      const file = selectedBookingDocs[typeId];
+      if (!file) continue;
+      
+      try {
+        const docFormData = new FormData();
+        docFormData.append('document', file);
+        docFormData.append('document_type_id', typeId);
+        await api.post(`/documents/booking/${bookingId}`, docFormData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      } catch (err) {
+        console.error(`Failed to upload doc type ${typeId}:`, err);
+      }
+    }
+    setSelectedBookingDocs({}); // Clear after upload
   };
 
   const fetchBookingHistory = async (id) => {
@@ -394,6 +434,9 @@ const Vehicles = () => {
       });
     }
     fetchAgentsByOffice(v.office_id);
+    setSelectedBookingDocs({}); // Reset
+    setFormStep(1); // Reset to step 1
+    setTempBookingId(null);
     setIsBookingModalOpen(true);
   };
 
@@ -401,21 +444,34 @@ const Vehicles = () => {
     e.preventDefault();
     notify('loading', 'Processing...');
     try {
-      // Clean numeric fields before sending
-      const cleanData = {
-        ...bookingData,
-        down_payment: bookingData.down_payment?.toString().replace(/\D/g, '') || 0
-      };
-
-      let bookingId = bookingData.id;
-      if (bookingData.id) {
-        await api.put(`/bookings/${bookingData.id}`, cleanData);
-      } else {
-        const res = await api.post('/bookings', cleanData);
-        bookingId = res.data.id;
-      }
+      setLoading(true);
+      let bookingId = bookingData.id || tempBookingId;
       
-      notify('success', 'Booking saved successfully!'); 
+      if (formStep === 1) {
+        // Step 1: Save Customer Data
+        const cleanData = {
+          ...bookingData,
+          vehicle_id: editingVehicle.id,
+          down_payment: bookingData.down_payment || 0
+        };
+        
+        if (bookingId) {
+          await api.put(`/bookings/${bookingId}`, cleanData);
+        } else {
+          const res = await api.post('/bookings', cleanData);
+          bookingId = res.data.id;
+        }
+        
+        setTempBookingId(bookingId);
+        setFormStep(2); // Move to Step 2
+        notify('success', 'Data saved! Now please upload documents.');
+        return;
+      }
+
+      // Step 2: Upload Documents and Finish
+      await handleUploadBookingDocs(bookingId);
+      
+      notify('success', 'Transaction completed successfully!'); 
       setIsBookingModalOpen(false); 
       fetchVehicles();
 
@@ -440,14 +496,18 @@ const Vehicles = () => {
     } catch (err) {
       console.error('Booking Submit Error:', err);
       notify('error', err.response?.data?.message || 'Booking failed');
+    } finally {
+      setLoading(false);
     }
   };
 
   const preConfirmAction = (v, type) => {
     setEditingVehicle(v); 
     setActionType(type);
-    setCancellationReason(''); // Reset remark
     setDealPhoto(null); // Reset photo for new action
+    setSelectedBookingDocs({}); // Reset booking docs
+    setFormStep(1); // Reset to step 1
+    setTempBookingId(null);
     fetchAgentsByOffice(v.office_id);
     api.get(`/bookings/vehicle/${v.id}`).then(r => {
       setActiveBooking(r.data);
@@ -486,8 +546,12 @@ const Vehicles = () => {
 
     notify('loading', 'Closing deal...');
     try {
+      setLoading(true);
+      
+      let bookingId = activeBooking?.id || tempBookingId;
+
       const formData = new FormData();
-      formData.append('booking_id', activeBooking?.id || '');
+      formData.append('booking_id', bookingId || '');
       formData.append('customer_name', bookingData.customer_name);
       formData.append('customer_phone', bookingData.customer_phone);
       formData.append('nik', bookingData.nik || '');
@@ -500,9 +564,22 @@ const Vehicles = () => {
         formData.append('delivery_photo', dealPhoto);
       }
 
-      const res = await api.put(`/bookings/vehicle/${editingVehicle.id}/sold`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      if (formStep === 1) {
+        // Step 1: Confirm Sale Data
+        const res = await api.put(`/bookings/vehicle/${editingVehicle.id}/sold`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        bookingId = res.data.id || activeBooking?.id;
+        setTempBookingId(bookingId);
+        setFormStep(2); // Move to Step 2
+        notify('success', 'Sale saved! Now please upload documents.');
+        return;
+      }
+
+      // Step 2: Upload Documents and Finish
+      if (bookingId) {
+        await handleUploadBookingDocs(bookingId);
+      }
       
       notify('success', 'Deal closed successfully!'); 
       setIsConfirmActionModalOpen(false); 
@@ -510,7 +587,7 @@ const Vehicles = () => {
       fetchVehicles();
 
       if (printDealProof) {
-        const d = await handlePrintDoc(res.data.id, 'deal-proof', false);
+        const d = await handlePrintDoc(bookingId, 'deal-proof', false);
         if (d) {
           setPdfDocuments([d]);
           setIsPdfModalOpen(true);
@@ -1068,219 +1145,264 @@ const Vehicles = () => {
         </div>
       </Modal>
 
-
-
-      <Modal isOpen={isConfirmActionModalOpen} onClose={() => { setIsConfirmActionModalOpen(false); setDealPhoto(null); }} title="Transaction Confirmation">
-        <div className="space-y-6 pt-2">
-          <p className="text-sm text-gray-600 dark:text-gray-300">Confirm {actionType === 'sold' ? 'Sale' : 'Cancellation'} for <strong className="text-gray-900 dark:text-white">{editingVehicle?.brand} {editingVehicle?.model}</strong>?</p>
-          <div className="space-y-6">
-            {actionType === 'sold' && (
-              <div className="space-y-5">
-                {/* Vehicle Data Verification */}
-                <div className="p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-2xl">
-                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-blue-100 dark:border-blue-900/20">
-                    <Hash size={14} className="text-blue-500" />
-                    <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Unit Verification</p>
+      <Modal isOpen={isConfirmActionModalOpen} onClose={() => setIsConfirmActionModalOpen(false)} title="Transaction Confirmation">
+        <div className="space-y-6">
+          {actionType === 'sold' && (
+            <div className="flex gap-2 px-1">
+              <div className={`h-1.5 flex-1 rounded-full transition-all ${formStep >= 1 ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-800'}`} />
+              <div className={`h-1.5 flex-1 rounded-full transition-all ${formStep >= 2 ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-800'}`} />
+            </div>
+          )}
+          {actionType === 'sold' && (
+            <div className="space-y-6">
+              {formStep === 1 ? (
+                <div className="space-y-6">
+                  <div className="p-4 bg-gray-900 text-white rounded-[32px] shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full -mr-16 -mt-16 blur-3xl" />
+                    <div className="relative flex justify-between items-start">
+                      <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Plate Number</p>
+                        <p className="text-xl font-black tracking-tight">{editingVehicle?.plate_number}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Selling Price</p>
+                        <p className="text-xl font-black text-blue-400 tracking-tight">{formatPrice(editingVehicle?.price)}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+                  {!activeBooking ? (
+                    <div className="space-y-4 p-5 bg-gray-50/80 dark:bg-gray-800/60 rounded-[32px] border-2 border-dashed border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center gap-2 mb-1">
+                        <UserIcon size={14} className="text-orange-500" />
+                        <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest">Direct Sale Customer Data</p>
+                      </div>
+                      <Input label="Customer Name" value={bookingData.customer_name} onChange={e => setBookingData({ ...bookingData, customer_name: e.target.value })} required />
+                      <div className="grid grid-cols-2 gap-4">
+                        <Input label="NIK (ID Number)" value={bookingData.nik} onChange={e => setBookingData({ ...bookingData, nik: e.target.value.replace(/\D/g, '').slice(0, 16) })} required />
+                        <Input label="Phone Number" value={bookingData.customer_phone} onChange={e => setBookingData({ ...bookingData, customer_phone: sanitizePhone(e.target.value) })} required />
+                      </div>
+                      <textarea 
+                        className="input min-h-[80px] p-3 text-xs" 
+                        placeholder="Additional transaction notes..." 
+                        value={bookingData.notes} 
+                        onChange={e => setBookingData({ ...bookingData, notes: e.target.value })} 
+                      />
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-600/20">
+                      <p className="text-[9px] font-black text-blue-200 uppercase mb-1">Selling to Reserved Customer:</p>
+                      <p className="text-base font-black uppercase tracking-tight">{activeBooking.customer_name}</p>
+                      <p className="text-xs font-medium opacity-80">{activeBooking.customer_phone}</p>
+                    </div>
+                  )}
+                  <Select label="Sales Executive" value={bookingData.sales_agent_id} onChange={e => setBookingData({ ...bookingData, sales_agent_id: e.target.value })} options={salesAgents.map(a => ({ value: a.id, label: `${a.name} [${a.sales_code}] - ${a.Office?.name || 'Unknown'}` }))} required />
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {bookingDocumentTypes.length > 0 && (
+                    <div className="space-y-4 p-5 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-[32px] border border-indigo-100 dark:border-indigo-900/30">
+                      <div className="flex items-center gap-2 mb-1">
+                        <FileText size={14} className="text-indigo-600" />
+                        <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Customer Legal Documents</p>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {bookingDocumentTypes.map(type => (
+                          <div key={type.id} className="space-y-1">
+                            <label className="text-[9px] font-black text-gray-400 uppercase ml-1">{type.name}</label>
+                            <label className={`flex items-center gap-2 p-2 rounded-xl border-2 border-dashed transition-all cursor-pointer ${selectedBookingDocs[type.id] ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-indigo-400'}`}>
+                              {selectedBookingDocs[type.id] ? <CheckCircle size={14} /> : <Upload size={14} className="text-gray-300" />}
+                              <span className="text-[10px] font-bold truncate flex-1">{selectedBookingDocs[type.id] ? selectedBookingDocs[type.id].name : 'Upload File'}</span>
+                              <input type="file" className="hidden" onChange={(e) => setSelectedBookingDocs({ ...selectedBookingDocs, [type.id]: e.target.files[0] })} />
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div className="space-y-2 mt-4">
+                    <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                      <Camera size={14} className="text-blue-500" /> Proof of Delivery Photo
+                    </label>
+                    <div className="relative group aspect-video bg-gray-100 dark:bg-gray-900 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 hover:border-blue-500 transition-all overflow-hidden flex items-center justify-center">
+                      {dealPhoto ? (
+                        <>
+                          <img src={URL.createObjectURL(dealPhoto)} className="w-full h-full object-cover" alt="Proof" />
+                          <button onClick={() => setDealPhoto(null)} className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-full shadow-lg"><X size={14} /></button>
+                        </>
+                      ) : (
+                        <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer">
+                          <ImageIcon size={32} className="text-gray-300 mb-2" />
+                          <p className="text-[10px] font-black text-gray-400 uppercase">Click to upload photo with customer</p>
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => setDealPhoto(e.target.files[0])} />
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all cursor-pointer" onClick={() => {
+                    const newVal = !printDealProof;
+                    setPrintDealProof(newVal);
+                    localStorage.setItem('pref_print_deal', newVal);
+                  }}>
+                    <input type="checkbox" checked={printDealProof} onChange={() => {}} className="w-4 h-4 rounded text-blue-600" />
+                    <span className="text-[10px] font-black text-gray-400 uppercase">Print Sales Receipt after save</span>
+                  </div>
+                </div>
+              )}
+              <button onClick={handleConfirmSale} className={`w-full py-4 ${formStep === 1 ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500'} text-white rounded-2xl font-black transition-all active:scale-95 uppercase text-xs tracking-widest`}>
+                {formStep === 1 ? 'SAVE & CONTINUE TO UPLOAD' : 'FINISH & PRINT DOCUMENTS'}
+              </button>
+            </div>
+          )}
+          {actionType === 'cancel' && (
+            <div className="space-y-4">
+              <div className="p-4 bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/30 rounded-2xl">
+                <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
+                    <Hash size={14} className="text-orange-500" />
+                    <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Data Verification</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-y-4 gap-x-6">
                     <div className="space-y-0.5">
                       <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Plate Number</p>
                       <p className="text-xs font-bold text-gray-900 dark:text-white uppercase">{editingVehicle?.plate_number}</p>
                     </div>
-                    <div className="space-y-0.5 text-right">
-                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Selling Price</p>
-                      <p className="text-xs font-black text-blue-600 uppercase">{formatPrice(editingVehicle?.price || 0)}</p>
+                    <div className="space-y-0.5">
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Customer Name</p>
+                      <p className="text-xs font-bold text-gray-900 dark:text-white uppercase truncate">{activeBooking?.customer_name || '-'}</p>
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">NIK / ID Number</p>
+                      <p className="text-xs font-bold text-gray-900 dark:text-white">{activeBooking?.id_number || activeBooking?.nik || '-'}</p>
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Total Down Payment</p>
+                      <p className="text-sm font-black text-orange-600">{formatPrice(activeBooking?.down_payment || 0)}</p>
                     </div>
                   </div>
                 </div>
-
-                {!activeBooking ? (
-                  <div className="space-y-4 p-5 bg-gray-50/80 dark:bg-gray-800/60 rounded-[32px] border-2 border-dashed border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center gap-2 mb-1">
-                      <UserIcon size={14} className="text-orange-500" />
-                      <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest">Direct Sale Customer Data</p>
-                    </div>
-                    <Input label="Customer Name" value={bookingData.customer_name} onChange={e => setBookingData({ ...bookingData, customer_name: e.target.value })} required />
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input label="NIK (ID Number)" value={bookingData.nik} onChange={e => setBookingData({ ...bookingData, nik: e.target.value.replace(/\D/g, '').slice(0, 16) })} required />
-                      <Input label="Phone Number" value={bookingData.customer_phone} onChange={e => setBookingData({ ...bookingData, customer_phone: sanitizePhone(e.target.value) })} required />
-                    </div>
-                    <textarea 
-                      className="input min-h-[80px] p-3 text-xs" 
-                      placeholder="Additional transaction notes..." 
-                      value={bookingData.notes} 
-                      onChange={e => setBookingData({ ...bookingData, notes: e.target.value })} 
-                    />
+                <div className="space-y-2 mb-6">
+                  <div className="flex items-center gap-2 ml-1">
+                    <Edit size={14} className="text-blue-500" />
+                    <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Cancellation Reason / Remark</label>
+                    <span className="text-[9px] font-bold text-red-500 ml-auto uppercase opacity-60">* Mandatory</span>
                   </div>
-                ) : (
-                  <div className="p-4 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-600/20">
-                    <p className="text-[9px] font-black text-blue-200 uppercase mb-1">Selling to Reserved Customer:</p>
-                    <p className="text-base font-black uppercase tracking-tight">{activeBooking.customer_name}</p>
-                    <p className="text-xs font-medium opacity-80">{activeBooking.customer_phone}</p>
-                  </div>
-                )}
-                
-                <Select label="Sales Executive" value={bookingData.sales_agent_id} onChange={e => setBookingData({ ...bookingData, sales_agent_id: e.target.value })} options={salesAgents.map(a => ({ value: a.id, label: `${a.name} [${a.sales_code}] - ${a.Office?.name || 'Unknown'}` }))} required />
-                
-                {/* Delivery Photo Upload */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
-                    <Camera size={14} className="text-blue-500" /> Proof of Delivery Photo
-                  </label>
-                  <div className="relative group aspect-video bg-gray-100 dark:bg-gray-900 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 hover:border-blue-500 transition-all overflow-hidden flex items-center justify-center">
-                    {dealPhoto ? (
-                      <>
-                        <img src={URL.createObjectURL(dealPhoto)} className="w-full h-full object-cover" alt="Proof" />
-                        <button onClick={() => setDealPhoto(null)} className="absolute top-2 right-2 p-1.5 bg-red-600 text-white rounded-full shadow-lg"><X size={14} /></button>
-                      </>
-                    ) : (
-                      <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer">
-                        <ImageIcon size={32} className="text-gray-300 mb-2" />
-                        <p className="text-[10px] font-black text-gray-400 uppercase">Click to upload photo with customer</p>
-                        <input type="file" accept="image/*" className="hidden" onChange={(e) => setDealPhoto(e.target.files[0])} />
-                      </label>
-                    )}
-                  </div>
+                  <textarea 
+                    value={cancellationReason}
+                    onChange={(e) => setCancellationReason(e.target.value)}
+                    placeholder="Type the reason why this booking is being cancelled..."
+                    className="w-full p-4 bg-white dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-2xl text-xs focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none min-h-[120px] resize-none shadow-sm transition-all placeholder:text-gray-300"
+                  />
                 </div>
-
-                <div className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all cursor-pointer" onClick={() => {
-                  const newVal = !printDealProof;
-                  setPrintDealProof(newVal);
-                  localStorage.setItem('pref_print_deal', newVal);
-                }}>
-                  <input type="checkbox" checked={printDealProof} onChange={() => {}} className="w-4 h-4 rounded text-blue-600" />
-                  <span className="text-[10px] font-black text-gray-400 uppercase">Print Sales Receipt after save</span>
-                </div>
-
-                <button onClick={handleConfirmSale} className="w-full py-4 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500 text-white rounded-2xl font-black transition-all active:scale-95 uppercase text-xs tracking-widest">CLOSE DEAL NOW</button>
-              </div>
-            )}
-            {actionType === 'cancel' && (
-              <div className="space-y-4">
-                <div className="p-4 bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/30 rounded-2xl">
-                  {/* Verification Info */}
-                  <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
-                      <Hash size={14} className="text-orange-500" />
-                      <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Data Verification</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-y-4 gap-x-6">
-                      <div className="space-y-0.5">
-                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Plate Number</p>
-                        <p className="text-xs font-bold text-gray-900 dark:text-white uppercase">{editingVehicle?.plate_number}</p>
-                      </div>
-                      <div className="space-y-0.5">
-                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Customer Name</p>
-                        <p className="text-xs font-bold text-gray-900 dark:text-white uppercase truncate">{activeBooking?.customer_name || '-'}</p>
-                      </div>
-                      <div className="space-y-0.5">
-                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">NIK / ID Number</p>
-                        <p className="text-xs font-bold text-gray-900 dark:text-white">{activeBooking?.id_number || activeBooking?.nik || '-'}</p>
-                      </div>
-                      <div className="space-y-0.5">
-                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-tighter">Total Down Payment</p>
-                        <p className="text-sm font-black text-orange-600">{formatPrice(activeBooking?.down_payment || 0)}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Input Remark */}
-                  <div className="space-y-2 mb-6">
-                    <div className="flex items-center gap-2 ml-1">
-                      <Edit size={14} className="text-blue-500" />
-                      <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Cancellation Reason / Remark</label>
-                      <span className="text-[9px] font-bold text-red-500 ml-auto uppercase opacity-60">* Mandatory</span>
-                    </div>
-                    <textarea 
-                      value={cancellationReason}
-                      onChange={(e) => setCancellationReason(e.target.value)}
-                      placeholder="Type the reason why this booking is being cancelled..."
-                      className="w-full p-4 bg-white dark:bg-gray-900 border-2 border-gray-100 dark:border-gray-800 rounded-2xl text-xs focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none min-h-[120px] resize-none shadow-sm transition-all placeholder:text-gray-300"
-                    />
-                  </div>
-
-                  {/* Action Selection */}
-                  <div className="space-y-3">
-                    <p className="text-[10px] font-black text-orange-600 uppercase text-center tracking-[0.2em] opacity-80">Select Final Outcome</p>
-                    <div className="grid grid-cols-1 gap-3">
-                      <button 
-                        onClick={() => handleCancelBooking('Cancelled')}
-                        className="p-5 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-red-500 rounded-2xl text-left transition-all group shadow-md active:bg-gray-100 dark:active:bg-gray-700 active:scale-[0.98] flex items-center justify-between"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <XCircle size={16} className="text-red-600" />
-                            <p className="text-sm font-black text-red-600 uppercase tracking-tight">Cancel (No Refund)</p>
-                          </div>
-                          <p className="text-[10px] text-gray-500 font-bold uppercase leading-relaxed max-w-[280px]">Dana DP hangus dan menjadi komponen pendapatan kantor.</p>
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black text-orange-600 uppercase text-center tracking-[0.2em] opacity-80">Select Final Outcome</p>
+                  <div className="grid grid-cols-1 gap-3">
+                    <button 
+                      onClick={() => handleCancelBooking('Cancelled')}
+                      className="p-5 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-red-500 rounded-2xl text-left transition-all group shadow-md active:bg-gray-100 dark:active:bg-gray-700 active:scale-[0.98] flex items-center justify-between"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <XCircle size={16} className="text-red-600" />
+                          <p className="text-sm font-black text-red-600 uppercase tracking-tight">Cancel (No Refund)</p>
                         </div>
-                        <ChevronRight size={18} className="text-gray-300 group-hover:text-red-500 transition-colors ml-2" />
-                      </button>
-
-                      <button 
-                        onClick={() => handleCancelBooking('Refunded')}
-                        className="p-5 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 rounded-2xl text-left transition-all group shadow-md active:bg-gray-100 dark:active:bg-gray-700 active:scale-[0.98] flex items-center justify-between"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <CheckCircle2 size={16} className="text-blue-600" />
-                            <p className="text-sm font-black text-blue-600 uppercase tracking-tight">Refund (Full Return)</p>
-                          </div>
-                          <p className="text-[10px] text-gray-500 font-bold uppercase leading-relaxed max-w-[280px]">Dana DP dikembalikan sepenuhnya kepada customer.</p>
+                        <p className="text-[10px] text-gray-500 font-bold uppercase leading-relaxed max-w-[280px]">Dana DP hangus dan menjadi komponen pendapatan kantor.</p>
+                      </div>
+                      <ChevronRight size={18} className="text-gray-300 group-hover:text-red-500 transition-colors ml-2" />
+                    </button>
+                    <button 
+                      onClick={() => handleCancelBooking('Refunded')}
+                      className="p-5 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 rounded-2xl text-left transition-all group shadow-md active:bg-gray-100 dark:active:bg-gray-700 active:scale-[0.98] flex items-center justify-between"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <CheckCircle2 size={16} className="text-blue-600" />
+                          <p className="text-sm font-black text-blue-600 uppercase tracking-tight">Refund (Full Return)</p>
                         </div>
-                        <ChevronRight size={18} className="text-gray-300 group-hover:text-blue-500 transition-colors ml-2" />
-                      </button>
-                    </div>
+                        <p className="text-[10px] text-gray-500 font-bold uppercase leading-relaxed max-w-[280px]">Dana DP dikembalikan sepenuhnya kepada customer.</p>
+                      </div>
+                      <ChevronRight size={18} className="text-gray-300 group-hover:text-blue-500 transition-colors ml-2" />
+                    </button>
                   </div>
                 </div>
               </div>
-            )}
-            <button onClick={() => setIsConfirmActionModalOpen(false)} className="w-full py-3 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all uppercase text-xs tracking-widest">BACK TO DASHBOARD</button>
-          </div>
+            </div>
+          )}
+          <button onClick={() => setIsConfirmActionModalOpen(false)} className="w-full py-3 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all uppercase text-xs tracking-widest">BACK TO DASHBOARD</button>
         </div>
       </Modal>
 
       <Modal isOpen={isBookingModalOpen} onClose={() => setIsBookingModalOpen(false)} title="Unit Reservation Form">
-        <form onSubmit={handleBookingSubmit} className="space-y-4">
-          <Input label="Customer Name" value={bookingData.customer_name} onChange={e => setBookingData({ ...bookingData, customer_name: e.target.value })} required />
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="NIK (ID Number)" placeholder="16-digit NIK" value={bookingData.nik} onChange={e => setBookingData({ ...bookingData, nik: e.target.value.replace(/\D/g, '').slice(0, 16) })} required />
-            <Input label="Phone Number" placeholder="+62..." value={bookingData.customer_phone} onChange={e => setBookingData({ ...bookingData, customer_phone: sanitizePhone(e.target.value) })} required />
+        <form onSubmit={handleBookingSubmit} className="space-y-6">
+          <div className="flex gap-2 px-1">
+            <div className={`h-1.5 flex-1 rounded-full transition-all ${formStep >= 1 ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-800'}`} />
+            <div className={`h-1.5 flex-1 rounded-full transition-all ${formStep >= 2 ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-800'}`} />
           </div>
-          <Input label="Down Payment (DP)" value={displayCurrency(bookingData.down_payment)} onChange={e => handleCurrencyChange(setBookingData, bookingData, 'down_payment', e.target.value)} />
-          <Select
-            label="Sales Agent (Optional)"
-            value={bookingData.sales_agent_id}
-            onChange={e => setBookingData({ ...bookingData, sales_agent_id: e.target.value })}
-            options={[{ value: '', label: '-- Select Sales (Optional) --' }, ...salesAgents.map(a => ({ value: a.id, label: `${a.name} [${a.sales_code}] - ${a.Office?.name || 'Unknown'}` }))]}
-          />
-          <textarea
-            className="input min-h-[80px] p-3 text-xs"
-            placeholder="Additional notes / information..."
-            value={bookingData.notes}
-            onChange={e => setBookingData({ ...bookingData, notes: e.target.value })}
-          />
-
-          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
-            <div className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all cursor-pointer" onClick={() => {
-              const newVal = !printReceipt;
-              setPrintReceipt(newVal);
-              localStorage.setItem('pref_print_receipt', newVal);
-            }}>
-              <input type="checkbox" checked={printReceipt} onChange={() => {}} className="w-4 h-4 rounded text-blue-600" />
-              <span className="text-[9px] font-black text-gray-400 uppercase leading-none">Print Reservation Receipt</span>
+          {formStep === 1 ? (
+            <div className="space-y-4">
+              <Input label="Customer Name" value={bookingData.customer_name} onChange={e => setBookingData({ ...bookingData, customer_name: e.target.value })} required />
+              <div className="grid grid-cols-2 gap-4">
+                <Input label="NIK (ID Number)" placeholder="16-digit NIK" value={bookingData.nik} onChange={e => setBookingData({ ...bookingData, nik: e.target.value.replace(/\D/g, '').slice(0, 16) })} required />
+                <Input label="Phone Number" placeholder="+62..." value={bookingData.customer_phone} onChange={e => setBookingData({ ...bookingData, customer_phone: sanitizePhone(e.target.value) })} required />
+              </div>
+              <Input label="Down Payment (DP)" value={displayCurrency(bookingData.down_payment)} onChange={e => handleCurrencyChange(setBookingData, bookingData, 'down_payment', e.target.value)} />
+              <Select
+                label="Sales Agent (Optional)"
+                value={bookingData.sales_agent_id}
+                onChange={e => setBookingData({ ...bookingData, sales_agent_id: e.target.value })}
+                options={[{ value: '', label: '-- Select Sales (Optional) --' }, ...salesAgents.map(a => ({ value: a.id, label: `${a.name} [${a.sales_code}] - ${a.Office?.name || 'Unknown'}` }))]}
+              />
+              <textarea
+                className="input min-h-[80px] p-3 text-xs"
+                placeholder="Additional notes / information..."
+                value={bookingData.notes}
+                onChange={e => setBookingData({ ...bookingData, notes: e.target.value })}
+              />
             </div>
-            <div className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all cursor-pointer" onClick={() => {
-              const newVal = !printInvoice;
-              setPrintInvoice(newVal);
-              localStorage.setItem('pref_print_invoice', newVal);
-            }}>
-              <input type="checkbox" checked={printInvoice} onChange={() => {}} className="w-4 h-4 rounded text-blue-600" />
-              <span className="text-[9px] font-black text-gray-400 uppercase leading-none">Print Settlement Invoice</span>
+          ) : (
+            <div className="space-y-6">
+              {bookingDocumentTypes.length > 0 && (
+                <div className="space-y-4 p-5 bg-gray-50 dark:bg-gray-800/40 rounded-[32px] border border-gray-100 dark:border-gray-800">
+                  <div className="flex items-center gap-2 mb-1">
+                    <FileText size={14} className="text-indigo-600" />
+                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Customer Legal Documents (Optional)</p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {bookingDocumentTypes.map(type => (
+                      <div key={type.id} className="space-y-1">
+                        <label className="text-[9px] font-black text-gray-400 uppercase ml-1">{type.name}</label>
+                        <label className={`flex items-center gap-2 p-2 rounded-xl border-2 border-dashed transition-all cursor-pointer ${selectedBookingDocs[type.id] ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-indigo-400'}`}>
+                          {selectedBookingDocs[type.id] ? <CheckCircle size={14} /> : <Upload size={14} className="text-gray-300" />}
+                          <span className="text-[10px] font-bold truncate flex-1">{selectedBookingDocs[type.id] ? selectedBookingDocs[type.id].name : 'Upload File'}</span>
+                          <input type="file" className="hidden" onChange={(e) => setSelectedBookingDocs({ ...selectedBookingDocs, [type.id]: e.target.files[0] })} />
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+                <div className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all cursor-pointer" onClick={() => {
+                  const newVal = !printReceipt;
+                  setPrintReceipt(newVal);
+                  localStorage.setItem('pref_print_receipt', newVal);
+                }}>
+                  <input type="checkbox" checked={printReceipt} onChange={() => {}} className="w-4 h-4 rounded text-blue-600" />
+                  <span className="text-[9px] font-black text-gray-400 uppercase leading-none">Print Reservation Receipt</span>
+                </div>
+                <div className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all cursor-pointer" onClick={() => {
+                  const newVal = !printInvoice;
+                  setPrintInvoice(newVal);
+                  localStorage.setItem('pref_print_invoice', newVal);
+                }}>
+                  <input type="checkbox" checked={printInvoice} onChange={() => {}} className="w-4 h-4 rounded text-blue-600" />
+                  <span className="text-[9px] font-black text-gray-400 uppercase leading-none">Print Settlement Invoice</span>
+                </div>
+              </div>
             </div>
-          </div>
-
-          <button type="submit" className="btn-primary w-full py-4 bg-orange-600 border-none uppercase text-xs font-black tracking-widest">SAVE RESERVATION</button>
+          )}
+          <button type="submit" className={`w-full py-4 ${formStep === 1 ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500'} text-white rounded-2xl font-black transition-all active:scale-95 uppercase text-xs tracking-widest`}>
+            {formStep === 1 ? 'SAVE DATA & CONTINUE TO UPLOAD' : 'FINISH & PRINT DOCUMENTS'}
+          </button>
         </form>
       </Modal>
     </div>
