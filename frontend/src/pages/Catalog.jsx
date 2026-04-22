@@ -8,7 +8,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, NavLink } from 'react-router-dom';
+import { useNavigate, NavLink, useLocation } from 'react-router-dom';
 import { IMAGE_BASE_URL } from '../config';
 
 // ----------------------------------------------------------------------
@@ -210,13 +210,14 @@ const Catalog = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Data States
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [moreLoading, setMoreLoading] = useState(false);
-  const [finalSearchTerm, setFinalSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('');
+  const [finalSearchTerm, setFinalSearchTerm] = useState(() => new URLSearchParams(window.location.search).get('search') || '');
+  const [filterType, setFilterType] = useState(() => new URLSearchParams(window.location.search).get('type') || '');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -230,6 +231,20 @@ const Catalog = () => {
   const [offices, setOffices] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // Handle Query Parameters from Landing Page
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const search = params.get('search') || '';
+    const type = params.get('type') || '';
+    setFinalSearchTerm(search);
+    setFilterType(type);
+  }, [location.search]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [finalSearchTerm, filterType, filters, selectedLocation]);
 
   // Interaction States
   const [selectedVehicle, setSelectedVehicle] = useState(null);
