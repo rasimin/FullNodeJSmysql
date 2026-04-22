@@ -34,7 +34,9 @@ const Vehicles = () => {
   const [documentTypes, setDocumentTypes] = useState([]);
   const [vehicleDocuments, setVehicleDocuments] = useState([]);
   const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+  const [isDocPromptOpen, setIsDocPromptOpen] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState(null);
+
 
   const [notification, setNotification] = useState({ status: 'idle', message: '' });
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
@@ -346,9 +348,19 @@ const Vehicles = () => {
       }
       setSelectedFiles([]);
 
-      notify('success', 'Success!');
-      setIsModalOpen(false);
+      const isNew = !editingVehicle;
+      if (isNew) {
+        // Fetch the full vehicle object to ensure we have all fields for the documents tab
+        const fullVehicleRes = await api.get(`/vehicles/${vehicleId}`);
+        setEditingVehicle(fullVehicleRes.data);
+        setIsDocPromptOpen(true);
+      } else {
+        setIsModalOpen(false);
+      }
+      
+      notify('success', isNew ? 'Unit added! Do you want to upload documents?' : 'Changes saved!');
       fetchVehicles();
+
     } catch (err) {
       console.error('Save error:', err);
       const msg = err.response?.data?.message || 'Failed to save changes';
@@ -993,6 +1005,40 @@ const Vehicles = () => {
           </div>
         )}
       </Modal>
+
+      {/* DOCUMENT UPLOAD PROMPT */}
+      <Modal isOpen={isDocPromptOpen} onClose={() => { setIsDocPromptOpen(false); setIsModalOpen(false); }} title="Unit Saved Successfully">
+        <div className="p-6 text-center space-y-6">
+          <div className="w-20 h-20 bg-green-50 dark:bg-green-900/20 rounded-full flex items-center justify-center text-green-500 mx-auto animate-bounce">
+            <CheckCircle2 size={48} />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight">Data Unit Tersimpan</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Apakah Anda ingin mengunggah dokumen legalitas (STNK, BPKB, dll) untuk unit ini sekarang?</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 pt-4">
+            <button 
+              onClick={() => {
+                setIsDocPromptOpen(false);
+                setIsModalOpen(false);
+              }}
+              className="py-4 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-gray-200 transition-all"
+            >
+              Nanti Saja
+            </button>
+            <button 
+              onClick={() => {
+                setIsDocPromptOpen(false);
+                setActiveTab('documents');
+              }}
+              className="py-4 bg-blue-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+            >
+              <Upload size={14} /> Ya, Upload Sekarang
+            </button>
+          </div>
+        </div>
+      </Modal>
+
 
 
       <Modal isOpen={isConfirmActionModalOpen} onClose={() => { setIsConfirmActionModalOpen(false); setDealPhoto(null); }} title="Transaction Confirmation">
