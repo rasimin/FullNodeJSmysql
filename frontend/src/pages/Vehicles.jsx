@@ -713,7 +713,7 @@ const Vehicles = () => {
       {/* Statistics Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         {[
-          { label: 'Total Stok', count: summary.total || 0, icon: Car, color: 'blue', status: '', borderClass: 'border-b-blue-600', bgClass: 'bg-blue-50/20' },
+          { label: 'Data Unit', count: summary.total || 0, icon: Car, color: 'blue', status: '', borderClass: 'border-b-blue-600', bgClass: 'bg-blue-50/20' },
           { label: 'Tersedia', count: summary.available || 0, icon: Tag, color: 'green', status: 'Available', borderClass: 'border-b-green-600', bgClass: 'bg-green-50/20' },
           { label: 'Dalam Booking', count: summary.booking || 0, icon: Clock, color: 'orange', status: 'Booked', borderClass: 'border-b-orange-600', bgClass: 'bg-orange-50/20' },
           { label: 'Unit Terjual', count: summary.sold || 0, icon: CheckCircle, color: 'purple', status: 'Sold', borderClass: 'border-b-purple-600', bgClass: 'bg-purple-50/20' },
@@ -1056,56 +1056,132 @@ const Vehicles = () => {
                   <p className="text-xs text-gray-500 max-w-xs mx-auto">Anda harus menyimpan data unit baru sebelum dapat mengunggah dokumen legalitas.</p>
                </div>
              ) : (
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 {documentTypes.map((type) => {
-                   const existingDoc = vehicleDocuments.find(d => d.document_type_id === type.id);
-                   return (
-                     <div key={type.id} className={`p-5 rounded-3xl border transition-all ${existingDoc ? 'bg-white dark:bg-gray-800 border-green-100 dark:border-green-900/30 shadow-lg shadow-green-500/5' : 'bg-gray-50/50 dark:bg-gray-800/20 border-gray-100 dark:border-gray-800'}`}>
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${existingDoc ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
-                              <FileText size={20} />
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <p className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-tight">{type.name}</p>
-                                {type.is_mandatory && <span className="text-[8px] font-black text-red-500 uppercase tracking-widest">Wajib</span>}
+                <div className="space-y-8">
+                  {/* Primary Legal Documents Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {documentTypes.filter(t => !['OTHER', 'LAINNYA'].includes(t.code?.toUpperCase())).map((type) => {
+                      const existingDoc = vehicleDocuments.find(d => d.document_type_id === type.id);
+                      return (
+                        <div key={type.id} className={`p-4 rounded-2xl border transition-all ${existingDoc ? 'bg-white dark:bg-gray-800 border-green-100 dark:border-green-900/30 shadow-sm' : 'bg-gray-50/50 dark:bg-gray-800/20 border-gray-100 dark:border-gray-800'}`}>
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex items-center gap-2.5">
+                              <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${existingDoc ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                                <FileText size={16} />
                               </div>
-                              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{existingDoc ? `Diunggah: ${new Date(existingDoc.created_at).toLocaleDateString('id-ID')}` : 'Belum ada file'}</p>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-tight">{type.name}</p>
+                                  {type.is_mandatory && <span className="text-[7px] font-black text-red-500 uppercase">Wajib</span>}
+                                </div>
+                                <p className="text-[8px] text-gray-400 font-bold uppercase">{existingDoc ? `Diunggah: ${new Date(existingDoc.created_at).toLocaleDateString('id-ID')}` : 'Belum ada file'}</p>
+                              </div>
                             </div>
+                            {existingDoc && !isViewOnly && (
+                              <button onClick={() => handleDeleteDocument(editingVehicle.id, existingDoc.id)} className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition-colors">
+                                <Trash2 size={14} />
+                              </button>
+                            )}
                           </div>
-                          {existingDoc && (
-                            <button onClick={() => handleDeleteDocument(editingVehicle.id, existingDoc.id)} className="p-2 hover:bg-red-50 text-red-500 rounded-xl transition-colors">
-                              <Trash2 size={16} />
+
+                          {existingDoc ? (
+                            <button 
+                              onClick={() => window.open(`${IMAGE_BASE_URL}${existingDoc.file_path}`, '_blank')}
+                              className="w-full py-2 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white rounded-lg text-[9px] font-black uppercase transition-all flex items-center justify-center gap-2"
+                            >
+                              <Eye size={12} /> Lihat Dokumen
                             </button>
+                          ) : (
+                            !isViewOnly && (
+                              <label className={`w-full py-4 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all ${isUploadingDoc ? 'opacity-50 pointer-events-none' : 'hover:border-blue-500 hover:bg-blue-50/50 border-gray-200 dark:border-gray-700'}`}>
+                                <Upload size={16} className="text-gray-300 mb-1" />
+                                <p className="text-[8px] font-black text-gray-400 uppercase">Pilih File</p>
+                                <input type="file" className="hidden" accept=".jpg,.jpeg,.png,.pdf" onChange={(e) => handleUploadDocument(editingVehicle.id, type.id, e.target.files[0])} disabled={isUploadingDoc} />
+                              </label>
+                            )
                           )}
                         </div>
+                      );
+                    })}
+                  </div>
 
-                        {existingDoc ? (
-                          <div className="flex items-center gap-3 mt-2">
-                             <button 
-                                onClick={() => window.open(`${IMAGE_BASE_URL}${existingDoc.file_path}`, '_blank')}
-                                className="flex-1 py-2.5 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white rounded-xl text-[9px] font-black uppercase transition-all flex items-center justify-center gap-2"
-                             >
-                               <Eye size={14} /> Lihat Dokumen
-                             </button>
+                  {/* Other Documents Section */}
+                  <div className="space-y-4 pt-6 border-t border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center gap-3">
+                      <div className="w-1 h-5 bg-purple-600 rounded-full" />
+                      <h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Dokumen Tambahan (Maks 5)</h4>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                      {[...Array(5)].map((_, i) => {
+                        const otherType = documentTypes.find(t => ['OTHER', 'LAINNYA'].includes(t.code?.toUpperCase()));
+                        const otherDocs = vehicleDocuments.filter(d => d.document_type_id === otherType?.id);
+                        const doc = otherDocs[i];
+
+                        return (
+                          <div key={i} className={`aspect-square rounded-2xl border flex flex-col items-center justify-center relative overflow-hidden ${doc ? 'bg-white dark:bg-gray-800 border-indigo-100 dark:border-indigo-900/30' : 'bg-gray-50/30 dark:bg-gray-800/10 border-dashed border-gray-200 dark:border-gray-700'}`}>
+                            {doc ? (
+                              <div className="w-full h-full p-2 flex flex-col items-center justify-center text-center">
+                                <FileText size={24} className="text-indigo-400 mb-2" />
+                                <p className="text-[7px] font-black text-gray-500 uppercase line-clamp-1 px-1">{doc.file_name}</p>
+                                <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                  <button onClick={() => window.open(`${IMAGE_BASE_URL}${doc.file_path}`, '_blank')} className="p-1.5 bg-white text-blue-600 rounded-lg"><Eye size={14} /></button>
+                                  {!isViewOnly && <button onClick={() => handleDeleteDocument(editingVehicle.id, doc.id)} className="p-1.5 bg-white text-red-600 rounded-lg"><Trash2 size={14} /></button>}
+                                </div>
+                              </div>
+                            ) : (
+                              !isViewOnly && otherType && (
+                                <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer hover:bg-indigo-50/30 transition-colors">
+                                  <PlusCircle size={20} className="text-gray-300 mb-1" />
+                                  <p className="text-[7px] font-black text-gray-400 uppercase">Tambah</p>
+                                  <input type="file" className="hidden" accept=".jpg,.jpeg,.png,.pdf" onChange={(e) => handleUploadDocument(editingVehicle.id, otherType.id, e.target.files[0])} disabled={isUploadingDoc} />
+                                </label>
+                              )
+                            )}
                           </div>
-                        ) : (
-                          <label className={`w-full py-6 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all ${isUploadingDoc ? 'opacity-50 pointer-events-none' : 'hover:border-blue-500 hover:bg-blue-50/50 border-gray-200 dark:border-gray-700'}`}>
-                            <Upload size={20} className="text-gray-300 mb-2" />
-                            <p className="text-[9px] font-black text-gray-400 uppercase">Klik untuk unggah file</p>
-                            <input 
-                              type="file" 
-                              className="hidden" 
-                              accept=".jpg,.jpeg,.png,.pdf" 
-                              onChange={(e) => handleUploadDocument(editingVehicle.id, type.id, e.target.files[0])}
-                              disabled={isUploadingDoc}
-                            />
-                          </label>
-                        )}
-                     </div>
-                   );
-                 })}
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Transaction Documents Section */}
+                  {bookingHistory.some(bh => bh.delivery_photo || bh.id) && (
+                    <div className="space-y-4 pt-6 border-t border-gray-100 dark:border-gray-800">
+                      <div className="flex items-center gap-3">
+                        <div className="w-1 h-5 bg-orange-500 rounded-full" />
+                        <h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Arsip Dokumen Transaksi</h4>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {bookingHistory.map((bh, idx) => (
+                          <div key={idx} className="p-4 bg-orange-50/30 dark:bg-orange-900/10 rounded-2xl border border-orange-100/50 dark:border-orange-900/20">
+                            <div className="flex justify-between items-start mb-3">
+                              <div>
+                                <p className="text-[9px] font-black text-orange-600 uppercase mb-1">Transaksi #{bh.id}</p>
+                                <p className="text-[8px] text-gray-400 font-bold uppercase">{new Date(bh.booking_date).toLocaleDateString('id-ID')}</p>
+                              </div>
+                              <div className="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
+                                <Bookmark size={14} />
+                              </div>
+                            </div>
+                            <div className="space-y-1.5">
+                              <button 
+                                onClick={() => handlePrintDoc(bh.id, 'receipt')}
+                                className="w-full py-2 bg-white dark:bg-gray-800 border border-orange-100 dark:border-gray-700 text-[8px] font-black uppercase text-gray-600 hover:bg-orange-600 hover:text-white rounded-lg transition-all flex items-center justify-center gap-2"
+                              >
+                                <FileText size={12} /> Kwitansi / Invoice
+                              </button>
+                              {bh.delivery_photo && (
+                                <button 
+                                  onClick={() => window.open(`${IMAGE_BASE_URL}${bh.delivery_photo}`, '_blank')}
+                                  className="w-full py-2 bg-white dark:bg-gray-800 border border-orange-100 dark:border-gray-700 text-[8px] font-black uppercase text-gray-600 hover:bg-orange-600 hover:text-white rounded-lg transition-all flex items-center justify-center gap-2"
+                                >
+                                  <Camera size={12} /> Foto Serah Terima
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                </div>
              )}
           </div>
@@ -1302,8 +1378,8 @@ const Vehicles = () => {
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <XCircle size={16} className="text-red-600" />
-                          <p className="text-sm font-black text-red-600 uppercase tracking-tight">Batal (Tanpa Refund)</p>
+                           <XCircle size={16} className="text-red-600" />
+                           <p className="text-sm font-black text-red-600 uppercase tracking-tight">Batal (Tanpa Refund)</p>
                         </div>
                         <p className="text-[10px] text-gray-500 font-bold uppercase leading-relaxed max-w-[280px]">Dana DP hangus dan menjadi komponen pendapatan kantor.</p>
                       </div>

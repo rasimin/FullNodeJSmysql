@@ -94,7 +94,19 @@ const Transactions = () => {
   const fetchMetadata = async () => {
     try {
       const r = await api.get('/documents/types', { params: { category: 'Booking' } });
-      setDocumentTypes(r.data);
+      // Deduplicate booking types by name to avoid showing redundant fields like "Kartu Keluarga" twice
+      const uniqueBookingTypes = r.data.reduce((acc, current) => {
+        const name = current.name.trim().toLowerCase();
+        // Remove common suffixes like (KK) for better comparison
+        const cleanName = name.replace(/\s*\(.*\)$/, '');
+        const exists = acc.find(item => {
+          const itemName = item.name.trim().toLowerCase().replace(/\s*\(.*\)$/, '');
+          return itemName === cleanName;
+        });
+        if (!exists) return [...acc, current];
+        return acc;
+      }, []);
+      setDocumentTypes(uniqueBookingTypes);
     } catch (e) { console.error('Fetch doc types error:', e); }
   };
 
