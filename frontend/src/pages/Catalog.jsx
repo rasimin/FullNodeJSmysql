@@ -162,7 +162,7 @@ const SearchInput = React.memo(({ onSearch, allSuggestions, initialValue }) => {
       <input
         type="text"
         placeholder="Cari unit (Brand, Model, No Plat)..."
-        className="w-full h-11 md:h-12 bg-gray-100 dark:bg-white/5 border-none rounded-full pl-10 md:pl-12 pr-11 md:pr-12 text-[11px] md:text-sm text-gray-900 dark:text-white placeholder:text-gray-500 focus:ring-1 focus:ring-gray-300 dark:focus:ring-white/20 transition-all outline-none"
+        className={`w-full h-11 md:h-12 bg-gray-100 dark:bg-white/5 border-none rounded-full pl-10 md:pl-12 ${localSearch ? 'pr-20 md:pr-24' : 'pr-11 md:pr-12'} text-[11px] md:text-sm text-gray-900 dark:text-white placeholder:text-gray-500 focus:ring-1 focus:ring-gray-300 dark:focus:ring-white/20 transition-all outline-none`}
         value={localSearch}
         onChange={(e) => { setLocalSearch(e.target.value); setShowSuggestions(true); }}
         onKeyDown={(e) => e.key === 'Enter' && handleManualSearch()}
@@ -192,12 +192,22 @@ const SearchInput = React.memo(({ onSearch, allSuggestions, initialValue }) => {
         )}
       </AnimatePresence>
 
-      <button
-        onClick={handleManualSearch}
-        className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 md:w-8 md:h-8 bg-gray-900 dark:bg-white text-white dark:text-gray-950 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
-      >
-        <Search size={12} className="md:w-[14px] md:h-[14px]" strokeWidth={3} />
-      </button>
+      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+        {localSearch && (
+          <button 
+            onClick={() => { setLocalSearch(''); onSearch(''); setShowSuggestions(false); }}
+            className="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors"
+          >
+            <X size={16} />
+          </button>
+        )}
+        <button
+          onClick={handleManualSearch}
+          className="w-7 h-7 md:w-8 md:h-8 bg-gray-900 dark:bg-white text-white dark:text-gray-950 rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg"
+        >
+          <Search size={12} className="md:w-[14px] md:h-[14px]" strokeWidth={3} />
+        </button>
+      </div>
     </div>
   );
 });

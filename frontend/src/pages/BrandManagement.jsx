@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { Search, Plus, Tags, Trash2, Edit, Car, FileSpreadsheet, Smartphone, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { Search, Plus, Tags, Trash2, Edit, Car, FileSpreadsheet, Smartphone, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, X } from 'lucide-react';
 import Modal from '../components/Modal';
 import DynamicIsland from '../components/DynamicIsland';
 import Input from '../components/ui/Input';
@@ -79,7 +79,21 @@ const BrandManagement = () => {
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-        <input type="text" className="input pl-10 h-11" placeholder="Cari merk..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
+        <input 
+          type="text" 
+          className={`input pl-10 ${search ? 'pr-10' : ''} h-11`} 
+          placeholder="Cari merk..." 
+          value={search} 
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }} 
+        />
+        {search && (
+          <button 
+            onClick={() => { setSearch(''); setPage(1); }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors"
+          >
+            <X size={18} />
+          </button>
+        )}
       </div>
 
       {viewMode === 'table' ? (

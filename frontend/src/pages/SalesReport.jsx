@@ -3,7 +3,7 @@ import api from '../services/api';
 import { 
   TrendingUp, Users, DollarSign, Package, Calendar, 
   Search, Filter, ChevronRight, ArrowUpRight, 
-  ArrowDownRight, Building2, ExternalLink, Download
+  ArrowDownRight, Building2, ExternalLink, Download, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Modal from '../components/Modal';
@@ -129,10 +129,18 @@ const SalesReport = () => {
               <input 
                 type="text" 
                 placeholder="Cari Agen..." 
-                className="pl-10 pr-4 py-2 bg-gray-50 dark:bg-white/5 rounded-xl text-[10px] font-black uppercase text-gray-700 dark:text-gray-200 outline-none border border-transparent focus:border-blue-500 transition-all w-48"
+                className={`pl-10 ${search ? 'pr-10' : 'pr-4'} py-2 bg-gray-50 dark:bg-white/5 rounded-xl text-[10px] font-black uppercase text-gray-700 dark:text-gray-200 outline-none border border-transparent focus:border-blue-500 transition-all w-48`}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
+              {search && (
+                <button 
+                  onClick={() => setSearch('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
         </div>
         

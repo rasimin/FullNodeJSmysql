@@ -5,7 +5,7 @@ import {
   Search, Plus, MapPin, Trash2, Edit, Map, Navigation, Hash, 
   ChevronRight, ChevronDown, FolderTree, Settings, User, 
   LayoutGrid, Building2, MapPinned, MoreHorizontal, LayoutList,
-  RefreshCcw, Loader2
+  RefreshCcw, Loader2, X
 } from 'lucide-react';
 import Modal from '../components/Modal';
 import DynamicIsland from '../components/DynamicIsland';
@@ -336,15 +336,23 @@ const LocationManagement = () => {
       <div className="max-w-4xl mx-auto space-y-3 md:space-y-8">
         <div className="relative group">
            <div className="absolute left-3 md:left-8 top-0 bottom-0 flex items-center justify-center text-gray-400 dark:text-gray-500 group-focus-within:text-blue-500 transition-colors pointer-events-none z-10 w-8 md:w-10">
-              <Search size={18} md={22} />
+              <Search size={18} />
            </div>
            <input 
               type="text" 
-              style={{ paddingLeft: window.innerWidth < 768 ? '40px' : '84px' }}
-              className="w-full h-12 md:h-16 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl md:rounded-2xl pr-4 text-[11px] md:text-sm font-medium focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all outline-none text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600 shadow-sm" 
+              style={{ paddingLeft: window.innerWidth < 768 ? '40px' : '84px', paddingRight: search ? '40px' : '16px' }}
+              className="w-full h-12 md:h-16 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl md:rounded-2xl text-[11px] md:text-sm font-medium focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all outline-none text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600 shadow-sm" 
               placeholder="Cari lokasi (minimal 3 karakter)..." 
               value={search} onChange={(e) => setSearch(e.target.value)} 
            />
+           {search && (
+             <button 
+               onClick={() => setSearch('')}
+               className="absolute right-3 md:right-8 top-0 bottom-0 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors z-10 w-8 md:w-10"
+             >
+               <X size={18} />
+             </button>
+           )}
         </div>
 
         <div className="flex flex-row gap-1.5 md:gap-4">

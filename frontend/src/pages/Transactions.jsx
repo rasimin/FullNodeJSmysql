@@ -5,7 +5,7 @@ import {
   Search, FileSpreadsheet, Printer, Eye, Calendar, User,
   Phone, Tag, Clock, CheckCircle, XCircle, MoreHorizontal,
   Building2, Hash, Wallet, UserCheck, Trash2, Edit, CheckCircle2,
-  PhoneCall, CreditCard as CardIcon, ChevronRight, ArrowUpDown, FileText, Upload, ArrowUpRight
+  PhoneCall, CreditCard as CardIcon, ChevronRight, ArrowUpDown, FileText, Upload, ArrowUpRight, X
 } from 'lucide-react';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
@@ -422,9 +422,17 @@ const Transactions = () => {
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text" placeholder="Cari ID, pelanggan atau unit..."
-              className="input pl-10 h-11 text-xs"
+              className={`input pl-10 ${search ? 'pr-10' : ''} h-11 text-xs`}
               value={search} onChange={(e) => setSearch(e.target.value)}
             />
+            {search && (
+              <button 
+                onClick={() => setSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            )}
           </div>
         </div>
 

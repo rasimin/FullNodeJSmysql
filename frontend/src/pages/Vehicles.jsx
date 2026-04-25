@@ -807,7 +807,24 @@ const Vehicles = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-        <div className="relative md:col-span-8"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} /><input type="text" className="input pl-10 h-12" placeholder="Cari..." value={search} onChange={handleSearch} /></div>
+        <div className="relative md:col-span-8">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <input 
+            type="text" 
+            className={`input pl-10 ${search ? 'pr-10' : ''} h-12`} 
+            placeholder="Cari..." 
+            value={search} 
+            onChange={handleSearch} 
+          />
+          {search && (
+            <button 
+              onClick={() => handleSearch({ target: { value: '' } })}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors"
+            >
+              <X size={18} />
+            </button>
+          )}
+        </div>
         <div className="md:col-span-4">{isHeadOffice && (<select className="input h-12" value={selectedBranch} onChange={(e) => { setSelectedBranch(e.target.value); setCurrentPage(1); }}><option value="">Semua Cabang</option>{offices.map(o => <option key={o.id} value={o.id}>{o.displayName}</option>)}</select>)}</div>
       </div>
 

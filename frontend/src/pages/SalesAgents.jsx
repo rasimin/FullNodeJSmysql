@@ -4,7 +4,7 @@ import { IMAGE_BASE_URL } from '../config';
 import { 
   Users, UserPlus, Search, Edit2, Trash2, Mail, Phone, MapPin, 
   Building2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, 
-  FileText, Filter, MoreVertical, FileSpreadsheet, Plus, LayoutGrid, LayoutList
+  FileText, Filter, MoreVertical, FileSpreadsheet, Plus, LayoutGrid, LayoutList, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Modal from '../components/Modal';
@@ -196,10 +196,18 @@ const SalesAgents = () => {
           <input 
             type="text"
             placeholder="Cari berdasarkan nama atau kode..."
-            className="input pl-10 h-11"
+            className={`input pl-10 ${searchTerm ? 'pr-10' : ''} h-11`}
             value={searchTerm}
             onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
           />
+          {searchTerm && (
+            <button 
+              onClick={() => { setSearchTerm(''); setPage(1); }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors"
+            >
+              <X size={18} />
+            </button>
+          )}
         </div>
         <div className="flex gap-2">
           <select 

@@ -1,6 +1,9 @@
-import { Calendar, Clock, ChevronDown } from 'lucide-react';
+import { Calendar, Clock, X } from 'lucide-react';
 
-const Input = ({ label, type = 'text', placeholder, value, onChange, required = false, icon: Icon, className = '', disabled = false, readOnly = false }) => {
+const Input = ({ 
+  label, type = 'text', placeholder, value, onChange, onClear,
+  required = false, icon: Icon, className = '', disabled = false, readOnly = false 
+}) => {
   const isDate = type === 'date' || type === 'datetime-local';
   const isTime = type === 'time';
   
@@ -26,8 +29,23 @@ const Input = ({ label, type = 'text', placeholder, value, onChange, required = 
               try { e.currentTarget.showPicker(); } catch (err) { }
             }
           }}
-          className={`input ${Icon ? 'pl-9' : ''} ${(isDate || isTime) ? 'pr-10' : ''} ${disabled || readOnly ? 'bg-gray-50 dark:bg-gray-900/50 cursor-not-allowed' : ''} ${isDate || isTime ? 'cursor-pointer' : ''} ${required && !value && !disabled && !readOnly ? 'border-red-500/50 bg-red-50/10 dark:bg-red-900/5' : ''} appearance-none custom-date-input`}
+          className={`input ${Icon ? 'pl-9' : ''} ${(isDate || isTime || (onClear && value)) ? 'pr-10' : ''} ${disabled || readOnly ? 'bg-gray-50 dark:bg-gray-900/50 cursor-not-allowed' : ''} ${isDate || isTime ? 'cursor-pointer' : ''} ${required && !value && !disabled && !readOnly ? 'border-red-500/50 bg-red-50/10 dark:bg-red-900/5' : ''} appearance-none custom-date-input`}
         />
+        
+        {/* Clear Button */}
+        {onClear && value && !disabled && !readOnly && !isDate && !isTime && (
+          <button 
+            type="button" 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClear();
+            }}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-red-500 transition-all active:scale-90"
+          >
+            <X size={15} />
+          </button>
+        )}
         {(isDate || isTime) && (
           <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400 group-hover:text-blue-500 transition-colors">
             {isDate ? <Calendar size={15} /> : <Clock size={15} />}
