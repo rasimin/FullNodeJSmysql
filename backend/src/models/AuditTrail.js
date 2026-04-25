@@ -12,7 +12,7 @@ const AuditTrail = sequelize.define('AuditTrail', {
     allowNull: false,
   },
   record_id: {
-    type: DataTypes.BIGINT,
+    type: DataTypes.STRING(36),
     allowNull: false,
   },
   action: {

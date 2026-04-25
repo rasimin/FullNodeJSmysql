@@ -101,7 +101,7 @@ const createAuditLog = async (options) => {
 
     await AuditTrail.create({
       table_name: model.tableName,
-      record_id: instance.id,
+      record_id: String(instance.id),
       action: action,
       old_values: oldValues,
       new_values: newValues,

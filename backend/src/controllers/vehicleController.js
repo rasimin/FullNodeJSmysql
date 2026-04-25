@@ -150,23 +150,7 @@ const getVehicles = async (req, res) => {
 
     const officeIncludeCondition = { 
       model: Office, 
-      attributes: ['id', 'name', 'parent_id', 'address', 'region_code'],
-      include: [
-        {
-          model: Location, as: 'location',
-          include: [
-            {
-              model: Location, as: 'parent',
-              include: [
-                {
-                  model: Location, as: 'parent',
-                  include: [{ model: Location, as: 'parent' }]
-                }
-              ]
-            }
-          ]
-        }
-      ]
+      attributes: ['id', 'name', 'parent_id', 'address', 'region_code']
     };
 
     if (regionCodes.length > 0) {

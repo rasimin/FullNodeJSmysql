@@ -40,19 +40,26 @@ const getAuditTrails = async (req, res) => {
 
     const { vehicle_id } = req.query;
     if (vehicle_id) {
+      // Use sequelize.literal() to avoid Sequelize's automatic JSON escaping on LIKE patterns.
+      // Sequelize over-escapes quotes when the column type is JSON, making LIKE unusable.
+      const vid = parseInt(vehicle_id); // sanitize to prevent SQL injection
+      if (isNaN(vid)) return res.status(400).json({ message: 'Invalid vehicle_id' });
+
       condition[Op.or] = [
-        { [Op.and]: [{ table_name: 'vehicles' }, { record_id: vehicle_id }] },
+        { [Op.and]: [{ table_name: 'vehicles' }, { record_id: String(vid) }] },
         { 
           [Op.and]: [
             { table_name: { [Op.in]: ['vehicle_documents', 'vehicle_images', 'bookings'] } },
-            { 
-              [Op.or]: [
-                { old_values: { [Op.like]: `%"vehicle_id":${vehicle_id}%` } },
-                { old_values: { [Op.like]: `%"vehicle_id":"${vehicle_id}"%` } },
-                { new_values: { [Op.like]: `%"vehicle_id":${vehicle_id}%` } },
-                { new_values: { [Op.like]: `%"vehicle_id":"${vehicle_id}"%` } }
-              ]
-            }
+            sequelize.literal(`(
+              old_values LIKE '%"vehicle_id":${vid}%' OR
+              old_values LIKE '%"vehicle_id": ${vid}%' OR
+              old_values LIKE '%"vehicle_id":"${vid}"%' OR
+              old_values LIKE '%"vehicle_id": "${vid}"%' OR
+              new_values LIKE '%"vehicle_id":${vid}%' OR
+              new_values LIKE '%"vehicle_id": ${vid}%' OR
+              new_values LIKE '%"vehicle_id":"${vid}"%' OR
+              new_values LIKE '%"vehicle_id": "${vid}"%'
+            )`)
           ]
         }
       ];
