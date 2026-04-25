@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import api from '../services/api';
 import {
@@ -76,6 +76,7 @@ const Vehicles = () => {
   const [selectedBranch, setSelectedBranch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [summary, setSummary] = useState({ available: 0, booking: 0, sold: 0, total: 0 });
+  const isFirstLoad = useRef(true);
   const [viewMode, setViewMode] = useState(window.innerWidth < 768 ? 'grid' : 'table');
 
   const [formData, setFormData] = useState({
@@ -150,19 +151,16 @@ const Vehicles = () => {
 
   const fetchMetadata = async () => {
     try {
-      const [b, o, s, dt, bdt] = await Promise.all([
-        api.get('/vehicles/brands'),
-        isHeadOffice ? api.get('/offices') : Promise.resolve({ data: [] }),
-        api.get('/sales-agents/active', { params: { officeId: user?.office_id } }),
-        api.get('/documents/types', { params: { category: 'Vehicle' } }),
-        api.get('/documents/types', { params: { category: 'Booking' } })
-      ]);
-      setBrands(b.data);
-      if (isHeadOffice) setOffices(formatOfficeHierarchy(o.data));
-      setSalesAgents(s.data);
-      setDocumentTypes(dt.data);
+      const res = await api.get('/vehicles/initial-data');
+      const { brands: bData, offices: oData, agents: sData, vehicleDocTypes: dtData, bookingDocTypes: bdtData } = res.data;
+
+      setBrands(bData);
+      if (isHeadOffice) setOffices(formatOfficeHierarchy(oData));
+      setSalesAgents(sData);
+      setDocumentTypes(dtData);
+
       // Deduplicate booking types by name to avoid showing redundant fields like "Kartu Keluarga" twice
-      const uniqueBookingTypes = bdt.data.reduce((acc, current) => {
+      const uniqueBookingTypes = bdtData.reduce((acc, current) => {
         const name = current.name.trim().toLowerCase();
         // Remove common suffixes like (KK) for better comparison
         const cleanName = name.replace(/\s*\(.*\)$/, '');
@@ -174,7 +172,7 @@ const Vehicles = () => {
         return acc;
       }, []);
       setBookingDocumentTypes(uniqueBookingTypes);
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error('Fetch metadata error:', e); }
   };
 
   const fetchVehicleDocuments = async (vehicleId) => {
@@ -319,18 +317,26 @@ const Vehicles = () => {
       setCurrentPage(1);
       fetchVehicles(1, plate, controller.signal);
       window.history.replaceState({}, document.title);
+      isFirstLoad.current = false;
       return () => controller.abort();
     }
 
-    // Debounce for manual search typing or filter changes
-    const timer = setTimeout(() => {
+    if (isFirstLoad.current) {
       fetchVehicles(currentPage, search, controller.signal);
-    }, 400);
+      isFirstLoad.current = false;
+    } else {
+      // Debounce for manual search typing or filter changes
+      const timer = setTimeout(() => {
+        fetchVehicles(currentPage, search, controller.signal);
+      }, 400);
 
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
+      return () => {
+        clearTimeout(timer);
+        controller.abort();
+      };
+    }
+
+    return () => controller.abort();
   }, [currentPage, search, selectedBranch, filterStatus]);
 
   useEffect(() => {
@@ -1027,7 +1033,7 @@ const Vehicles = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden ${v.type === 'Mobil' ? 'bg-indigo-50 text-indigo-600' : 'bg-orange-50 text-orange-600'}`}>
-                          {v.images?.length > 0 ? <img src={`${IMAGE_BASE_URL}${v.images[0].image_url}`} className="w-full h-full object-cover" alt="Unit" /> : <Car size={20} />}
+                          {v.images?.length > 0 ? <img src={`${IMAGE_BASE_URL}${v.images[0].image_url}`} className="w-full h-full object-cover" alt="Unit" loading="lazy" /> : <Car size={20} />}
                         </div>
                         <div>
                           <p className="text-sm font-black text-gray-900 dark:text-gray-100">{v.brand} {v.model}</p>
@@ -1109,7 +1115,7 @@ const Vehicles = () => {
 
                 <div className="flex items-start gap-3 mb-3">
                   <div className="w-16 h-16 rounded-xl bg-gray-100 dark:bg-gray-800 overflow-hidden flex-shrink-0">
-                    {displayImage ? <img src={`${IMAGE_BASE_URL}${displayImage}`} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-300"><ImageIcon size={20} /></div>}
+                    {displayImage ? <img src={`${IMAGE_BASE_URL}${displayImage}`} className="w-full h-full object-cover" loading="lazy" /> : <div className="w-full h-full flex items-center justify-center text-gray-300"><ImageIcon size={20} /></div>}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h4 className="text-xs font-black text-gray-900 dark:text-white line-clamp-2 uppercase tracking-tight mb-1 leading-tight">{v.model}</h4>

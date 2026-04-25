@@ -1,4 +1,4 @@
-const { Vehicle, Office, User, VehicleBrand, SalesAgent, VehicleImage, Booking, Location, sequelize } = require('../models');
+const { Vehicle, Office, User, VehicleBrand, SalesAgent, VehicleImage, Booking, Location, DocumentType, sequelize } = require('../models');
 const { Op } = require('sequelize');
 const sharp = require('sharp');
 const path = require('path');
@@ -597,6 +597,49 @@ const getVehicleSummary = async (req, res) => {
   }
 };
 
+const getInitialData = async (req, res) => {
+  try {
+    const user = req.user;
+    const isSuperAdmin = user.Role?.name === 'Super Admin';
+    const currentOffice = user.office_id ? await Office.findByPk(user.office_id) : null;
+
+    // Determine relevant offices for sales agents (same cluster as user)
+    let salesAgentCondition = { status: 'Active' };
+    if (user.office_id) {
+       const parentId = currentOffice?.parent_id || user.office_id;
+       const clusterOffices = await Office.findAll({
+         where: { [Op.or]: [{ id: parentId }, { parent_id: parentId }] },
+         attributes: ['id']
+       });
+       salesAgentCondition.office_id = { [Op.in]: clusterOffices.map(o => o.id) };
+    }
+
+    const [brands, offices, agents, vehicleDocTypes, bookingDocTypes] = await Promise.all([
+      VehicleBrand.findAll({ order: [['name', 'ASC']] }),
+      isSuperAdmin || (currentOffice && !currentOffice.parent_id)
+        ? Office.findAll({ attributes: ['id', 'name', 'parent_id'] })
+        : Promise.resolve([]),
+      SalesAgent.findAll({
+        where: salesAgentCondition,
+        attributes: ['id', 'name', 'sales_code']
+      }),
+      DocumentType.findAll({ where: { category: { [Op.in]: ['Vehicle', 'All'] } } }),
+      DocumentType.findAll({ where: { category: { [Op.in]: ['Booking', 'All'] } } })
+    ]);
+
+    res.json({
+      brands,
+      offices,
+      agents,
+      vehicleDocTypes,
+      bookingDocTypes
+    });
+  } catch (error) {
+    console.error('Initial Data Error:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getVehicles,
   getVehicleById,
@@ -614,5 +657,6 @@ module.exports = {
   deleteBrand,
   getVehicleSummary,
   getYearHistory,
-  getFilterOptions
+  getFilterOptions,
+  getInitialData
 };
