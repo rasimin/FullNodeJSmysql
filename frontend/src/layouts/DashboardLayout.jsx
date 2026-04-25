@@ -65,7 +65,7 @@ const DashboardLayout = () => {
         title: 'DATA MASTER',
         items: [
           { to: '/brands', icon: Tags, label: 'Daftar Brand' },
-          { to: '/vehicles', icon: Car, label: 'Stok Kendaraan' },
+          { to: '/vehicles', icon: Car, label: 'Daftar Kendaraan' },
           { to: '/transactions', icon: FileText, label: 'Data Transaksi' },
           { to: '/offices', icon: Building2, label: 'Daftar Kantor' },
           { to: '/sales-agents', icon: Users, label: 'Tim Sales' },

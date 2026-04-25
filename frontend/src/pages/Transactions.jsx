@@ -5,7 +5,7 @@ import {
   Search, FileSpreadsheet, Printer, Eye, Calendar, User,
   Phone, Tag, Clock, CheckCircle, XCircle, MoreHorizontal,
   Building2, Hash, Wallet, UserCheck, Trash2, Edit, CheckCircle2,
-  PhoneCall, CreditCard as CardIcon, ChevronRight, ArrowUpDown, FileText, Upload
+  PhoneCall, CreditCard as CardIcon, ChevronRight, ArrowUpDown, FileText, Upload, ArrowUpRight
 } from 'lucide-react';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
@@ -31,6 +31,8 @@ const Transactions = () => {
   const [activeTab, setActiveTab] = useState('main');
   const [documentTypes, setDocumentTypes] = useState([]);
   const [bookingDocuments, setBookingDocuments] = useState([]);
+  const [selectedExtraBookingDocs, setSelectedExtraBookingDocs] = useState([]);
+  const [deliveryPhoto, setDeliveryPhoto] = useState(null);
   const [isUploadingDoc, setIsUploadingDoc] = useState(false);
 
 
@@ -114,7 +116,26 @@ const Transactions = () => {
     try {
       const r = await api.get(`/documents/booking/${bookingId}`);
       setBookingDocuments(r.data);
-    } catch (e) { console.error('Fetch docs error:', e); }
+    } catch (err) {
+      console.error('Fetch booking docs error:', err);
+    }
+  };
+
+  const handleUpdateDeliveryPhoto = async (bookingId, file) => {
+    if (!file) return;
+    notify('loading', 'Mengunggah foto penyerahan...');
+    try {
+      const formData = new FormData();
+      formData.append('delivery_photo', file);
+      const r = await api.put(`/bookings/${bookingId}/delivery-photo`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setBookingData(prev => ({ ...prev, delivery_photo: r.data.delivery_photo }));
+      notify('success', 'Foto penyerahan berhasil diperbarui');
+    } catch (err) {
+      console.error('Update delivery photo error:', err);
+      notify('error', 'Gagal memperbarui foto penyerahan');
+    }
   };
 
   const handleUploadDocument = async (bookingId, typeId, file) => {
@@ -131,10 +152,40 @@ const Transactions = () => {
       notify('success', 'Dokumen berhasil diunggah');
       fetchBookingDocuments(bookingId);
     } catch (err) {
-      console.error('Upload doc error:', err);
-      notify('error', 'Gagal mengunggah dokumen');
+      const msg = err.response?.data?.message || err.message;
+      console.error('Upload doc error:', msg);
+      notify('error', 'Gagal mengunggah dokumen: ' + msg);
     } finally {
       setIsUploadingDoc(false);
+    }
+  };
+
+  const handleUploadExtraDocuments = async (bookingId) => {
+    if (selectedExtraBookingDocs.length === 0) return;
+    
+    const otherType = documentTypes.find(t => ['OTHER', 'LAINNYA'].includes(t.code?.toUpperCase()));
+    if (!otherType) {
+      notify('error', 'Tipe dokumen OTHER tidak ditemukan');
+      return;
+    }
+
+    notify('loading', `Mengunggah ${selectedExtraBookingDocs.length} dokumen tambahan...`);
+    try {
+      for (const file of selectedExtraBookingDocs) {
+        const formData = new FormData();
+        formData.append('document', file);
+        formData.append('document_type_id', otherType.id);
+        await api.post(`/documents/booking/${bookingId}`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      }
+      setSelectedExtraBookingDocs([]);
+      fetchBookingDocuments(bookingId);
+      notify('success', 'Dokumen tambahan berhasil diunggah');
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message;
+      console.error('Upload extra docs error:', msg);
+      notify('error', 'Beberapa dokumen gagal diunggah: ' + msg);
     }
   };
 
@@ -256,6 +307,8 @@ const Transactions = () => {
     });
     fetchAgentsByOffice(t.office_id);
     fetchBookingDocuments(t.id);
+    setSelectedExtraBookingDocs([]);
+    setDeliveryPhoto(null);
     setIsBookingModalOpen(true);
   };
 
@@ -322,7 +375,7 @@ const Transactions = () => {
       case 'sold':
         return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400 border border-green-100 dark:border-green-800">Terjual / Deal</span>;
       case 'cancelled':
-        return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 border border-red-100 dark:border-red-800">Dibatalkan (Pendapatan)</span>;
+        return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 border border-red-100 dark:border-red-800">di batalkan (non refund)</span>;
       case 'refunded':
       case 'refund':
         return <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400 border border-orange-100 dark:border-orange-800">Refunded</span>;
@@ -385,7 +438,7 @@ const Transactions = () => {
             <option value="">Semua Status</option>
             <option value="Active">Booking Aktif</option>
             <option value="Sold">Terjual / Deal</option>
-            <option value="Cancelled">Dibatalkan</option>
+            <option value="Cancelled">Dibatalkan (Non Refund)</option>
             <option value="Refunded">Refunded</option>
           </select>
         </div>
@@ -484,22 +537,22 @@ const Transactions = () => {
                             </div>
                             <div className="flex gap-1 transition-opacity">
                               <button onClick={() => { setSelectedTransaction(t); setIsDeleteModalOpen(true); }} className="btn-delete !p-1" title="Hapus"><Trash2 size={12} /></button>
-                              {s === 'active' && (
-                                <>
-                                  <button onClick={() => openBookingModal(t)} className="btn-edit !p-1" title="Edit"><Edit size={12} /></button>
-                                  <button 
-                                    onClick={() => { 
-                                      setSelectedTransaction(t); 
-                                      setCancellationReason(''); 
-                                      setIsCancelModalOpen(true); 
-                                    }}
-                                    className="btn-icon !p-1 text-red-500 hover:bg-red-50" 
-                                    title="Batalkan Booking"
-                                  >
-                                    <XCircle size={12} />
-                                  </button>
-                                </>
-                              )}
+                                  {(s === 'active' || s === 'sold') && (
+                                    <button onClick={() => openBookingModal(t)} className="btn-edit !p-1" title="Edit"><Edit size={12} /></button>
+                                  )}
+                                  {s === 'active' && (
+                                    <button 
+                                      onClick={() => { 
+                                        setSelectedTransaction(t); 
+                                        setCancellationReason(''); 
+                                        setIsCancelModalOpen(true); 
+                                      }}
+                                      className="btn-icon !p-1 text-red-500 hover:bg-red-50" 
+                                      title="Batalkan Booking"
+                                    >
+                                      <XCircle size={12} />
+                                    </button>
+                                  )}
                             </div>
                           </div>
                         </td>
@@ -521,7 +574,13 @@ const Transactions = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <p className="text-xs font-bold text-gray-900 dark:text-white">{t.Vehicle?.brand} {t.Vehicle?.model}</p>
+                          <button 
+                            onClick={() => navigate('/vehicles', { state: { searchPlate: t.Vehicle?.plate_number } })}
+                            className="flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors cursor-pointer group text-left"
+                          >
+                            {t.Vehicle?.brand} {t.Vehicle?.model}
+                            <ArrowUpRight size={12} className="text-amber-500/70 group-hover:text-amber-600 transition-colors" />
+                          </button>
                           <button 
                             onClick={() => navigate('/vehicles', { state: { searchPlate: t.Vehicle?.plate_number } })}
                             className="text-[10px] text-blue-600 font-black uppercase hover:underline cursor-pointer text-left block"
@@ -622,7 +681,13 @@ const Transactions = () => {
                         <div className="flex justify-between items-start mb-2">
                           <div>
                             <p className="text-[10px] font-black text-gray-400 uppercase leading-none mb-1">Detail Unit</p>
-                            <p className="text-xs font-bold text-gray-900 dark:text-white uppercase">{t.Vehicle?.brand} {t.Vehicle?.model}</p>
+                            <button 
+                              onClick={() => navigate('/vehicles', { state: { searchPlate: t.Vehicle?.plate_number } })}
+                              className="flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400 uppercase hover:text-amber-700 dark:hover:text-amber-300 transition-colors cursor-pointer group text-left"
+                            >
+                              {t.Vehicle?.brand} {t.Vehicle?.model}
+                              <ArrowUpRight size={10} className="text-amber-500/70 group-hover:text-amber-600 transition-colors" />
+                            </button>
                           </div>
                           <button 
                             onClick={() => navigate('/vehicles', { state: { searchPlate: t.Vehicle?.plate_number } })}
@@ -677,15 +742,15 @@ const Transactions = () => {
                     <div className="p-2.5 px-4 bg-gray-50 dark:bg-gray-800/20 border-t border-gray-50 dark:border-gray-800 flex justify-between items-center">
                       <div className="flex gap-1.5">
                         <button onClick={() => { setSelectedTransaction(t); setIsDeleteModalOpen(true); }} className="btn-delete !bg-white dark:!bg-gray-800 !p-1.5 shadow-sm" title="Hapus"><Trash2 size={14} /></button>
+                        {(s === 'active' || s === 'sold') && (
+                          <button onClick={() => openBookingModal(t)} className="btn-edit !bg-white dark:!bg-gray-800 !p-1.5 shadow-sm" title="Edit"><Edit size={14} /></button>
+                        )}
                         {s === 'active' && (
-                          <>
-                            <button onClick={() => openBookingModal(t)} className="btn-edit !bg-white dark:!bg-gray-800 !p-1.5 shadow-sm" title="Edit"><Edit size={14} /></button>
-                             <button onClick={() => { 
-                               setSelectedTransaction(t); 
-                               setCancellationReason(''); // Reset
-                               setIsCancelModalOpen(true); 
-                             }} className="btn-icon !bg-white dark:!bg-gray-800 !p-1.5 !text-red-500 hover:!bg-red-50 shadow-sm" title="Batalkan Booking"><XCircle size={14} /></button>
-                          </>
+                           <button onClick={() => { 
+                             setSelectedTransaction(t); 
+                             setCancellationReason(''); // Reset
+                             setIsCancelModalOpen(true); 
+                           }} className="btn-icon !bg-white dark:!bg-gray-800 !p-1.5 !text-red-500 hover:!bg-red-50 shadow-sm" title="Batalkan Booking"><XCircle size={14} /></button>
                         )}
                       </div>
                       <div className="flex gap-1">
@@ -912,9 +977,11 @@ const Transactions = () => {
             <div className="flex items-center gap-3"><div className="w-1 h-5 bg-blue-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Dokumen Pelanggan & Transaksi</h4></div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {documentTypes.map((type) => {
-                const existingDoc = bookingDocuments.find(d => d.document_type_id === type.id);
-                return (
+              {documentTypes
+                .filter(t => !['OTHER', 'LAINNYA'].includes(t.code?.toUpperCase()))
+                .map((type) => {
+                  const existingDoc = bookingDocuments.find(d => d.document_type_id === type.id);
+                  return (
                   <div key={type.id} className={`p-5 rounded-3xl border transition-all ${existingDoc ? 'bg-white dark:bg-gray-800 border-green-100 dark:border-green-900/30 shadow-lg shadow-green-500/5' : 'bg-gray-50/50 dark:bg-gray-800/20 border-gray-100 dark:border-gray-800'}`}>
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center gap-3">
@@ -962,6 +1029,107 @@ const Transactions = () => {
                 );
               })}
             </div>
+
+            {/* Document Lainya Section */}
+            <div className="space-y-4 p-6 bg-purple-50/50 dark:bg-purple-900/10 rounded-[32px] border border-purple-100 dark:border-purple-900/30">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <FileText size={16} className="text-purple-600" />
+                  <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest">Dokumen Lainnya (Maks 5)</p>
+                </div>
+                {selectedExtraBookingDocs.length > 0 && (
+                  <button 
+                    onClick={() => handleUploadExtraDocuments(bookingData.id)}
+                    className="px-4 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-[9px] font-black uppercase rounded-lg shadow-lg shadow-purple-500/20 transition-all active:scale-95"
+                  >
+                    Simpan Dokumen Baru
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-5 gap-3">
+                {[...Array(5)].map((_, i) => {
+                  const otherType = documentTypes.find(t => ['OTHER', 'LAINNYA'].includes(t.code?.toUpperCase()));
+                  const existingOtherDocs = bookingDocuments.filter(d => d.document_type_id === otherType?.id);
+                  
+                  const existingDoc = existingOtherDocs[i];
+                  const doc = !existingDoc ? selectedExtraBookingDocs[i - existingOtherDocs.length] : null;
+                  
+                  return (
+                    <div key={i} className={`aspect-square rounded-2xl border-2 transition-all relative ${existingDoc ? 'bg-white dark:bg-gray-800 border-green-100 dark:border-green-900/30 border-solid' : doc ? 'bg-white dark:bg-gray-900 border-purple-200 border-dashed' : 'bg-gray-50/50 dark:bg-gray-900/50 border-gray-100 dark:border-gray-800 border-dashed hover:border-purple-400'}`}>
+                      {existingDoc ? (
+                        <div className="w-full h-full p-2 flex flex-col items-center justify-center text-center">
+                          <FileText size={20} className="text-green-500 mb-1" />
+                          <button onClick={() => window.open(`${IMAGE_BASE_URL}${existingDoc.file_path}`, '_blank')} className="text-[7px] font-black text-blue-600 uppercase hover:underline">Lihat</button>
+                          <button onClick={() => handleDeleteDocument(bookingData.id, existingDoc.id)} className="absolute -top-1 -right-1 bg-red-50 text-red-500 rounded-full p-1 shadow-sm hover:bg-red-500 hover:text-white transition-all"><X size={10} /></button>
+                        </div>
+                      ) : doc ? (
+                        <div className="w-full h-full p-2 flex flex-col items-center justify-center">
+                          <FileText size={20} className="text-purple-400 mb-1" />
+                          <p className="text-[7px] font-bold truncate w-full text-center px-1 text-gray-500">{doc.name}</p>
+                          <button onClick={() => setSelectedExtraBookingDocs(prev => prev.filter((_, idx) => idx !== (i - existingOtherDocs.length)))} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 shadow-sm hover:bg-red-600 transition-colors z-10">
+                            <X size={10} />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer">
+                          <Upload size={18} className="text-gray-300" />
+                          <input 
+                            type="file" 
+                            className="hidden" 
+                            accept=".jpg,.jpeg,.png,.pdf" 
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              if (file) setSelectedExtraBookingDocs(prev => [...prev, file]);
+                            }} 
+                          />
+                        </label>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Delivery Photo Section (Only for Sold) */}
+            {bookingData.status === 'Sold' && (
+              <div className="space-y-4 p-6 bg-blue-50/50 dark:bg-blue-900/10 rounded-[32px] border border-blue-100 dark:border-blue-900/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <Camera size={16} className="text-blue-600" />
+                  <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Foto Bukti Penyerahan</p>
+                </div>
+                
+                <div className="relative group">
+                  {bookingData.delivery_photo ? (
+                    <div className="relative aspect-video rounded-2xl overflow-hidden border-2 border-blue-200 shadow-lg">
+                      <img 
+                        src={`${IMAGE_BASE_URL}${bookingData.delivery_photo}`} 
+                        alt="Bukti Penyerahan" 
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                         <button 
+                           onClick={() => window.open(`${IMAGE_BASE_URL}${bookingData.delivery_photo}`, '_blank')}
+                           className="p-2 bg-white text-blue-600 rounded-full hover:bg-blue-50 transition-colors"
+                         >
+                           <Eye size={18} />
+                         </button>
+                         <label className="p-2 bg-white text-green-600 rounded-full hover:bg-green-50 transition-colors cursor-pointer">
+                           <Upload size={18} />
+                           <input type="file" className="hidden" accept="image/*" onChange={(e) => handleUpdateDeliveryPhoto(bookingData.id, e.target.files[0])} />
+                         </label>
+                      </div>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center aspect-video bg-white dark:bg-gray-900 border-2 border-dashed border-blue-200 dark:border-blue-800 rounded-2xl cursor-pointer hover:border-blue-500 transition-all group">
+                      <Camera size={32} className="text-blue-300 group-hover:text-blue-500 mb-2" />
+                      <p className="text-xs font-bold text-gray-400 group-hover:text-blue-500">Klik untuk Unggah Foto Bukti Penyerahan</p>
+                      <input type="file" className="hidden" accept="image/*" onChange={(e) => handleUpdateDeliveryPhoto(bookingData.id, e.target.files[0])} />
+                    </label>
+                  )}
+                </div>
+                <p className="text-[9px] font-medium text-blue-400 italic text-center">* Foto ini akan digunakan sebagai lampiran BAST dan laporan serah terima.</p>
+              </div>
+            )}
           </div>
         )}
       </Modal>

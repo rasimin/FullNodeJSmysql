@@ -273,6 +273,37 @@ exports.confirmSale = async (req, res) => {
   }
 };
 
+exports.updateDeliveryPhoto = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const booking = await Booking.findByPk(id);
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+
+    const uploadDir = path.join(__dirname, '../../uploads/sales');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    const filename = `deal-update-${id}-${Date.now()}.webp`;
+    const filepath = path.join(uploadDir, filename);
+    
+    await sharp(req.file.buffer)
+      .resize({ width: 1200, height: 900, fit: 'inside' })
+      .webp({ quality: 80 })
+      .toFile(filepath);
+      
+    const deliveryPhotoPath = `/uploads/sales/${filename}`;
+    
+    await booking.update({ delivery_photo: deliveryPhotoPath }, { userId: req.user.id });
+    
+    res.json(booking);
+  } catch (err) {
+    console.error('Update Delivery Photo Error:', err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
 exports.getVehicleBookingHistory = async (req, res) => {
   try {
     const history = await Booking.findAll({
@@ -296,9 +327,9 @@ exports.updateBooking = async (req, res) => {
     const booking = await Booking.findByPk(req.params.id);
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
     
-    // Hanya booking Active yang bisa diedit (atau sesuai business logic)
-    if (booking.status !== 'Active') {
-      return res.status(400).json({ message: 'Only active bookings can be edited' });
+    // Hanya booking Active atau Sold yang bisa diedit (agar bisa perbaiki input setelah deal)
+    if (!['Active', 'Sold'].includes(booking.status)) {
+      return res.status(400).json({ message: 'Hanya transaksi aktif atau terjual yang bisa diedit' });
     }
 
     // Application-level mandatory validation for NIK

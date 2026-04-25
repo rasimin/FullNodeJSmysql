@@ -13,6 +13,7 @@ router.get('/vehicle/:vehicleId/history', bookingController.getVehicleBookingHis
 router.put('/vehicle/:vehicleId/sold', upload.single('delivery_photo'), bookingController.confirmSale);
 router.put('/vehicle/:vehicleId/cancel', bookingController.cancelVehicleBooking);
 router.put('/:id', bookingController.updateBooking);
+router.put('/:id/delivery-photo', upload.single('delivery_photo'), bookingController.updateDeliveryPhoto);
 router.put('/:id/cancel', bookingController.cancelBooking);
 router.delete('/:id', bookingController.deleteBooking);
 
