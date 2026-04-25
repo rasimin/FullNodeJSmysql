@@ -67,6 +67,7 @@ const Vehicles = () => {
   const [formStep, setFormStep] = useState(1); // 1: Data, 2: Upload & Print
   const [tempBookingId, setTempBookingId] = useState(null);
   const [dealPhoto, setDealPhoto] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null); // { message, onConfirm }
 
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -207,18 +208,58 @@ const Vehicles = () => {
   };
 
   const handleDeleteDocument = async (vehicleId, docId) => {
-    if (!window.confirm('Hapus dokumen ini?')) return;
-    notify('loading', 'Menghapus dokumen...');
-    try {
-      await api.delete(`/documents/vehicle/${vehicleId}/${docId}`);
-      notify('success', 'Dokumen dihapus');
-      fetchVehicleDocuments(vehicleId);
-      // Refresh audit trails so the deletion shows in the audit tab
-      fetchAuditTrails(vehicleId);
-    } catch (err) {
-      console.error('Delete doc error:', err);
-      notify('error', 'Gagal menghapus dokumen');
-    }
+    setConfirmAction({
+      message: 'Hapus dokumen ini?',
+      onConfirm: async () => {
+        notify('loading', 'Menghapus dokumen...');
+        try {
+          await api.delete(`/documents/vehicle/${vehicleId}/${docId}`);
+          notify('success', 'Dokumen dihapus');
+          fetchVehicleDocuments(vehicleId);
+          fetchAuditTrails(vehicleId);
+        } catch (err) {
+          console.error('Delete doc error:', err);
+          notify('error', 'Gagal menghapus dokumen');
+        }
+      }
+    });
+  };
+
+  const handleDeleteBookingDocument = async (bookingId, docId) => {
+    setConfirmAction({
+      message: 'Hapus dokumen ini?',
+      onConfirm: async () => {
+        notify('loading', 'Menghapus dokumen...');
+        try {
+          await api.delete(`/documents/booking/${bookingId}/${docId}`);
+          notify('success', 'Dokumen dihapus');
+          const r = await api.get(`/documents/booking/${bookingId}`);
+          setActiveBookingDocs(r.data || []);
+          if (editingVehicle) fetchAuditTrails(editingVehicle.id);
+        } catch (err) {
+          console.error('Delete booking doc error:', err);
+          notify('error', 'Gagal menghapus dokumen');
+        }
+      }
+    });
+  };
+
+  const handleDeleteDeliveryPhoto = async (bookingId) => {
+    setConfirmAction({
+      message: 'Hapus foto bukti penyerahan?',
+      onConfirm: async () => {
+        notify('loading', 'Menghapus foto...');
+        try {
+          await api.delete(`/bookings/${bookingId}/delivery-photo`);
+          notify('success', 'Foto dihapus');
+          setActiveBooking(prev => ({ ...prev, delivery_photo: null }));
+          fetchVehicles();
+        } catch (err) {
+          console.error('Delete delivery photo error:', err);
+          notify('error', 'Gagal menghapus foto');
+        }
+      }
+    });
   };
 
 
@@ -838,21 +879,23 @@ const Vehicles = () => {
   };
 
   const handleDeleteImage = async (imgId) => {
-    if (!window.confirm('Hapus gambar ini?')) return;
-    try {
-      notify('loading', 'Menghapus gambar...');
-      await api.delete(`/vehicles/${editingVehicle.id}/images/${imgId}`);
-      // Immediately remove from local state
-      setEditingVehicle(prev => ({
-        ...prev,
-        images: (prev.images || []).filter(img => img.id !== imgId)
-      }));
-      fetchVehicles();
-      notify('success', 'Gambar dihapus!');
-    } catch (e) {
-      console.error('Delete image error:', e);
-      notify('error', e.response?.data?.message || 'Gagal menghapus gambar');
-    }
+    setConfirmAction({
+      message: 'Hapus gambar ini?',
+      onConfirm: async () => {
+        try {
+          notify('loading', 'Menghapus gambar...');
+          await api.delete(`/vehicles/${editingVehicle.id}/images/${imgId}`);
+          setEditingVehicle(prev => ({
+            ...prev,
+            images: (prev.images || []).filter(img => img.id !== imgId)
+          }));
+          fetchVehicles();
+          notify('success', 'Gambar dihapus');
+        } catch (e) {
+          notify('error', 'Gagal menghapus gambar');
+        }
+      }
+    });
   };
 
   const displayCurrency = (val) => {
@@ -886,7 +929,21 @@ const Vehicles = () => {
 
   return (
     <div className="space-y-6">
-      <DynamicIsland status={confirmDeleteId ? 'confirm' : notification.status} message={confirmDeleteId ? 'Hapus kendaraan?' : notification.message} onConfirm={handleDelete} onCancel={() => setConfirmDeleteId(null)} />
+      <DynamicIsland 
+        status={confirmDeleteId || confirmAction ? 'confirm' : notification.status} 
+        message={confirmDeleteId ? 'Hapus kendaraan ini secara permanen?' : (confirmAction?.message || notification.message)} 
+        onConfirm={() => {
+          if (confirmDeleteId) handleDelete();
+          else if (confirmAction) {
+            confirmAction.onConfirm();
+            setConfirmAction(null);
+          }
+        }} 
+        onCancel={() => {
+          setConfirmDeleteId(null);
+          setConfirmAction(null);
+        }} 
+      />
       <PdfViewerModal 
         isOpen={isPdfModalOpen} 
         onClose={() => setIsPdfModalOpen(false)} 
@@ -1097,26 +1154,87 @@ const Vehicles = () => {
 
       {/* MASTER VEHICLE FORM MODAL */}
       <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setIsViewOnly(false); }} title="Ringkasan Master Kendaraan" maxWidth="max-w-5xl">
-        {/* Tab Switcher */}
-        <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-2xl mb-6 w-fit">
-          <button
-            onClick={() => setActiveTab('main')}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'main' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-          >
-            <Car size={14} /> Umum & Media
-          </button>
-          <button
-            onClick={() => setActiveTab('documents')}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'documents' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-          >
-            <FileText size={14} /> Dokumen Legal
-          </button>
-          <button
-            onClick={() => setActiveTab('audit')}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'audit' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-          >
-            <History size={14} /> Riwayat & Audit
-          </button>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+          {/* Tab Switcher */}
+          <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-2xl w-fit shrink-0">
+            <button
+              onClick={() => setActiveTab('main')}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'main' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              <Car size={14} /> Umum & Media
+            </button>
+            <button
+              onClick={() => setActiveTab('documents')}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'documents' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              <FileText size={14} /> Dokumen Legal
+            </button>
+            <button
+              onClick={() => setActiveTab('audit')}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'audit' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              <History size={14} /> Riwayat & Audit
+            </button>
+          </div>
+
+          {/* Status Box - Now Compact & Side-by-side */}
+          {(editingVehicle?.status === 'Booked' || editingVehicle?.status === 'Sold') && (
+            <div className={`p-2.5 pl-3 pr-4 ${editingVehicle?.status === 'Sold' ? 'bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-900/30' : 'bg-amber-50/50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/30'} border rounded-[20px] flex items-center gap-4 transition-all shadow-sm`}>
+              <div className="flex items-center gap-3">
+                <div className={`w-9 h-9 ${editingVehicle?.status === 'Sold' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600' : 'bg-amber-100 dark:bg-amber-900/40 text-amber-600'} rounded-xl flex items-center justify-center shrink-0`}>
+                  {editingVehicle?.status === 'Sold' ? <CheckCircle size={18} /> : <Bookmark size={18} />}
+                </div>
+                <div>
+                  <p className={`text-[8px] font-black ${editingVehicle?.status === 'Sold' ? 'text-emerald-700' : 'text-amber-700'} uppercase tracking-[0.15em]`}>
+                    {editingVehicle?.status === 'Sold' ? 'Unit Terjual' : 'Unit Reservasi'}
+                  </p>
+                  <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400">Transaksi Aktif</p>
+                </div>
+              </div>
+              <div className="flex gap-1.5 h-full">
+                {bookingHistory.length === 0 && editingVehicle?.status === 'Booked' && (
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setConfirmAction({
+                        message: 'Data booking tidak ditemukan di sistem. Reset status unit menjadi Tersedia?',
+                        onConfirm: async () => {
+                          try {
+                            notify('loading', 'Mereset status...');
+                            await api.put(`/vehicles/${editingVehicle.id}`, { status: 'Available', sales_agent_id: null });
+                            notify('success', 'Status unit berhasil di-reset');
+                            setIsModalOpen(false);
+                            fetchVehicles();
+                          } catch (e) {
+                            notify('error', 'Gagal reset status');
+                          }
+                        }
+                      });
+                    }}
+                    className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-[8px] font-black uppercase rounded-lg transition-all active:scale-95"
+                  >
+                    Reset
+                  </button>
+                )}
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    const activeB = bookingHistory.find(b => b.status === 'Active' || b.status === 'Sold');
+                    if (activeB) openBookingModal(editingVehicle, activeB);
+                    else {
+                      api.get(`/bookings/vehicle/${editingVehicle.id}`).then(r => {
+                        if (r.data) openBookingModal(editingVehicle, r.data);
+                        else notify('error', 'Detail transaksi tidak ditemukan.');
+                      });
+                    }
+                  }}
+                  className={`px-4 py-2 ${editingVehicle?.status === 'Sold' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-amber-600 hover:bg-amber-700'} text-white text-[9px] font-black uppercase rounded-xl transition-all active:scale-95 shadow-sm`}
+                >
+                  Kelola Transaksi
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {activeTab === 'main' ? (
@@ -1200,63 +1318,7 @@ const Vehicles = () => {
               </div>
 
               <div className="space-y-8">
-                {(editingVehicle?.status === 'Booked' || editingVehicle?.status === 'Sold') && (
-                  <div className={`p-4 ${editingVehicle?.status === 'Sold' ? 'bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800' : 'bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800'} border rounded-3xl mb-6 flex items-center justify-between shadow-sm`}>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 ${editingVehicle?.status === 'Sold' ? 'bg-green-100 dark:bg-green-900/40 text-green-600' : 'bg-amber-100 dark:bg-amber-900/40 text-amber-600'} rounded-full flex items-center justify-center`}>
-                        {editingVehicle?.status === 'Sold' ? <CheckCircle size={20} /> : <Bookmark size={20} />}
-                      </div>
-                      <div>
-                        <p className={`text-[10px] font-black ${editingVehicle?.status === 'Sold' ? 'text-green-600' : 'text-amber-600'} uppercase tracking-widest mb-0.5`}>
-                          {editingVehicle?.status === 'Sold' ? 'Unit Telah Terjual' : 'Unit Sedang Reservasi'}
-                        </p>
-                        <p className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                          {bookingHistory.length === 0 && editingVehicle?.status === 'Booked' 
-                            ? 'Peringatan: Data reservasi tidak sinkron!' 
-                            : 'Lihat rincian transaksi atau lengkapi dokumen pendukung.'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      {bookingHistory.length === 0 && editingVehicle?.status === 'Booked' && (
-                        <button 
-                          type="button" 
-                          onClick={async () => {
-                            if (window.confirm('Data booking tidak ditemukan di sistem. Reset status unit menjadi Tersedia?')) {
-                              try {
-                                await api.put(`/vehicles/${editingVehicle.id}`, { status: 'Available', sales_agent_id: null });
-                                notify('success', 'Status unit berhasil di-reset');
-                                setIsModalOpen(false);
-                                fetchVehicles();
-                              } catch (e) {
-                                notify('error', 'Gagal reset status');
-                              }
-                            }
-                          }}
-                          className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-[10px] font-black uppercase rounded-xl transition-all active:scale-95"
-                        >
-                          Reset Status
-                        </button>
-                      )}
-                      <button 
-                        type="button" 
-                        onClick={() => {
-                          const activeB = bookingHistory.find(b => b.status === 'Active' || b.status === 'Sold');
-                          if (activeB) openBookingModal(editingVehicle, activeB);
-                          else {
-                            api.get(`/bookings/vehicle/${editingVehicle.id}`).then(r => {
-                              if (r.data) openBookingModal(editingVehicle, r.data);
-                              else notify('error', 'Detail transaksi tidak ditemukan.');
-                            });
-                          }
-                        }}
-                        className={`px-4 py-2 ${editingVehicle?.status === 'Sold' ? 'bg-green-600 hover:bg-green-700 shadow-green-500/20' : 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/20'} text-white text-[10px] font-black uppercase rounded-xl shadow-lg transition-all active:scale-95`}
-                      >
-                        Kelola Transaksi
-                      </button>
-                    </div>
-                  </div>
-                )}
+
                 <div className="space-y-6">
                   <div className="flex items-center gap-2"><div className="w-1 h-5 bg-indigo-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Galeri Media</h4></div>
                   <div className="grid grid-cols-2 gap-2">
@@ -1349,35 +1411,7 @@ const Vehicles = () => {
                </div>
              ) : (
                 <div className="space-y-8">
-                  {editingVehicle?.status === 'Booked' && (
-                    <div className="p-6 bg-blue-50 dark:bg-blue-900/10 rounded-[32px] border border-blue-100 dark:border-blue-900/30 flex flex-col sm:flex-row items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center text-blue-600">
-                          <FileText size={24} />
-                        </div>
-                        <div>
-                          <p className="text-xs font-black text-blue-600 uppercase tracking-widest mb-1">Dokumen Booking / Reservasi</p>
-                          <p className="text-xs font-bold text-gray-500 dark:text-gray-400">Unit ini dalam status booking. Anda dapat mengunggah KTP, KK, dan dokumen lainnya di sini.</p>
-                        </div>
-                      </div>
-                      <button 
-                        type="button" 
-                        onClick={() => {
-                          const activeB = bookingHistory.find(b => b.status === 'Active');
-                          if (activeB) openBookingModal(editingVehicle, activeB);
-                          else {
-                            api.get(`/bookings/vehicle/${editingVehicle.id}`).then(r => {
-                              if (r.data) openBookingModal(editingVehicle, r.data);
-                              else notify('error', 'Detail reservasi tidak ditemukan');
-                            });
-                          }
-                        }}
-                        className="w-full sm:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase rounded-xl shadow-xl shadow-blue-600/20 transition-all active:scale-95"
-                      >
-                        Upload Dokumen Booking
-                      </button>
-                    </div>
-                  )}
+                  {/* Dokumen sections handled above via the unified status banner */}
                   {/* Primary Legal Documents Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {documentTypes.filter(t => !['OTHER', 'LAINNYA'].includes(t.code?.toUpperCase())).map((type) => {
@@ -1508,181 +1542,106 @@ const Vehicles = () => {
           </div>
         ) : (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Audit Trails Section */}
-              <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-1 h-5 bg-indigo-600 rounded-full" />
-                  <h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Log Aktivitas Data</h4>
-                </div>
+            {/* Audit Trails Section */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="w-1 h-5 bg-indigo-600 rounded-full" />
+                <h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Log Aktivitas Data</h4>
+              </div>
 
-                {isAuditLoading ? (
-                  <div className="p-10 text-center text-[10px] font-black text-gray-400 uppercase animate-pulse">Mengambil data riwayat...</div>
-                ) : auditTrails.length === 0 ? (
-                  <div className="p-10 text-center bg-gray-50 dark:bg-gray-800/20 rounded-[32px] border-2 border-dashed border-gray-100 dark:border-gray-800">
-                    <History size={32} className="mx-auto text-gray-300 mb-2" />
-                    <p className="text-[10px] font-black text-gray-400 uppercase">Belum ada riwayat perubahan data</p>
-                  </div>
-                ) : (
-                  <div className="relative space-y-3 before:absolute before:left-[17px] before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-100 dark:before:bg-gray-800/50">
-                    {auditTrails.map((audit) => (
-                      <div key={audit.id} className="relative pl-10">
-                        <div className={`absolute left-0 top-1 w-8.5 h-8.5 rounded-full border-4 border-white dark:border-gray-900 flex items-center justify-center z-10 ${
-                          audit.action === 'INSERT' ? 'bg-green-500 text-white' : 
-                          audit.action === 'UPDATE' ? 'bg-blue-500 text-white' : 'bg-red-500 text-white'
-                        }`}>
-                          {audit.action === 'INSERT' ? <Plus size={12} /> : audit.action === 'UPDATE' ? <Edit size={12} /> : <Trash2 size={12} />}
-                        </div>
-                        <div className="p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800/50 shadow-sm transition-all hover:shadow-md">
-                          <div className="flex justify-between items-center mb-1.5">
-                            <div>
-                              <p className="text-[11px] font-black text-gray-900 dark:text-white uppercase tracking-tight leading-none mb-1">{audit.User?.name || 'Sistem'}</p>
-                              <div className="flex items-center gap-1.5">
-                                <p className="text-[9px] text-gray-400 font-bold uppercase">{new Date(audit.createdAt || audit.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}</p>
-                                <span className="w-0.5 h-0.5 bg-gray-300 rounded-full"></span>
-                                <p className="text-[9px] text-indigo-500 font-black uppercase tracking-wider">{tableLabels[audit.table_name] || audit.table_name}</p>
-                              </div>
+              {isAuditLoading ? (
+                <div className="p-10 text-center text-[10px] font-black text-gray-400 uppercase animate-pulse">Mengambil data riwayat...</div>
+              ) : auditTrails.length === 0 ? (
+                <div className="p-10 text-center bg-gray-50 dark:bg-gray-800/20 rounded-[32px] border-2 border-dashed border-gray-100 dark:border-gray-800">
+                  <History size={32} className="mx-auto text-gray-300 mb-2" />
+                  <p className="text-[10px] font-black text-gray-400 uppercase">Belum ada riwayat perubahan data</p>
+                </div>
+              ) : (
+                <div className="relative space-y-3 before:absolute before:left-[17px] before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-100 dark:before:bg-gray-800/50">
+                  {auditTrails.map((audit) => (
+                    <div key={audit.id} className="relative pl-10">
+                      <div className={`absolute left-0 top-1 w-8.5 h-8.5 rounded-full border-4 border-white dark:border-gray-900 flex items-center justify-center z-10 ${
+                        audit.action === 'INSERT' ? 'bg-green-500 text-white' : 
+                        audit.action === 'UPDATE' ? 'bg-blue-500 text-white' : 'bg-red-500 text-white'
+                      }`}>
+                        {audit.action === 'INSERT' ? <Plus size={12} /> : audit.action === 'UPDATE' ? <Edit size={12} /> : <Trash2 size={12} />}
+                      </div>
+                      <div className="p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-800/50 shadow-sm transition-all hover:shadow-md">
+                        <div className="flex justify-between items-center mb-1.5">
+                          <div>
+                            <p className="text-[11px] font-black text-gray-900 dark:text-white uppercase tracking-tight leading-none mb-1">{audit.User?.name || 'Sistem'}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-[9px] text-gray-400 font-bold uppercase">{new Date(audit.createdAt || audit.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}</p>
+                              <span className="w-0.5 h-0.5 bg-gray-300 rounded-full"></span>
+                              <p className="text-[9px] text-indigo-500 font-black uppercase tracking-wider">{tableLabels[audit.table_name] || audit.table_name}</p>
                             </div>
-                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${
-                              audit.action === 'INSERT' ? 'bg-green-100/50 text-green-600' : 
-                              audit.action === 'UPDATE' ? 'bg-blue-100/50 text-blue-600' : 'bg-red-100/50 text-red-600'
-                            }`}>{audit.action}</span>
                           </div>
+                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${
+                            audit.action === 'INSERT' ? 'bg-green-100/50 text-green-600' : 
+                            audit.action === 'UPDATE' ? 'bg-blue-100/50 text-blue-600' : 'bg-red-100/50 text-red-600'
+                          }`}>{audit.action}</span>
+                        </div>
+                        
+                        {(() => {
+                          const oldVals = parseAuditValue(audit.old_values) || {};
+                          const newVals = parseAuditValue(audit.new_values) || {};
                           
-                          {(() => {
-                            const oldVals = parseAuditValue(audit.old_values) || {};
-                            const newVals = parseAuditValue(audit.new_values) || {};
-                            
-                            // Determine which keys to show
-                            let keysToShow = [];
-                            if (audit.action === 'INSERT') {
-                              keysToShow = Object.keys(newVals).filter(k => 
-                                !['updated_at', 'created_at', 'updatedAt', 'createdAt', 'id', 'user_id', 'office_id', 'images', 'Office', 'User'].includes(k) &&
-                                newVals[k] !== null && newVals[k] !== ''
-                              );
-                            } else if (audit.action === 'DELETE' && oldVals) {
-                              keysToShow = Object.keys(oldVals).filter(k => 
-                                !['updated_at', 'created_at', 'updatedAt', 'createdAt', 'id', 'user_id', 'office_id', 'images', 'Office', 'User', 'uploaded_by'].includes(k) &&
-                                oldVals[k] !== null && oldVals[k] !== ''
-                              );
-                            } else if (audit.action === 'UPDATE' && oldVals) {
-                              keysToShow = Object.keys(oldVals).filter(key => {
-                                const oldV = oldVals[key];
-                                const newV = newVals[key];
-                                
-                                // Robust comparison to handle string vs number issues (e.g. "2026" vs 2026)
-                                const isDifferent = (oldV !== newV) && (String(oldV) !== String(newV));
-                                
-                                return isDifferent && 
-                                       !['updated_at', 'created_at', 'updatedAt', 'createdAt', 'id', 'user_id', 'images', 'Office', 'User'].includes(key);
-                              });
-                            }
+                          // Determine which keys to show
+                          let keysToShow = [];
+                          if (audit.action === 'INSERT') {
+                            keysToShow = Object.keys(newVals).filter(k => 
+                              !['updated_at', 'created_at', 'updatedAt', 'createdAt', 'id', 'user_id', 'office_id', 'images', 'Office', 'User'].includes(k) &&
+                              newVals[k] !== null && newVals[k] !== ''
+                            );
+                          } else if (audit.action === 'DELETE' && oldVals) {
+                            keysToShow = Object.keys(oldVals).filter(k => 
+                              !['updated_at', 'created_at', 'updatedAt', 'createdAt', 'id', 'user_id', 'office_id', 'images', 'Office', 'User', 'uploaded_by'].includes(k) &&
+                              oldVals[k] !== null && oldVals[k] !== ''
+                            );
+                          } else if (audit.action === 'UPDATE' && oldVals) {
+                            keysToShow = Object.keys(oldVals).filter(key => {
+                              const oldV = oldVals[key];
+                              const newV = newVals[key];
+                              
+                              // Robust comparison to handle string vs number issues (e.g. "2026" vs 2026)
+                              const isDifferent = (oldV !== newV) && (String(oldV) !== String(newV));
+                              
+                              return isDifferent && 
+                                     !['updated_at', 'created_at', 'updatedAt', 'createdAt', 'id', 'user_id', 'images', 'Office', 'User'].includes(key);
+                            });
+                          }
 
-                            if (keysToShow.length > 0) {
-                              return (
-                                <div className="mt-2 space-y-0.5 border-t border-gray-50 dark:border-gray-700/50 pt-2">
-                                  {keysToShow.map(key => (
-                                    <div key={key} className="flex items-center gap-2 text-[9px] md:text-[10px] py-1 px-1.5 rounded hover:bg-gray-50 dark:hover:bg-gray-900/30 group">
-                                      <span className="font-bold text-gray-400 dark:text-gray-500 uppercase tracking-tighter w-24 shrink-0">{fieldLabels[key] || key}</span>
-                                      <div className="flex items-center gap-2 overflow-hidden text-[10px] md:text-[11px]">
-                                        {audit.action === 'INSERT' ? (
-                                          <span className="text-gray-900 dark:text-gray-200 font-bold truncate">{getAuditDisplayValue(key, newVals[key])}</span>
-                                        ) : audit.action === 'DELETE' ? (
-                                          <span className="text-red-500/70 line-through truncate">{getAuditDisplayValue(key, oldVals[key])}</span>
-                                        ) : (
-                                          <div className="flex items-center gap-1.5">
-                                            <span className="text-red-400/80 line-through truncate max-w-[120px]">{getAuditDisplayValue(key, oldVals[key])}</span>
-                                            <ArrowRight size={10} className="text-gray-300 shrink-0" />
-                                            <span className="text-green-600 dark:text-green-400 font-bold truncate">{getAuditDisplayValue(key, newVals[key])}</span>
-                                          </div>
-                                        )}
-                                      </div>
+                          if (keysToShow.length > 0) {
+                            return (
+                              <div className="mt-2 space-y-0.5 border-t border-gray-50 dark:border-gray-700/50 pt-2">
+                                {keysToShow.map(key => (
+                                  <div key={key} className="flex items-center gap-2 text-[9px] md:text-[10px] py-1 px-1.5 rounded hover:bg-gray-50 dark:hover:bg-gray-900/30 group">
+                                    <span className="font-bold text-gray-400 dark:text-gray-500 uppercase tracking-tighter w-24 shrink-0">{fieldLabels[key] || key}</span>
+                                    <div className="flex items-center gap-2 overflow-hidden text-[10px] md:text-[11px]">
+                                      {audit.action === 'INSERT' ? (
+                                        <span className="text-gray-900 dark:text-gray-200 font-bold truncate">{getAuditDisplayValue(key, newVals[key])}</span>
+                                      ) : audit.action === 'DELETE' ? (
+                                        <span className="text-red-500/70 line-through truncate">{getAuditDisplayValue(key, oldVals[key])}</span>
+                                      ) : (
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="text-red-400/80 line-through truncate max-w-[120px]">{getAuditDisplayValue(key, oldVals[key])}</span>
+                                          <ArrowRight size={10} className="text-gray-300 shrink-0" />
+                                          <span className="text-green-600 dark:text-green-400 font-bold truncate">{getAuditDisplayValue(key, newVals[key])}</span>
+                                        </div>
+                                      )}
                                     </div>
-                                  ))}
-                                </div>
-                               );
-                            }
-                            return null;
-                          })()}
-                        </div>
+                                  </div>
+                                ))}
+                              </div>
+                             );
+                          }
+                          return null;
+                        })()}
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Transaction History Section */}
-              <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-1 h-5 bg-amber-500 rounded-full" />
-                  <h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Riwayat Transaksi Unit</h4>
+                    </div>
+                  ))}
                 </div>
-
-                {bookingHistory.length === 0 ? (
-                  <div className="p-10 text-center bg-gray-50 dark:bg-gray-800/20 rounded-[32px] border-2 border-dashed border-gray-100 dark:border-gray-800">
-                    <Wallet size={32} className="mx-auto text-gray-300 mb-2" />
-                    <p className="text-[10px] font-black text-gray-400 uppercase">Belum ada riwayat transaksi</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {bookingHistory.map((bh) => (
-                      <div key={bh.id} className="p-5 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm transition-all hover:shadow-xl hover:shadow-amber-500/5">
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
-                              bh.status === 'Sold' ? 'bg-green-50 text-green-600' : 
-                              bh.status === 'Cancelled' ? 'bg-red-50 text-red-600' : 'bg-orange-50 text-orange-600'
-                            }`}>
-                              {bh.status === 'Sold' ? <CheckCircle2 size={20} /> : bh.status === 'Cancelled' ? <XCircle size={20} /> : <Clock size={20} />}
-                            </div>
-                            <div>
-                              <p className="text-xs font-black text-gray-900 dark:text-white uppercase truncate max-w-[150px]">{bh.customer_name}</p>
-                              <p className="text-[8px] text-gray-400 font-bold uppercase">{new Date(bh.booking_date).toLocaleDateString('id-ID')}</p>
-                            </div>
-                          </div>
-                          <span className={`px-2.5 py-1 rounded-xl text-[8px] font-black uppercase ${
-                            bh.status === 'Sold' ? 'bg-green-100 text-green-600' : 
-                            bh.status === 'Cancelled' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'
-                          }`}>{bh.status === 'Sold' ? 'Terjual' : bh.status === 'Cancelled' ? 'Batal' : 'Booked'}</span>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-4 mb-4">
-                          <div className="space-y-1">
-                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">Agen Penjual</p>
-                            <p className="text-[10px] font-bold text-gray-700 dark:text-gray-300">{bh.salesAgent?.name || '-'}</p>
-                          </div>
-                          <div className="space-y-1 text-right">
-                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">Uang Muka / DP</p>
-                            <p className="text-xs font-black text-blue-600">{formatPrice(bh.down_payment)}</p>
-                          </div>
-                        </div>
-
-                        {bh.delivery_photo && (
-                          <div className="mt-4 pt-4 border-t border-gray-50 dark:border-gray-700/50 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Camera size={14} className="text-blue-500" />
-                              <p className="text-[9px] font-black text-gray-500 uppercase">Foto Penyerahan</p>
-                            </div>
-                            <button 
-                              onClick={() => window.open(`${IMAGE_BASE_URL}${bh.delivery_photo}`, '_blank')}
-                              className="px-3 py-1.5 bg-blue-50 text-blue-600 text-[8px] font-black uppercase rounded-lg hover:bg-blue-600 hover:text-white transition-all"
-                            >
-                              Lihat Foto
-                            </button>
-                          </div>
-                        )}
-                        
-                        {bh.status === 'Cancelled' && bh.cancellation_reason && (
-                          <div className="mt-3 p-3 bg-red-50/50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30">
-                            <p className="text-[8px] font-black text-red-500 uppercase mb-1">Alasan Pembatalan:</p>
-                            <p className="text-[10px] text-gray-600 dark:text-gray-400 italic">{bh.cancellation_reason}</p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           </div>
         )}
@@ -2045,13 +2004,19 @@ const Vehicles = () => {
                         <div key={type.id} className="space-y-1">
                           <label className="text-[9px] font-black text-gray-400 uppercase ml-1">{type.name}</label>
                           {existingDoc ? (
-                            <div 
-                              onClick={() => window.open(`${IMAGE_BASE_URL}${existingDoc.file_path}`, '_blank')}
-                              className="flex items-center gap-2 p-2 rounded-xl border-2 border-solid bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 transition-all cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30"
-                            >
-                              <CheckCircle size={14} className="text-blue-500" />
-                              <span className="text-[10px] font-bold truncate flex-1">Terunggah (Klik Lihat)</span>
-                              <Eye size={12} className="opacity-40" />
+                            <div className="flex items-center gap-2 p-2 rounded-xl border-2 border-solid bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 transition-all">
+                              <div className="flex items-center gap-2 flex-1 cursor-pointer min-w-0" onClick={() => window.open(`${IMAGE_BASE_URL}${existingDoc.file_path}`, '_blank')}>
+                                <CheckCircle size={14} className="text-blue-500 shrink-0" />
+                                <span className="text-[10px] font-bold truncate">Terunggah (Klik Lihat)</span>
+                              </div>
+                              <div className="flex items-center gap-2 px-1">
+                                <button type="button" onClick={() => window.open(`${IMAGE_BASE_URL}${existingDoc.file_path}`, '_blank')} className="text-blue-400 hover:text-blue-600 transition-colors">
+                                  <Eye size={12} />
+                                </button>
+                                <button type="button" onClick={() => handleDeleteBookingDocument(activeBooking.id, existingDoc.id)} className="text-red-400 hover:text-red-600 transition-colors">
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
                             </div>
                           ) : (
                             <label className={`flex items-center gap-2 p-2 rounded-xl border-2 border-dashed transition-all cursor-pointer ${isSelected ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-indigo-400'}`}>
@@ -2084,10 +2049,19 @@ const Vehicles = () => {
                     return (
                       <div key={i} className={`aspect-square rounded-xl border-2 transition-all relative ${existingDoc ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 border-solid cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30' : doc ? 'bg-white dark:bg-gray-900 border-purple-200 border-dashed' : 'bg-gray-50/50 dark:bg-gray-900/50 border-gray-100 dark:border-gray-800 border-dashed hover:border-purple-400'}`}>
                         {existingDoc ? (
-                          <div className="w-full h-full p-1 flex flex-col items-center justify-center text-center" onClick={() => window.open(`${IMAGE_BASE_URL}${existingDoc.file_path}`, '_blank')}>
-                            <FileText size={18} className="text-blue-500 mb-1" />
-                            <p className="text-[6px] font-black truncate w-full px-1 text-blue-600 uppercase tracking-tighter">Lihat</p>
-                            <p className="text-[5px] font-bold text-blue-400 uppercase mt-0.5 tracking-tighter">Terunggah</p>
+                          <div className="w-full h-full p-1 flex flex-col items-center justify-center text-center relative group">
+                            <div className="cursor-pointer" onClick={() => window.open(`${IMAGE_BASE_URL}${existingDoc.file_path}`, '_blank')}>
+                              <FileText size={18} className="text-blue-500 mb-1 mx-auto" />
+                              <p className="text-[6px] font-black truncate w-full px-1 text-blue-600 uppercase tracking-tighter">Lihat</p>
+                              <p className="text-[5px] font-bold text-blue-400 uppercase mt-0.5 tracking-tighter">Terunggah</p>
+                            </div>
+                            <button 
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleDeleteBookingDocument(activeBooking.id, existingDoc.id); }}
+                              className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 shadow-sm hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                            >
+                              <Trash2 size={8} />
+                            </button>
                           </div>
                         ) : doc ? (
                           <div className="w-full h-full p-1 flex flex-col items-center justify-center">
@@ -2145,6 +2119,13 @@ const Vehicles = () => {
                                   <Upload size={18} />
                                   <input type="file" className="hidden" accept="image/*" onChange={(e) => handleUpdateDeliveryPhoto(activeBooking.id, e.target.files[0])} />
                                 </label>
+                                <button 
+                                  type="button"
+                                  onClick={() => handleDeleteDeliveryPhoto(activeBooking.id)}
+                                  className="p-2 bg-white text-red-600 rounded-full hover:bg-red-50 transition-colors"
+                                >
+                                  <Trash2 size={18} />
+                                </button>
                              </div>
                            </div>
                          ) : (

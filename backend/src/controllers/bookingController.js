@@ -304,6 +304,27 @@ exports.updateDeliveryPhoto = async (req, res) => {
   }
 };
 
+exports.deleteDeliveryPhoto = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const booking = await Booking.findByPk(id);
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+    if (booking.delivery_photo) {
+      const absolutePath = path.join(__dirname, '../..', booking.delivery_photo);
+      if (fs.existsSync(absolutePath)) {
+        fs.unlinkSync(absolutePath);
+      }
+      await booking.update({ delivery_photo: null }, { userId: req.user.id });
+    }
+
+    res.json({ message: 'Delivery photo deleted successfully' });
+  } catch (err) {
+    console.error('Delete Delivery Photo Error:', err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
 exports.getVehicleBookingHistory = async (req, res) => {
   try {
     const history = await Booking.findAll({

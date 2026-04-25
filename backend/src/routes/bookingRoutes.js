@@ -14,6 +14,7 @@ router.put('/vehicle/:vehicleId/sold', upload.single('delivery_photo'), bookingC
 router.put('/vehicle/:vehicleId/cancel', bookingController.cancelVehicleBooking);
 router.put('/:id', bookingController.updateBooking);
 router.put('/:id/delivery-photo', upload.single('delivery_photo'), bookingController.updateDeliveryPhoto);
+router.delete('/:id/delivery-photo', bookingController.deleteDeliveryPhoto);
 router.put('/:id/cancel', bookingController.cancelBooking);
 router.delete('/:id', bookingController.deleteBooking);
 
