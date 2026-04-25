@@ -8,7 +8,7 @@ router.use(authenticate);
 // Activity Logs
 router.get('/activities', getActivityLogs);
 
-// Audit Trails (Usually restricted to higher admins)
-router.get('/audits', authorize(['Super Admin', 'Admin Pusat']), getAuditTrails);
+// Audit Trails
+router.get('/audits', authorize(['Super Admin', 'Admin Pusat', 'Admin Cabang']), getAuditTrails);
 
 module.exports = router;

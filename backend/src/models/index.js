@@ -96,7 +96,7 @@ const createAuditLog = async (options) => {
   if (!userId) return; 
 
   try {
-    const oldValues = action === 'UPDATE' ? instance._previousDataValues : null;
+    const oldValues = (action === 'UPDATE' || action === 'DELETE') ? (action === 'DELETE' ? instance.get({ plain: true }) : instance.previous()) : null;
     const newValues = action === 'DELETE' ? null : instance.get({ plain: true });
 
     await AuditTrail.create({
@@ -140,6 +140,8 @@ setupHooks(VehicleImage);
 setupHooks(SalesAgent);
 setupHooks(SystemSetting);
 setupHooks(Location);
+setupHooks(VehicleDocument);
+setupHooks(BookingDocument);
 
 module.exports = {
   sequelize,

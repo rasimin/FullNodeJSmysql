@@ -1,4 +1,5 @@
-const { ActivityLog, AuditTrail, User } = require('../models');
+const { ActivityLog, AuditTrail, User, sequelize } = require('../models');
+const { Op } = require('sequelize');
 const { getPagination, getPagingData } = require('../utils/pagination');
 
 // Get Activity Logs
@@ -28,13 +29,34 @@ const getActivityLogs = async (req, res) => {
 // Get Audit Trails
 const getAuditTrails = async (req, res) => {
   try {
-    const { page, size, table_name, action, user_id } = req.query;
+    const { page, size, table_name, action, user_id, record_id } = req.query;
     const { limit, offset } = getPagination(page, size);
 
     const condition = {};
     if (table_name) condition.table_name = table_name;
     if (action) condition.action = action;
     if (user_id) condition.user_id = user_id;
+    if (record_id) condition.record_id = record_id;
+
+    const { vehicle_id } = req.query;
+    if (vehicle_id) {
+      condition[Op.or] = [
+        { [Op.and]: [{ table_name: 'vehicles' }, { record_id: vehicle_id }] },
+        { 
+          [Op.and]: [
+            { table_name: { [Op.in]: ['vehicle_documents', 'vehicle_images', 'bookings'] } },
+            { 
+              [Op.or]: [
+                { old_values: { [Op.like]: `%"vehicle_id":${vehicle_id}%` } },
+                { old_values: { [Op.like]: `%"vehicle_id":"${vehicle_id}"%` } },
+                { new_values: { [Op.like]: `%"vehicle_id":${vehicle_id}%` } },
+                { new_values: { [Op.like]: `%"vehicle_id":"${vehicle_id}"%` } }
+              ]
+            }
+          ]
+        }
+      ];
+    }
 
     const { count, rows } = await AuditTrail.findAndCountAll({
       where: condition,

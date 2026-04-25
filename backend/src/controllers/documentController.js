@@ -38,14 +38,14 @@ exports.uploadVehicleDocument = async (req, res) => {
     fs.writeFileSync(filepath, req.file.buffer);
 
     const doc = await VehicleDocument.create({
-      vehicle_id: id,
+      vehicle_id: parseInt(id),
       document_type_id,
       file_path: `/uploads/documents/vehicles/${filename}`,
       file_name: req.file.originalname,
       file_size: req.file.size,
       mime_type: req.file.mimetype,
       uploaded_by: req.user.id
-    });
+    }, { userId: req.user.id });
 
     const fullDoc = await VehicleDocument.findByPk(doc.id, {
       include: [{ model: DocumentType, as: 'type' }]
@@ -87,7 +87,7 @@ exports.uploadBookingDocument = async (req, res) => {
       file_size: req.file.size,
       mime_type: req.file.mimetype,
       uploaded_by: req.user.id
-    });
+    }, { userId: req.user.id });
 
     const fullDoc = await BookingDocument.findByPk(doc.id, {
       include: [{ model: DocumentType, as: 'type' }]
@@ -112,7 +112,7 @@ exports.deleteVehicleDocument = async (req, res) => {
       fs.unlinkSync(absolutePath);
     }
 
-    await doc.destroy();
+    await doc.destroy({ userId: req.user.id });
     res.json({ message: 'Document deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -131,7 +131,7 @@ exports.deleteBookingDocument = async (req, res) => {
       fs.unlinkSync(absolutePath);
     }
 
-    await doc.destroy();
+    await doc.destroy({ userId: req.user.id });
     res.json({ message: 'Document deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -143,7 +143,7 @@ exports.getVehicleDocuments = async (req, res) => {
   try {
     const { id } = req.params;
     const docs = await VehicleDocument.findAll({
-      where: { vehicle_id: id },
+      where: { vehicle_id: parseInt(id) },
       include: [{ model: DocumentType, as: 'type' }]
     });
     res.json(docs);

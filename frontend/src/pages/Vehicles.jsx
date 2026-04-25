@@ -89,6 +89,8 @@ const Vehicles = () => {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [openMenuId, setOpenMenuId] = useState(null);
+  const [auditTrails, setAuditTrails] = useState([]);
+  const [isAuditLoading, setIsAuditLoading] = useState(false);
 
   const { user } = JSON.parse(localStorage.getItem('user_data') || '{}');
   const isSuperAdmin = user?.role === 'Super Admin';
@@ -236,6 +238,20 @@ const Vehicles = () => {
     } catch (e) { console.error(e); }
     setLoading(false);
   };
+  
+  const fetchAuditTrails = async (vehicleId) => {
+    setIsAuditLoading(true);
+    try {
+      const r = await api.get('/logs/audits', {
+        params: { vehicle_id: vehicleId, size: 50 }
+      });
+      setAuditTrails(r.data.items || []);
+    } catch (e) {
+      console.error('Fetch audit trails error:', e);
+    } finally {
+      setIsAuditLoading(false);
+    }
+  };
 
   useEffect(() => { fetchMetadata(); }, []);
   
@@ -250,6 +266,75 @@ const Vehicles = () => {
     }
   }, [currentPage, search, selectedBranch, filterStatus, location.state]);
 
+  useEffect(() => {
+    if (activeTab === 'audit' && editingVehicle?.id && auditTrails.length === 0) {
+      fetchAuditTrails(editingVehicle.id);
+    }
+  }, [activeTab, editingVehicle]);
+
+  const parseAuditValue = (val) => {
+    if (!val) return null;
+    if (typeof val === 'object') return val;
+    try { return JSON.parse(val); } catch (e) { return val; }
+  };
+
+  const getAuditDisplayValue = (key, value) => {
+    if (value === null || value === undefined || value === '') return '-';
+    
+    if (key === 'office_id') {
+      const office = offices.find(o => o.id.toString() === value.toString());
+      return office ? office.name : `ID: ${value}`;
+    }
+    
+    if (key === 'sales_agent_id') {
+      const agent = salesAgents.find(a => a.id.toString() === value.toString());
+      return agent ? agent.name : `ID: ${value}`;
+    }
+
+    if (key === 'document_type_id') {
+      const docType = documentTypes.find(dt => dt.id.toString() === value.toString());
+      return docType ? docType.name : `ID: ${value}`;
+    }
+
+    if (key === 'price' || key === 'purchase_price' || key === 'service_cost') {
+      return formatPrice(value);
+    }
+    
+    return value.toString();
+  };
+
+  const fieldLabels = {
+    type: 'Kategori',
+    brand: 'Merk',
+    model: 'Model',
+    year: 'Tahun',
+    plate_number: 'No. Plat',
+    price: 'Harga Jual',
+    purchase_price: 'Harga Beli',
+    service_cost: 'Biaya Servis',
+    status: 'Status',
+    office_id: 'Kantor Cabang',
+    description: 'Deskripsi',
+    color: 'Warna',
+    odometer: 'Odometer',
+    transmission: 'Transmisi',
+    fuel_type: 'Bahan Bakar',
+    sales_agent_id: 'Agen Sales',
+    sold_date: 'Tgl Terjual',
+    entry_date: 'Tgl Masuk',
+    file_name: 'Nama File',
+    document_type_id: 'Tipe Dokumen',
+    file_path: 'Lokasi File',
+    vehicle_id: 'ID Kendaraan'
+  };
+
+  const tableLabels = {
+    vehicles: 'Data Unit',
+    vehicle_documents: 'Dokumen',
+    vehicle_images: 'Foto Unit',
+    bookings: 'Transaksi'
+  };
+
   const handleSearch = (e) => { setSearch(e.target.value); setCurrentPage(1); };
   const formatPrice = (p) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(p);
 
@@ -259,6 +344,7 @@ const Vehicles = () => {
     setSelectedFiles([]);
     setActiveTab('main');
     setVehicleDocuments([]);
+    setAuditTrails([]);
     if (vehicle) {
       setFormData({
         ...vehicle,
@@ -988,6 +1074,12 @@ const Vehicles = () => {
           >
             <FileText size={14} /> Dokumen Legal
           </button>
+          <button
+            onClick={() => setActiveTab('audit')}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'audit' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+          >
+            <History size={14} /> Riwayat & Audit
+          </button>
         </div>
 
         {activeTab === 'main' ? (
@@ -1194,7 +1286,7 @@ const Vehicles = () => {
             </div>
             {!isViewOnly && <div className="pt-6 border-t border-gray-100 text-right"><button type="submit" className="btn-primary px-8 py-3 bg-blue-600 border-none text-[10px] font-black uppercase tracking-widest shadow-xl">Simpan Perubahan Master</button></div>}
           </form>
-        ) : (
+        ) : activeTab === 'documents' ? (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
              <div className="flex items-center gap-3"><div className="w-1 h-5 bg-blue-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Pusat Dokumen Legalitas</h4></div>
              
@@ -1253,7 +1345,7 @@ const Vehicles = () => {
                                   <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-tight">{type.name}</p>
                                   {type.is_mandatory && <span className="text-[7px] font-black text-red-500 uppercase">Wajib</span>}
                                 </div>
-                                <p className="text-[8px] text-gray-400 font-bold uppercase">{existingDoc ? `Diunggah: ${new Date(existingDoc.created_at).toLocaleDateString('id-ID')}` : 'Belum ada file'}</p>
+                                <p className="text-[8px] text-gray-400 font-bold uppercase">{existingDoc ? `Diunggah: ${new Date(existingDoc.createdAt || existingDoc.created_at).toLocaleDateString('id-ID')}` : 'Belum ada file'}</p>
                               </div>
                             </div>
                             {existingDoc && !isViewOnly && (
@@ -1364,6 +1456,174 @@ const Vehicles = () => {
                   )}
                </div>
              )}
+          </div>
+        ) : (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Audit Trails Section */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-1 h-5 bg-indigo-600 rounded-full" />
+                  <h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Log Aktivitas Data</h4>
+                </div>
+
+                {isAuditLoading ? (
+                  <div className="p-10 text-center text-[10px] font-black text-gray-400 uppercase animate-pulse">Mengambil data riwayat...</div>
+                ) : auditTrails.length === 0 ? (
+                  <div className="p-10 text-center bg-gray-50 dark:bg-gray-800/20 rounded-[32px] border-2 border-dashed border-gray-100 dark:border-gray-800">
+                    <History size={32} className="mx-auto text-gray-300 mb-2" />
+                    <p className="text-[10px] font-black text-gray-400 uppercase">Belum ada riwayat perubahan data</p>
+                  </div>
+                ) : (
+                  <div className="relative space-y-4 before:absolute before:left-[19px] before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-100 dark:before:bg-gray-800">
+                    {auditTrails.map((audit) => (
+                      <div key={audit.id} className="relative pl-12">
+                        <div className={`absolute left-0 top-1 w-10 h-10 rounded-full border-4 border-white dark:border-gray-900 flex items-center justify-center z-10 ${
+                          audit.action === 'INSERT' ? 'bg-green-500 text-white' : 
+                          audit.action === 'UPDATE' ? 'bg-blue-500 text-white' : 'bg-red-500 text-white'
+                        }`}>
+                          {audit.action === 'INSERT' ? <Plus size={14} /> : audit.action === 'UPDATE' ? <Edit size={14} /> : <Trash2 size={14} />}
+                        </div>
+                        <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm transition-all hover:shadow-md">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <p className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-tight">{audit.User?.name || 'Sistem'}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-[8px] text-gray-400 font-bold uppercase">{new Date(audit.createdAt || audit.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                                <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+                                <p className="text-[8px] text-indigo-500 font-black uppercase tracking-widest">{tableLabels[audit.table_name] || audit.table_name}</p>
+                              </div>
+                            </div>
+                            <span className={`px-2 py-0.5 rounded text-[7px] font-black uppercase ${
+                              audit.action === 'INSERT' ? 'bg-green-100 text-green-600' : 
+                              audit.action === 'UPDATE' ? 'bg-blue-100 text-blue-600' : 'bg-red-100 text-red-600'
+                            }`}>{audit.action}</span>
+                          </div>
+                          
+                          {(() => {
+                            const oldVals = parseAuditValue(audit.old_values) || {};
+                            const newVals = parseAuditValue(audit.new_values) || {};
+                            
+                            // Determine which keys to show
+                            let keysToShow = [];
+                            if (audit.action === 'INSERT') {
+                              keysToShow = Object.keys(newVals).filter(k => 
+                                !['updated_at', 'created_at', 'updatedAt', 'createdAt', 'id', 'user_id', 'office_id', 'images', 'Office', 'User'].includes(k) &&
+                                newVals[k] !== null && newVals[k] !== ''
+                              );
+                            } else if (audit.action === 'UPDATE' && oldVals) {
+                              keysToShow = Object.keys(oldVals).filter(key => {
+                                const oldV = oldVals[key];
+                                const newV = newVals[key];
+                                
+                                // Robust comparison to handle string vs number issues (e.g. "2026" vs 2026)
+                                const isDifferent = (oldV !== newV) && (String(oldV) !== String(newV));
+                                
+                                return isDifferent && 
+                                       !['updated_at', 'created_at', 'updatedAt', 'createdAt', 'id', 'user_id', 'images', 'Office', 'User'].includes(key);
+                              });
+                            }
+
+                            if (keysToShow.length > 0) {
+                              return (
+                                <div className="mt-3 space-y-2 border-t border-gray-50 dark:border-gray-700/50 pt-2">
+                                  {keysToShow.map(key => (
+                                    <div key={key} className="grid grid-cols-2 gap-2 text-[8px] md:text-[9px]">
+                                      <div className={`p-1.5 rounded-lg border ${audit.action === 'INSERT' ? 'bg-gray-50/50 dark:bg-gray-900/20 border-gray-100' : 'bg-red-50/50 dark:bg-red-900/10 border-red-100/50 dark:border-red-900/30'}`}>
+                                        <p className={`font-black uppercase tracking-tighter mb-0.5 ${audit.action === 'INSERT' ? 'text-gray-400' : 'text-red-400'}`}>{fieldLabels[key] || key}</p>
+                                        <p className="text-gray-500 line-clamp-2 italic">{audit.action === 'INSERT' ? '(Baru)' : getAuditDisplayValue(key, oldVals[key])}</p>
+                                      </div>
+                                      <div className="p-1.5 bg-green-50/50 dark:bg-green-900/10 rounded-lg border border-green-100/50 dark:border-green-900/30">
+                                        <p className="font-black text-green-400 uppercase tracking-tighter mb-0.5">{fieldLabels[key] || key}</p>
+                                        <p className="text-gray-700 dark:text-gray-200 font-bold line-clamp-2">{getAuditDisplayValue(key, newVals[key])}</p>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                               );
+                            }
+                            return null;
+                          })()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Transaction History Section */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-1 h-5 bg-amber-500 rounded-full" />
+                  <h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Riwayat Transaksi Unit</h4>
+                </div>
+
+                {bookingHistory.length === 0 ? (
+                  <div className="p-10 text-center bg-gray-50 dark:bg-gray-800/20 rounded-[32px] border-2 border-dashed border-gray-100 dark:border-gray-800">
+                    <Wallet size={32} className="mx-auto text-gray-300 mb-2" />
+                    <p className="text-[10px] font-black text-gray-400 uppercase">Belum ada riwayat transaksi</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {bookingHistory.map((bh) => (
+                      <div key={bh.id} className="p-5 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm transition-all hover:shadow-xl hover:shadow-amber-500/5">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
+                              bh.status === 'Sold' ? 'bg-green-50 text-green-600' : 
+                              bh.status === 'Cancelled' ? 'bg-red-50 text-red-600' : 'bg-orange-50 text-orange-600'
+                            }`}>
+                              {bh.status === 'Sold' ? <CheckCircle2 size={20} /> : bh.status === 'Cancelled' ? <XCircle size={20} /> : <Clock size={20} />}
+                            </div>
+                            <div>
+                              <p className="text-xs font-black text-gray-900 dark:text-white uppercase truncate max-w-[150px]">{bh.customer_name}</p>
+                              <p className="text-[8px] text-gray-400 font-bold uppercase">{new Date(bh.booking_date).toLocaleDateString('id-ID')}</p>
+                            </div>
+                          </div>
+                          <span className={`px-2.5 py-1 rounded-xl text-[8px] font-black uppercase ${
+                            bh.status === 'Sold' ? 'bg-green-100 text-green-600' : 
+                            bh.status === 'Cancelled' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'
+                          }`}>{bh.status === 'Sold' ? 'Terjual' : bh.status === 'Cancelled' ? 'Batal' : 'Booked'}</span>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          <div className="space-y-1">
+                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">Agen Penjual</p>
+                            <p className="text-[10px] font-bold text-gray-700 dark:text-gray-300">{bh.salesAgent?.name || '-'}</p>
+                          </div>
+                          <div className="space-y-1 text-right">
+                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">Uang Muka / DP</p>
+                            <p className="text-xs font-black text-blue-600">{formatPrice(bh.down_payment)}</p>
+                          </div>
+                        </div>
+
+                        {bh.delivery_photo && (
+                          <div className="mt-4 pt-4 border-t border-gray-50 dark:border-gray-700/50 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Camera size={14} className="text-blue-500" />
+                              <p className="text-[9px] font-black text-gray-500 uppercase">Foto Penyerahan</p>
+                            </div>
+                            <button 
+                              onClick={() => window.open(`${IMAGE_BASE_URL}${bh.delivery_photo}`, '_blank')}
+                              className="px-3 py-1.5 bg-blue-50 text-blue-600 text-[8px] font-black uppercase rounded-lg hover:bg-blue-600 hover:text-white transition-all"
+                            >
+                              Lihat Foto
+                            </button>
+                          </div>
+                        )}
+                        
+                        {bh.status === 'Cancelled' && bh.cancellation_reason && (
+                          <div className="mt-3 p-3 bg-red-50/50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30">
+                            <p className="text-[8px] font-black text-red-500 uppercase mb-1">Alasan Pembatalan:</p>
+                            <p className="text-[10px] text-gray-600 dark:text-gray-400 italic">{bh.cancellation_reason}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </Modal>
