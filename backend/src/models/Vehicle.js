@@ -87,6 +87,14 @@ const Vehicle = sequelize.define('Vehicle', {
   fuel_type: {
     type: DataTypes.STRING(30),
     allowNull: true,
+  },
+  is_deleted: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+  deleted_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
   }
 }, {
   tableName: 'vehicles',

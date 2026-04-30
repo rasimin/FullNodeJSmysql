@@ -56,6 +56,23 @@ const syncDb = async () => {
       console.log('Added sales_agent_id column to vehicles');
     }
 
+    if (!tableInfo.is_deleted) {
+      await queryInterface.addColumn('vehicles', 'is_deleted', {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      });
+      console.log('Added is_deleted column to vehicles');
+    }
+    
+    if (!tableInfo.deleted_at) {
+      await queryInterface.addColumn('vehicles', 'deleted_at', {
+        type: DataTypes.DATE,
+        allowNull: true
+      });
+      console.log('Added deleted_at column to vehicles');
+    }
+
     // Check sales_agents table
     const salesAgentsInfo = await queryInterface.describeTable('sales_agents');
     if (!salesAgentsInfo.avatar_url) {

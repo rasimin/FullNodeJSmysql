@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { 
   getVehicles, getVehicleById, createVehicle, updateVehicle, deleteVehicle,
+  getDeletedVehicles, restoreVehicle, permanentlyDeleteVehicle,
   getBrands, getModelHistory, getTypeHistory, getYearHistory, getFilterOptions, createBrand, updateBrand, deleteBrand,
   uploadVehicleImages, deleteVehicleImage, setPrimaryImage, getVehicleSummary, getInitialData
 } = require('../controllers/vehicleController');
@@ -21,6 +22,11 @@ router.get('/model-history', getModelHistory);
 router.get('/type-history', getTypeHistory);
 router.get('/year-history', getYearHistory);
 router.get('/filter-options', getFilterOptions);
+
+// Recycle Bin Routes
+router.get('/deleted/list', authorize(['Super Admin', 'Admin Pusat']), getDeletedVehicles);
+router.post('/deleted/:id/restore', authorize(['Super Admin', 'Admin Pusat']), restoreVehicle);
+router.delete('/deleted/:id/permanent', authorize(['Super Admin']), permanentlyDeleteVehicle);
 
 // Vehicle CRUD
 router.post('/', authorize(['Super Admin', 'Admin Pusat', 'Admin Cabang']), createVehicle);

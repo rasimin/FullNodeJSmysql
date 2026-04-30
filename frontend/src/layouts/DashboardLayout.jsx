@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { 
   LayoutDashboard, Users, Building2, ShieldCheck, LogOut, Shield,
-  Menu, X, History, FileText, Sun, Moon, ChevronLeft, ChevronRight, UserCircle, Car, Tags, BarChart2, BarChart3, Search, Rocket, MapPin, Activity, DollarSign
+  Menu, X, History, FileText, Sun, Moon, ChevronLeft, ChevronRight, UserCircle, Car, Tags, BarChart2, BarChart3, Search, Rocket, MapPin, Activity, DollarSign, Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IMAGE_BASE_URL } from '../config';
@@ -73,11 +73,17 @@ const DashboardLayout = () => {
           { to: '/catalog', icon: LayoutDashboard, label: 'Katalog Showroom', target: '_blank' },
         ]
       },
-      {
-        title: 'ADMIN & KEAMANAN',
-        items: []
-      }
     ];
+
+    // Add Recycle Bin if permitted
+    if (userRole === 'Super Admin' || userRole === 'Admin Pusat') {
+      groups[1].items.push({ to: '/recycle-bin', icon: Trash2, label: 'Tempat Sampah' });
+    }
+
+    groups.push({
+      title: 'ADMIN & KEAMANAN',
+      items: []
+    });
 
     // Add Security items based on role
     const securityItems = groups[2].items;

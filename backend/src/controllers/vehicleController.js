@@ -9,7 +9,8 @@ const { getPagination, getPagingData } = require('../utils/pagination');
 const getVehicleById = async (req, res) => {
   try {
     const { id } = req.params;
-    const vehicle = await Vehicle.findByPk(id, {
+    const vehicle = await Vehicle.findOne({
+      where: { id, is_deleted: false },
       include: [
         { 
           model: Office, 
@@ -126,7 +127,8 @@ const getVehicles = async (req, res) => {
     }
 
     const condition = {
-      office_id: { [Op.in]: officeIds }
+      office_id: { [Op.in]: officeIds },
+      is_deleted: false
     };
 
     if (search) {
@@ -194,8 +196,98 @@ const deleteVehicle = async (req, res) => {
     const vehicle = await Vehicle.findByPk(id);
     if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
     
+    // Soft delete: change flagging is_deleted to true and set deleted_at
+    await vehicle.update({ 
+      is_deleted: true,
+      deleted_at: new Date()
+    }, { userId: req.user.id });
+    res.json({ message: 'Vehicle moved to recycle bin' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const getDeletedVehicles = async (req, res) => {
+  try {
+    const { page, size, search, officeId: filterOfficeId, sortOrder } = req.query;
+    const { limit, offset } = getPagination(page, size);
+    const user = req.user;
+    const isSuperAdmin = user.Role?.name === 'Super Admin';
+    const currentOffice = await Office.findByPk(user.office_id);
+    let officeIds = [];
+
+    if (isSuperAdmin) {
+      if (filterOfficeId) {
+        officeIds = [filterOfficeId];
+      } else {
+        const allOffices = await Office.findAll({ attributes: ['id'] });
+        officeIds = allOffices.map(o => o.id);
+      }
+    } else if (currentOffice && !currentOffice.parent_id) {
+      const allowed = await Office.findAll({
+        where: { [Op.or]: [{ id: user.office_id }, { parent_id: user.office_id }] },
+        attributes: ['id']
+      });
+      const allowedIds = allowed.map(o => o.id);
+      officeIds = (filterOfficeId && allowedIds.includes(parseInt(filterOfficeId))) ? [filterOfficeId] : allowedIds;
+    } else {
+      officeIds = [user.office_id];
+    }
+    
+    const condition = {
+      is_deleted: true,
+      office_id: { [Op.in]: officeIds }
+    };
+
+    if (search) {
+      condition[Op.or] = [
+        { brand: { [Op.like]: `%${search}%` } },
+        { model: { [Op.like]: `%${search}%` } },
+        { plate_number: { [Op.like]: `%${search}%` } },
+      ];
+    }
+
+    const { count, rows: vehicles } = await Vehicle.findAndCountAll({
+      where: condition,
+      limit,
+      offset,
+      include: [
+        { model: Office, attributes: ['name'] },
+        { model: User, attributes: ['name'] }
+      ],
+      order: [['deleted_at', sortOrder === 'ASC' ? 'ASC' : 'DESC']]
+    });
+
+    res.json(getPagingData({ count, rows: vehicles }, page, limit));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const restoreVehicle = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const vehicle = await Vehicle.findByPk(id);
+    if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
+    
+    await vehicle.update({ 
+      is_deleted: false,
+      deleted_at: null
+    }, { userId: req.user.id });
+    res.json({ message: 'Vehicle restored successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const permanentlyDeleteVehicle = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const vehicle = await Vehicle.findByPk(id);
+    if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
+    
     await vehicle.destroy({ userId: req.user.id });
-    res.json({ message: 'Vehicle deleted successfully' });
+    res.json({ message: 'Vehicle permanently deleted' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -566,7 +658,10 @@ const getVehicleSummary = async (req, res) => {
     }
 
     const summary = await Vehicle.findAll({
-      where: { office_id: officeIds },
+      where: { 
+        office_id: officeIds,
+        is_deleted: false
+      },
       attributes: [
         'status',
         [sequelize.fn('COUNT', sequelize.col('id')), 'count']
@@ -646,6 +741,9 @@ module.exports = {
   createVehicle,
   updateVehicle,
   deleteVehicle,
+  getDeletedVehicles,
+  restoreVehicle,
+  permanentlyDeleteVehicle,
   uploadVehicleImages,
   deleteVehicleImage,
   setPrimaryImage,

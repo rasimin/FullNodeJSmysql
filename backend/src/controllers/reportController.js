@@ -32,7 +32,10 @@ exports.getDashboardStats = async (req, res) => {
        officeIds = [user.office_id];
     }
 
-    const where = { office_id: { [Op.in]: officeIds } };
+    const where = { 
+      office_id: { [Op.in]: officeIds },
+      is_deleted: false
+    };
 
     // 1. Core Summary Stats
     const totalInventory = await Vehicle.count({ where });
@@ -105,7 +108,9 @@ exports.getDashboardStats = async (req, res) => {
       include: [{
         model: Vehicle,
         as: 'vehicles',
-        attributes: ['id', 'status', 'price']
+        attributes: ['id', 'status', 'price'],
+        where: { is_deleted: false },
+        required: false
       }]
     });
 
@@ -130,7 +135,7 @@ exports.getDashboardStats = async (req, res) => {
       include: [{
         model: Vehicle,
         as: 'soldVehicles',
-        where: { status: 'Sold' },
+        where: { status: 'Sold', is_deleted: false },
         attributes: ['id', 'price'],
         required: false
       }]
@@ -198,7 +203,8 @@ exports.getSalesAgentReport = async (req, res) => {
 
     const whereVehicle = { 
       status: 'Sold',
-      office_id: { [Op.in]: officeIds }
+      office_id: { [Op.in]: officeIds },
+      is_deleted: false
     };
     if (startDate && endDate) {
       whereVehicle.sold_date = { [Op.between]: [startDate, endDate] };
@@ -245,7 +251,8 @@ exports.getAgentSalesDetails = async (req, res) => {
 
     const whereVehicle = { 
       sales_agent_id: id,
-      status: 'Sold'
+      status: 'Sold',
+      is_deleted: false
     };
     if (startDate && endDate) {
       whereVehicle.sold_date = { [Op.between]: [startDate, endDate] };
@@ -298,7 +305,10 @@ exports.getAdvancedAnalytics = async (req, res) => {
       }
     }
 
-    const baseWhere = { office_id: { [Op.in]: officeIds } };
+    const baseWhere = { 
+      office_id: { [Op.in]: officeIds },
+      is_deleted: false
+    };
 
     // 1. Inventory Aging (For Available Units)
     const availableVehicles = await Vehicle.findAll({
@@ -408,12 +418,19 @@ exports.getBusinessAnalysisReport = async (req, res) => {
       }
     }
 
-    const where = { office_id: { [Op.in]: officeIds } };
+    const baseWhere = { 
+      office_id: { [Op.in]: officeIds }
+    };
+
+    const vehicleWhere = {
+      ...baseWhere,
+      is_deleted: false
+    };
 
     // --- Added: Opening Balance Logic ---
     let openingBalance = 0;
-    let salesWhere = { ...where, status: 'Sold' };
-    let purchaseWhere = { ...where };
+    let salesWhere = { ...vehicleWhere, status: 'Sold' };
+    let purchaseWhere = { ...vehicleWhere };
     let startDate = null;
     let endDate = null;
 
@@ -423,12 +440,12 @@ exports.getBusinessAnalysisReport = async (req, res) => {
       
       // Calculate Opening Balance (Everything BEFORE this year)
       const prevSales = await Vehicle.findAll({
-        where: { ...where, status: 'Sold', sold_date: { [Op.lt]: startDate } },
+        where: { ...vehicleWhere, status: 'Sold', sold_date: { [Op.lt]: startDate } },
         attributes: [[sequelize.fn('SUM', sequelize.col('price')), 'total']],
         raw: true
       });
       const prevPurchases = await Vehicle.findAll({
-        where: { ...where, entry_date: { [Op.lt]: startDate } },
+        where: { ...vehicleWhere, entry_date: { [Op.lt]: startDate } },
         attributes: [
           [sequelize.fn('SUM', sequelize.col('purchase_price')), 'cost'],
           [sequelize.fn('SUM', sequelize.col('service_cost')), 'service']
@@ -445,20 +462,20 @@ exports.getBusinessAnalysisReport = async (req, res) => {
 
     // 1. Current Live Stock Summary (Always all-time/current)
     const availableVehicles = await Vehicle.findAll({
-      where: { ...where, status: 'Available' },
+      where: { ...vehicleWhere, status: 'Available' },
       attributes: ['brand', 'model', 'plate_number', 'price', 'purchase_price', 'service_cost', 'entry_date'],
       raw: true
     });
 
     const liveStockCount = availableVehicles.length;
     const bookedCount = await Vehicle.count({
-      where: { ...where, status: 'Booked' }
+      where: { ...vehicleWhere, status: 'Booked' }
     });
 
     // Income from Cancelled Bookings (Non-refundable DP)
     const cancelledDPIncomeRaw = await Booking.sum('down_payment', {
         where: {
-            ...where,
+            ...baseWhere,
             status: 'Cancelled',
             ...(startDate && endDate ? { booking_date: { [Op.between]: [startDate, endDate] } } : 
                startDate ? { booking_date: { [Op.gte]: startDate } } : 
@@ -529,7 +546,7 @@ exports.getBusinessAnalysisReport = async (req, res) => {
     // Sales Trend
     const soldTrendRaw = await Vehicle.findAll({
       where: { 
-        ...where, 
+        ...vehicleWhere, 
         status: 'Sold',
         sold_date: { [Op.gte]: sixMonthsAgo } 
       },
@@ -547,7 +564,7 @@ exports.getBusinessAnalysisReport = async (req, res) => {
     // Purchase Trend (including service cost)
     const purchaseTrendRaw = await Vehicle.findAll({
       where: { 
-        ...where, 
+        ...vehicleWhere, 
         entry_date: { [Op.gte]: sixMonthsAgo } 
       },
       attributes: [

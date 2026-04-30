@@ -608,8 +608,14 @@ const Vehicles = () => {
 
   const handleDelete = async () => {
     notify('loading', 'Menghapus...');
-    try { await api.delete(`/vehicles/${confirmDeleteId}`); notify('success', 'Dihapus'); setConfirmDeleteId(null); fetchVehicles(); }
-    catch { notify('error', 'Error'); }
+    try { 
+      await api.delete(`/vehicles/${confirmDeleteId}`); 
+      notify('success', 'Berhasil dipindahkan ke tempat sampah'); 
+      setConfirmDeleteId(null); 
+      fetchVehicles(); 
+      fetchSummary(); // Refresh summary too
+    }
+    catch { notify('error', 'Gagal menghapus kendaraan'); }
   };
 
   const openBookingModal = (v, existingBooking = null) => {

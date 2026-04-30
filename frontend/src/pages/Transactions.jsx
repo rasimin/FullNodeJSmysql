@@ -5,7 +5,7 @@ import {
   Search, FileSpreadsheet, Printer, Eye, Calendar, User,
   Phone, Tag, Clock, CheckCircle, XCircle, MoreHorizontal,
   Building2, Hash, Wallet, UserCheck, Trash2, Edit, CheckCircle2,
-  PhoneCall, CreditCard as CardIcon, ChevronRight, ArrowUpDown, FileText, Upload, ArrowUpRight, X
+  PhoneCall, CreditCard as CardIcon, ChevronRight, ArrowUpDown, FileText, Upload, ArrowUpRight, X, MapPin
 } from 'lucide-react';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
@@ -16,6 +16,7 @@ import Modal from '../components/Modal';
 import PdfViewerModal from '../components/PdfViewerModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IMAGE_BASE_URL } from '../config';
+import { formatOfficeHierarchy } from '../utils/hierarchy';
 
 const Transactions = () => {
   const navigate = useNavigate();
@@ -27,6 +28,8 @@ const Transactions = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [notification, setNotification] = useState({ status: 'idle', message: '' });
   const [viewMode, setViewMode] = useState(window.innerWidth < 768 ? 'grid' : 'table');
+  const [offices, setOffices] = useState([]);
+  const [selectedBranch, setSelectedBranch] = useState('');
 
   const [activeTab, setActiveTab] = useState('main');
   const [documentTypes, setDocumentTypes] = useState([]);
@@ -58,6 +61,8 @@ const Transactions = () => {
 
   const storedUser = JSON.parse(localStorage.getItem('user_data') || '{}');
   const user = storedUser.user || storedUser;
+  const isSuperAdmin = user?.role === 'Super Admin';
+  const isHeadOffice = isSuperAdmin || !user?.office_id || user?.Office?.parent_id === null;
 
   const notify = (status, message, delay = 2000) => {
     setNotification({ status, message });
@@ -79,7 +84,8 @@ const Transactions = () => {
           startDate: dateRange.start,
           endDate: dateRange.end,
           sortBy: sort.column,
-          sortOrder: sort.direction
+          sortOrder: sort.direction,
+          officeId: selectedBranch
         }
       });
       const data = r.data.items || (Array.isArray(r.data) ? r.data : []);
@@ -110,6 +116,15 @@ const Transactions = () => {
       }, []);
       setDocumentTypes(uniqueBookingTypes);
     } catch (e) { console.error('Fetch doc types error:', e); }
+  };
+
+  const fetchOffices = async () => {
+    try {
+      const res = await api.get('/offices');
+      setOffices(formatOfficeHierarchy(res.data));
+    } catch (error) {
+      console.error('Error fetching offices:', error);
+    }
   };
 
   const fetchBookingDocuments = async (bookingId) => {
@@ -205,7 +220,8 @@ const Transactions = () => {
   useEffect(() => {
     fetchTransactions();
     fetchMetadata();
-  }, [page, search, statusFilter, dateRange, sort]);
+    if (isHeadOffice) fetchOffices();
+  }, [page, search, statusFilter, dateRange, sort, selectedBranch]);
 
 
   const toggleSort = (column) => {
@@ -451,7 +467,23 @@ const Transactions = () => {
           </select>
         </div>
 
-        <div className="lg:col-span-4 grid grid-cols-2 gap-2">
+        {isHeadOffice && (
+          <div className="lg:col-span-2">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Cabang</label>
+            <Select
+              icon={MapPin}
+              value={selectedBranch}
+              onChange={(e) => { setSelectedBranch(e.target.value); setPage(1); }}
+              options={[
+                { value: '', label: 'Semua Cabang' },
+                ...offices.map(o => ({ value: o.id, label: o.displayName }))
+              ]}
+              className="h-11 text-[11px]"
+            />
+          </div>
+        )}
+
+        <div className={isHeadOffice ? "lg:col-span-4 grid grid-cols-2 gap-2" : "lg:col-span-4 grid grid-cols-2 gap-2"}>
           <div>
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Tanggal Mulai</label>
             <div className="relative group">

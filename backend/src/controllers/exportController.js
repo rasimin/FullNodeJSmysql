@@ -123,7 +123,10 @@ const exportVehicles = async (req, res) => {
       officeIds = [user.office_id];
     }
 
-    const condition = { office_id: { [Op.in]: officeIds } };
+    const condition = { 
+      office_id: { [Op.in]: officeIds },
+      is_deleted: false
+    };
     if (search) {
       condition[Op.or] = [
         { brand: { [Op.like]: `%${search}%` } },
@@ -178,8 +181,13 @@ const exportBookingPdf = async (req, res) => {
   try {
     const { id } = req.params;
     const { type } = req.query;
-    const booking = await Booking.findByPk(id, {
-      include: [{ model: Vehicle }, { model: Office }, { model: SalesAgent, as: 'salesAgent' }]
+    const booking = await Booking.findOne({
+      where: { id },
+      include: [
+        { model: Vehicle, where: { is_deleted: false }, required: true },
+        { model: Office },
+        { model: SalesAgent, as: 'salesAgent' }
+      ]
     });
 
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
@@ -345,8 +353,13 @@ const exportSaleInvoicePdf = async (req, res) => {
   try {
     const { id } = req.params;
     const { isProof } = req.query;
-    const booking = await Booking.findByPk(id, {
-      include: [{ model: Vehicle }, { model: Office }, { model: SalesAgent, as: 'salesAgent' }]
+    const booking = await Booking.findOne({
+      where: { id },
+      include: [
+        { model: Vehicle, where: { is_deleted: false }, required: true },
+        { model: Office },
+        { model: SalesAgent, as: 'salesAgent' }
+      ]
     });
 
     if (!booking) return res.status(404).json({ message: 'Record not found' });
@@ -579,7 +592,10 @@ const exportFinancialReportPdf = async (req, res) => {
       }
     }
 
-    const where = { office_id: { [Op.in]: officeIds } };
+    const where = { 
+      office_id: { [Op.in]: officeIds },
+      is_deleted: false
+    };
     let salesWhere = { ...where, status: 'Sold' };
     let purchaseWhere = { ...where };
     let bookingWhere = { ...where, status: 'Cancelled' };
@@ -597,7 +613,12 @@ const exportFinancialReportPdf = async (req, res) => {
     const purchases = await Vehicle.findAll({ where: purchaseWhere });
     const cancellations = await Booking.findAll({
       where: bookingWhere,
-      include: [{ model: Vehicle, attributes: ['type', 'brand', 'model'] }]
+      include: [{ 
+        model: Vehicle, 
+        attributes: ['type', 'brand', 'model'],
+        where: { is_deleted: false },
+        required: true
+      }]
     });
 
     // Grouping Logic

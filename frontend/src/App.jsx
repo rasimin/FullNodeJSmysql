@@ -25,6 +25,7 @@ import SalesReport from './pages/SalesReport';
 import AnalysisReport from './pages/AnalysisReport';
 import FinanceReport from './pages/FinanceReport';
 import Transactions from './pages/Transactions';
+import RecycleBin from './pages/RecycleBin';
 import DashboardLayout from './layouts/DashboardLayout';
 
 function App() {
@@ -44,6 +45,7 @@ function App() {
                 <Route path="/vehicles" element={<Vehicles />} />
                 <Route path="/transactions" element={<Transactions />} />
                 <Route path="/brands" element={<BrandManagement />} />
+                <Route path="/recycle-bin" element={<RecycleBin />} />
                 <Route path="/offices" element={<OfficeManagement />} />
                 <Route path="/activities" element={<ActivityLog />} />
                 <Route path="/roles" element={<RoleManagement />} />

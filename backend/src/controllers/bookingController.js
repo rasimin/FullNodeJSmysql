@@ -13,7 +13,7 @@ exports.createBooking = async (req, res) => {
     if (!nik) return res.status(400).json({ message: 'NIK (National ID Number) is mandatory' });
 
     // Pastikan kendaraan ada dan tersedia
-    const vehicle = await Vehicle.findByPk(vehicle_id);
+    const vehicle = await Vehicle.findOne({ where: { id: vehicle_id, is_deleted: false } });
     if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
     if (vehicle.status !== 'Available') return res.status(400).json({ message: 'Vehicle already booked or sold' });
 
@@ -188,7 +188,12 @@ exports.getAllBookings = async (req, res) => {
       limit,
       offset,
       include: [
-        { model: Vehicle, attributes: ['brand', 'model', 'plate_number', 'price'] },
+        { 
+          model: Vehicle, 
+          attributes: ['brand', 'model', 'plate_number', 'price'],
+          where: { is_deleted: false },
+          required: true 
+        },
         { model: User, attributes: ['name'] },
         { model: Office, attributes: ['name'] },
         { model: SalesAgent, as: 'salesAgent', attributes: ['name'] }
@@ -208,7 +213,7 @@ exports.confirmSale = async (req, res) => {
     const { vehicleId } = req.params;
     const { sales_agent_id, sold_date, customer_name, customer_phone } = req.body;
 
-    const vehicle = await Vehicle.findByPk(vehicleId);
+    const vehicle = await Vehicle.findOne({ where: { id: vehicleId, is_deleted: false } });
     if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
 
     let deliveryPhotoPath = null;
