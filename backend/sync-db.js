@@ -110,8 +110,98 @@ const syncDb = async () => {
       console.log('Added postal_code column to offices');
     }
 
-    // Backfill existing agents with empty sales_code
-    console.log('Backfilling empty sales codes...');
+    // Check bookings table
+    const bookingsInfo = await queryInterface.describeTable('bookings');
+    if (!bookingsInfo.payment_method) {
+      await queryInterface.addColumn('bookings', 'payment_method', {
+        type: DataTypes.STRING,
+        allowNull: true
+      });
+      console.log('Added payment_method column to bookings');
+    }
+
+    // Check promotions table
+    const tables = await queryInterface.showAllTables();
+    if (!tables.includes('promotions')) {
+      await queryInterface.createTable('promotions', {
+        id: {
+          type: DataTypes.INTEGER,
+          primaryKey: true,
+          autoIncrement: true
+        },
+        title: {
+          type: DataTypes.STRING,
+          allowNull: false
+        },
+        description: {
+          type: DataTypes.TEXT,
+          allowNull: true
+        },
+        image_path: {
+          type: DataTypes.STRING,
+          allowNull: false
+        },
+        placement: {
+          type: DataTypes.ENUM('Slider', 'Popup', 'Banner'),
+          defaultValue: 'Slider'
+        },
+        target_url: {
+          type: DataTypes.STRING,
+          allowNull: true
+        },
+        start_date: {
+          type: DataTypes.DATEONLY,
+          allowNull: false
+        },
+        end_date: {
+          type: DataTypes.DATEONLY,
+          allowNull: false
+        },
+        is_active: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: true
+        },
+        priority: {
+          type: DataTypes.INTEGER,
+          defaultValue: 0
+        },
+        office_id: {
+          type: DataTypes.INTEGER,
+          allowNull: true,
+          references: {
+            model: 'offices',
+            key: 'id'
+          },
+          onUpdate: 'CASCADE',
+          onDelete: 'SET NULL'
+        },
+        is_all_branches: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: false
+        },
+        created_by: {
+          type: DataTypes.BIGINT,
+          allowNull: false,
+          references: {
+            model: 'users',
+            key: 'id'
+          },
+          onUpdate: 'CASCADE',
+          onDelete: 'CASCADE'
+        },
+        created_at: {
+          type: DataTypes.DATE,
+          allowNull: false
+        },
+        updated_at: {
+          type: DataTypes.DATE,
+          allowNull: false
+        }
+      });
+      console.log('Created promotions table');
+    }
+
+    console.log('Database synchronized and backfilled.');
     const { SalesAgent } = require('./src/models');
     const generateSalesCode = () => {
       const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';

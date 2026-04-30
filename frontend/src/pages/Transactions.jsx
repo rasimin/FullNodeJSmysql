@@ -5,7 +5,7 @@ import {
   Search, FileSpreadsheet, Printer, Eye, Calendar, User,
   Phone, Tag, Clock, CheckCircle, XCircle, MoreHorizontal,
   Building2, Hash, Wallet, UserCheck, Trash2, Edit, CheckCircle2,
-  PhoneCall, CreditCard as CardIcon, ChevronRight, ArrowUpDown, FileText, Upload, ArrowUpRight, X, MapPin
+  PhoneCall, CreditCard as CardIcon, ChevronRight, ArrowUpDown, FileText, Upload, ArrowUpRight, X, MapPin, Camera
 } from 'lucide-react';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
@@ -54,7 +54,8 @@ const Transactions = () => {
   const [salesAgents, setSalesAgents] = useState([]);
   const [bookingData, setBookingData] = useState({
     vehicle_id: '', customer_name: '', customer_phone: '', id_number: '',
-    booking_date: '', down_payment: '', notes: '', sales_agent_id: ''
+    booking_date: '', down_payment: '', notes: '', sales_agent_id: '',
+    payment_method: 'Cash'
   });
   const [printReceipt, setPrintReceipt] = useState(localStorage.getItem('pref_print_receipt') === 'true');
   const [printInvoice, setPrintInvoice] = useState(localStorage.getItem('pref_print_invoice') === 'true');
@@ -319,7 +320,8 @@ const Transactions = () => {
       nik: t.nik || '',
       id_number: t.id_number || '',
       notes: t.notes || '',
-      sales_agent_id: t.sales_agent_id || ''
+      sales_agent_id: t.sales_agent_id || '',
+      payment_method: t.payment_method || 'Cash'
     });
     fetchAgentsByOffice(t.office_id);
     fetchBookingDocuments(t.id);
@@ -431,94 +433,107 @@ const Transactions = () => {
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
-        <div className="lg:col-span-4 relative">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Cari Transaksi</label>
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text" placeholder="Cari ID, pelanggan atau unit..."
-              className={`input pl-10 ${search ? 'pr-10' : ''} h-11 text-xs`}
-              value={search} onChange={(e) => setSearch(e.target.value)}
-            />
-            {search && (
-              <button 
-                onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors"
-              >
-                <X size={16} />
-              </button>
+      <div className="bg-white dark:bg-gray-900/50 p-6 rounded-[32px] border border-gray-100 dark:border-gray-800 shadow-sm space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
+          <div className="lg:col-span-6 relative">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block ml-1">Cari Transaksi</label>
+            <div className="relative group">
+              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+              <input
+                type="text" placeholder="Cari ID, nama pelanggan, nomor plat atau unit..."
+                className={`input pl-11 ${search ? 'pr-11' : ''} h-12 text-xs bg-gray-50/50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700/50 focus:bg-white dark:focus:bg-gray-800`}
+                value={search} onChange={(e) => setSearch(e.target.value)}
+              />
+              {search && (
+                <button 
+                  onClick={() => setSearch('')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="lg:col-span-3">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block ml-1">Status Transaksi</label>
+            <select
+              className="input h-12 text-xs font-bold bg-gray-50/50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700/50 focus:bg-white dark:focus:bg-gray-800"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">Semua Status</option>
+              <option value="Active">Booking Aktif</option>
+              <option value="Sold">Terjual / Deal</option>
+              <option value="Cancelled">Dibatalkan (Non Refund)</option>
+              <option value="Refunded">Refunded</option>
+            </select>
+          </div>
+
+          <div className="lg:col-span-3">
+            {isHeadOffice ? (
+              <>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block ml-1">Cabang / Lokasi</label>
+                <Select
+                  icon={MapPin}
+                  value={selectedBranch}
+                  onChange={(e) => { setSelectedBranch(e.target.value); setPage(1); }}
+                  options={[
+                    { value: '', label: 'Semua Cabang' },
+                    ...offices.map(o => ({ value: o.id, label: o.displayName }))
+                  ]}
+                  className="h-12 text-[11px] bg-gray-50/50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700/50 focus:bg-white dark:focus:bg-gray-800"
+                />
+              </>
+            ) : (
+              <div className="h-12 flex items-end">
+                <div className="w-full px-4 py-3 bg-blue-50/30 dark:bg-blue-900/10 rounded-2xl border border-blue-100/50 dark:border-blue-800/50">
+                  <p className="text-[10px] font-black text-blue-600 uppercase tracking-tight">Kantor: {user?.Office?.name || 'Cabang Aktif'}</p>
+                </div>
+              </div>
             )}
           </div>
         </div>
 
-        <div className="lg:col-span-2">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Status</label>
-          <select
-            className="input h-11 text-xs font-bold"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="">Semua Status</option>
-            <option value="Active">Booking Aktif</option>
-            <option value="Sold">Terjual / Deal</option>
-            <option value="Cancelled">Dibatalkan (Non Refund)</option>
-            <option value="Refunded">Refunded</option>
-          </select>
-        </div>
-
-        {isHeadOffice && (
-          <div className="lg:col-span-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Cabang</label>
-            <Select
-              icon={MapPin}
-              value={selectedBranch}
-              onChange={(e) => { setSelectedBranch(e.target.value); setPage(1); }}
-              options={[
-                { value: '', label: 'Semua Cabang' },
-                ...offices.map(o => ({ value: o.id, label: o.displayName }))
-              ]}
-              className="h-11 text-[11px]"
-            />
-          </div>
-        )}
-
-        <div className={isHeadOffice ? "lg:col-span-4 grid grid-cols-2 gap-2" : "lg:col-span-4 grid grid-cols-2 gap-2"}>
-          <div>
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Tanggal Mulai</label>
-            <div className="relative group">
-              <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-focus-within:text-blue-500 transition-colors" />
-              <input 
-                type="date" 
-                className="input pl-9 h-11 text-[11px] font-bold w-full cursor-pointer" 
-                value={dateRange.start}
-                onClick={(e) => e.target.showPicker?.()}
-                onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-              />
+        <div className="pt-2 border-t border-gray-50 dark:border-gray-800/50">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
+            <div className="lg:col-span-4">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block ml-1">Dari Tanggal</label>
+              <div className="relative group">
+                <Calendar size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-focus-within:text-blue-500 transition-colors" />
+                <input 
+                  type="date" 
+                  className="input pl-11 h-12 text-[11px] font-bold w-full cursor-pointer bg-gray-50/50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700/50" 
+                  value={dateRange.start}
+                  onClick={(e) => e.target.showPicker?.()}
+                  onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="lg:col-span-4">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block ml-1">Sampai Tanggal</label>
+              <div className="relative group">
+                <Calendar size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-focus-within:text-blue-500 transition-colors" />
+                <input 
+                  type="date" 
+                  className="input pl-11 h-12 text-[11px] font-bold w-full cursor-pointer bg-gray-50/50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700/50" 
+                  value={dateRange.end}
+                  onClick={(e) => e.target.showPicker?.()}
+                  onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="lg:col-span-4">
+              <button 
+                onClick={() => setDateRange({ start: '', end: '' })}
+                disabled={!dateRange.start && !dateRange.end}
+                className="w-full h-12 bg-white dark:bg-gray-800 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer group flex items-center justify-center gap-2"
+              >
+                <XCircle size={14} className={dateRange.start || dateRange.end ? "text-red-500" : ""} />
+                Hapus Filter Tanggal
+              </button>
             </div>
           </div>
-          <div>
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Tanggal Akhir</label>
-            <div className="relative group">
-              <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-focus-within:text-blue-500 transition-colors" />
-              <input 
-                type="date" 
-                className="input pl-9 h-11 text-[11px] font-bold w-full cursor-pointer" 
-                value={dateRange.end}
-                onClick={(e) => e.target.showPicker?.()}
-                onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="lg:col-span-2">
-          <button 
-            onClick={() => setDateRange({ start: '', end: '' })}
-            className="w-full h-11 bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
-          >
-            Hapus Tanggal
-          </button>
         </div>
       </div>
 
@@ -542,26 +557,26 @@ const Transactions = () => {
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
-                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap cursor-pointer hover:text-blue-600 transition-colors group" onClick={() => toggleSort('booking_date')}>
+                    <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] whitespace-nowrap cursor-pointer hover:text-blue-600 transition-colors group" onClick={() => toggleSort('booking_date')}>
                       <div className="flex items-center gap-2">
-                        Tgl Booking <ArrowUpDown size={10} className={sort.column === 'booking_date' ? 'text-blue-500' : 'text-gray-300 opacity-0 group-hover:opacity-100'} />
+                        Tgl Booking <ArrowUpDown size={10} className={sort.column === 'booking_date' ? 'text-blue-500' : 'text-gray-300 opacity-0 group-hover:opacity-100 transition-all'} />
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap cursor-pointer hover:text-blue-600 transition-colors group" onClick={() => toggleSort('updatedAt')}>
+                    <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] whitespace-nowrap cursor-pointer hover:text-blue-600 transition-colors group" onClick={() => toggleSort('updatedAt')}>
                       <div className="flex items-center gap-2">
-                        Tgl Modif <ArrowUpDown size={10} className={sort.column === 'updatedAt' ? 'text-blue-500' : 'text-gray-300 opacity-0 group-hover:opacity-100'} />
+                        Tgl Modif <ArrowUpDown size={10} className={sort.column === 'updatedAt' ? 'text-blue-500' : 'text-gray-300 opacity-0 group-hover:opacity-100 transition-all'} />
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest cursor-pointer hover:text-blue-600 transition-colors group" onClick={() => toggleSort('customer_name')}>
+                    <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] cursor-pointer hover:text-blue-600 transition-colors group" onClick={() => toggleSort('customer_name')}>
                       <div className="flex items-center gap-2">
-                        Pelanggan <ArrowUpDown size={10} className={sort.column === 'customer_name' ? 'text-blue-500' : 'text-gray-300 opacity-0 group-hover:opacity-100'} />
+                        Pelanggan <ArrowUpDown size={10} className={sort.column === 'customer_name' ? 'text-blue-500' : 'text-gray-300 opacity-0 group-hover:opacity-100 transition-all'} />
                       </div>
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Detail Unit</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Kantor / Sales</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Harga</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right whitespace-nowrap">Cetak</th>
+                    <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Detail Unit</th>
+                    <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Kantor / Sales</th>
+                    <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] whitespace-nowrap">Harga</th>
+                    <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Status</th>
+                    <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-right whitespace-nowrap">Cetak</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -569,104 +584,127 @@ const Transactions = () => {
                     const s = (t.status || '').toLowerCase();
                     return (
                       <tr key={t.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2 group">
-                            <div>
-                              <p className="text-xs font-bold text-gray-900 dark:text-white">{new Date(t.booking_date).toLocaleDateString('id-ID')}</p>
-                              <p className="text-[9px] text-gray-300 font-bold uppercase truncate max-w-[80px]">ID: {t.id.split('-')[0]}</p>
+                        <td className="px-6 py-5">
+                          <div className="flex items-center gap-3 group">
+                            <div className="space-y-0.5">
+                              <p className="text-xs font-black text-gray-900 dark:text-white">{new Date(t.booking_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter bg-gray-50 dark:bg-gray-800 px-1.5 py-0.5 rounded-md w-fit">ID: {t.id.split('-')[0]}</p>
                             </div>
-                            <div className="flex gap-1 transition-opacity">
-                              <button onClick={() => { setSelectedTransaction(t); setIsDeleteModalOpen(true); }} className="btn-delete !p-1" title="Hapus"><Trash2 size={12} /></button>
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100 origin-left">
+                              <button 
+                                onClick={() => { setSelectedTransaction(t); setIsDeleteModalOpen(true); }} 
+                                className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400 hover:bg-red-500 hover:text-white dark:hover:bg-red-500 transition-all rounded-lg cursor-pointer" 
+                                title="Hapus"
+                              >
+                                <Trash2 size={12} />
+                              </button>
                                   {(s === 'active' || s === 'sold') && (
-                                    <button onClick={() => openBookingModal(t)} className="btn-edit !p-1" title="Edit"><Edit size={12} /></button>
-                                  )}
-                                  {s === 'active' && (
                                     <button 
-                                      onClick={() => { 
-                                        setSelectedTransaction(t); 
-                                        setCancellationReason(''); 
-                                        setIsCancelModalOpen(true); 
-                                      }}
-                                      className="btn-icon !p-1 text-red-500 hover:bg-red-50" 
-                                      title="Batalkan Booking"
+                                      onClick={() => openBookingModal(t)} 
+                                      className="p-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-500 dark:text-blue-400 hover:bg-blue-500 hover:text-white dark:hover:bg-blue-500 transition-all rounded-lg cursor-pointer" 
+                                      title="Edit"
                                     >
-                                      <XCircle size={12} />
+                                      <Edit size={12} />
                                     </button>
                                   )}
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-5">
                           <div className="flex flex-col">
                             <span className="text-xs font-bold text-gray-900 dark:text-white">{new Date(t.updatedAt).toLocaleDateString('id-ID')}</span>
-                            <span className="text-[9px] text-gray-400 font-bold">{new Date(t.updatedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span className="text-[9px] text-gray-400 font-medium">{new Date(t.updatedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-5">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500">
-                              <User size={14} />
+                            <div className="w-9 h-9 rounded-xl bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center text-gray-400 border border-gray-100 dark:border-gray-800">
+                              <User size={16} />
                             </div>
                             <div className="min-w-0">
-                              <p className="text-xs font-black text-gray-900 dark:text-white uppercase truncate">{t.customer_name}</p>
-                              <p className="text-[10px] text-gray-400 font-bold">{t.customer_phone}</p>
+                              <p className="text-xs font-black text-gray-900 dark:text-white uppercase truncate tracking-tight">{t.customer_name}</p>
+                              <p className="text-[10px] text-gray-500 font-bold">{t.customer_phone}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <button 
-                            onClick={() => navigate('/vehicles', { state: { searchPlate: t.Vehicle?.plate_number } })}
-                            className="flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors cursor-pointer group text-left"
-                          >
-                            {t.Vehicle?.brand} {t.Vehicle?.model}
-                            <ArrowUpRight size={12} className="text-amber-500/70 group-hover:text-amber-600 transition-colors" />
-                          </button>
-                          <button 
-                            onClick={() => navigate('/vehicles', { state: { searchPlate: t.Vehicle?.plate_number } })}
-                            className="text-[10px] text-blue-600 font-black uppercase hover:underline cursor-pointer text-left block"
-                          >
-                            {t.Vehicle?.plate_number}
-                          </button>
+                        <td className="px-6 py-5">
+                          <div className="flex flex-col gap-0.5">
+                            <button 
+                              onClick={() => navigate('/vehicles', { state: { searchPlate: t.Vehicle?.plate_number } })}
+                              className="flex items-center gap-1 text-xs font-black text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors cursor-pointer group text-left"
+                            >
+                              {t.Vehicle?.brand} {t.Vehicle?.model}
+                              <ArrowUpRight size={12} className="text-amber-500/70 group-hover:text-amber-600 transition-colors" />
+                            </button>
+                            <span className="text-[10px] text-blue-600 font-black uppercase bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-md w-fit">
+                              {t.Vehicle?.plate_number}
+                            </span>
+                          </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-1.5">
-                              <Building2 size={12} className="text-gray-400" />
-                              <p className="text-xs font-black text-gray-700 dark:text-gray-300 uppercase">{t.Office?.name || 'Kantor Pusat'}</p>
+                        <td className="px-6 py-5">
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              <div className="w-1.5 h-1.5 rounded-full bg-gray-300"></div>
+                              <p className="text-[10px] font-black text-gray-600 dark:text-gray-400 uppercase tracking-tight">{t.Office?.name || 'Kantor Pusat'}</p>
                             </div>
                             {t.salesAgent && (
-                              <div className="flex items-center gap-1.5">
-                                <UserCheck size={12} className="text-blue-500" />
-                                <p className="text-[10px] font-bold text-blue-600 uppercase">{t.salesAgent?.name}</p>
+                              <div className="flex items-center gap-1.5 pl-3">
+                                <UserCheck size={10} className="text-blue-500" />
+                                <p className="text-[9px] font-bold text-blue-600/70 uppercase">{t.salesAgent?.name}</p>
                               </div>
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex flex-col">
-                            <span className="text-xs font-black text-blue-600 dark:text-blue-400">Rp. {formatNumber(t.Vehicle?.price || 0)}</span>
-                            <span className="text-[10px] font-bold text-gray-400">Dp. {formatPrice(t.down_payment)}</span>
+                        <td className="px-6 py-5 whitespace-nowrap">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-xs font-black text-blue-600 dark:text-blue-400">Rp {formatNumber(t.Vehicle?.price || 0)}</span>
+                            <div className="flex items-center gap-1">
+                              <span className="text-[9px] font-bold text-gray-400 uppercase">DP:</span>
+                              <span className="text-[10px] font-bold text-gray-500">{formatPrice(t.down_payment)}</span>
+                            </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-center">
-                          <div className="flex flex-col items-center">
+                        <td className="px-6 py-5 text-center">
+                          <div className="flex flex-col items-center gap-1">
                             {getStatusBadge(t.status)}
-                            {(['cancelled', 'refunded', 'refund'].includes(t.status?.toLowerCase())) && t.cancellation_reason && (
-                              <p className="text-[9px] text-gray-400 font-bold italic mt-1 max-w-[120px] truncate" title={t.cancellation_reason}>
-                                "{t.cancellation_reason}"
-                              </p>
-                            )}
+                            <span className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase shadow-sm ${
+                              t.payment_method === 'Credit' ? 'bg-indigo-600 text-white' : 
+                              t.payment_method === 'Tukar Tambah' ? 'bg-orange-500 text-white' : 
+                              'bg-emerald-600 text-white'
+                            }`}>
+                              {t.payment_method || 'Cash'}
+                            </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-1.5">
+                        <td className="px-6 py-5 text-right">
+                          <div className="flex justify-end gap-2">
                             {(s === 'active' || s === 'sold') && (
                               <>
-                                <button onClick={() => handlePrintDoc(t.id, 'receipt')} className="btn-icon hover:text-indigo-600 hover:bg-indigo-50" title="Cetak Kwitansi"><Printer size={12} /></button>
-                                <button onClick={() => handlePrintDoc(t.id, 'sale-invoice')} className="btn-icon hover:text-amber-600 hover:bg-amber-50" title="Cetak Invoice"><FileSpreadsheet size={12} /></button>
+                                <button 
+                                  onClick={() => handlePrintDoc(t.id, 'receipt')} 
+                                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-500 transition-all shadow-sm cursor-pointer" 
+                                  title="Cetak Kwitansi"
+                                >
+                                  <Printer size={14} />
+                                </button>
+                                <button 
+                                  onClick={() => handlePrintDoc(t.id, 'sale-invoice')} 
+                                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 hover:bg-amber-600 hover:text-white dark:hover:bg-amber-500 transition-all shadow-sm cursor-pointer" 
+                                  title="Cetak Invoice"
+                                >
+                                  <FileText size={14} />
+                                </button>
                               </>
                             )}
-                            {s === 'sold' && <button onClick={() => handlePrintDoc(t.id, 'deal-proof')} className="btn-icon hover:text-green-600 hover:bg-green-50" title="Cetak Kwitansi Penjualan"><CheckCircle size={12} /></button>}
+                            {s === 'sold' && (
+                              <button 
+                                onClick={() => handlePrintDoc(t.id, 'deal-proof')} 
+                                className="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-500 transition-all shadow-sm cursor-pointer" 
+                                title="Cetak Kwitansi Penjualan"
+                              >
+                                <CheckCircle size={14} />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -743,7 +781,16 @@ const Transactions = () => {
                           </div>
                           <div className="text-right">
                             <p className="text-[9px] font-black text-gray-400 uppercase leading-none">Uang Muka (DP)</p>
-                            <p className="text-xs font-bold text-gray-700 dark:text-gray-300">{formatPrice(t.down_payment)}</p>
+                            <div className="flex flex-col items-end">
+                              <p className="text-xs font-bold text-gray-700 dark:text-gray-300">{formatPrice(t.down_payment)}</p>
+                              <span className={`mt-0.5 px-2 rounded-[4px] text-[7px] font-black uppercase shadow-sm ${
+                                t.payment_method === 'Credit' ? 'bg-indigo-600 text-white' : 
+                                t.payment_method === 'Tukar Tambah' ? 'bg-orange-500 text-white' : 
+                                'bg-emerald-600 text-white'
+                              }`}>
+                                {t.payment_method || 'Cash'}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -978,6 +1025,17 @@ const Transactions = () => {
               <Input label="Nomor Telepon" placeholder="+62..." value={bookingData.customer_phone} onChange={e => setBookingData({ ...bookingData, customer_phone: e.target.value })} required />
             </div>
             <Input label="Uang Muka (DP)" value={displayCurrency(bookingData.down_payment)} onChange={e => handleCurrencyChange(setBookingData, bookingData, 'down_payment', e.target.value)} />
+            <Select 
+              label="Metode Pembayaran" 
+              value={bookingData.payment_method} 
+              onChange={e => setBookingData({ ...bookingData, payment_method: e.target.value })} 
+              options={[
+                { value: 'Cash', label: 'Cash (Tunai)' },
+                { value: 'Credit', label: 'Credit (Leasing)' },
+                { value: 'Tukar Tambah', label: 'Tukar Tambah (Trade-in)' }
+              ]} 
+              required 
+            />
             <Select
               label="Sales Agent (Optional)"
               value={bookingData.sales_agent_id}

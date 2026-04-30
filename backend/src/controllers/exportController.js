@@ -257,6 +257,11 @@ const exportBookingPdf = async (req, res) => {
     doc.text(`:`, valueX - 10, startY + 25 + (rowHeight * 3));
     doc.text(new Date(booking.booking_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }), valueX, startY + 25 + (rowHeight * 3));
 
+    doc.font('Helvetica').text(`Method`, labelX, startY + 25 + (rowHeight * 4));
+    doc.text(`:`, valueX - 10, startY + 25 + (rowHeight * 4));
+    doc.font('Helvetica-Bold').fillColor('#b91c1c').text(booking.payment_method || 'Cash', valueX, startY + 25 + (rowHeight * 4));
+    doc.fillColor('#000'); // Reset color
+
     // Right Column: Vehicle
     const rightLabelX = 320;
     const rightValueX = 390;
@@ -425,6 +430,11 @@ const exportSaleInvoicePdf = async (req, res) => {
     doc.font('Helvetica').text(`Booking`, labelX, startY + 25 + (rowHeight * 3));
     doc.text(`:`, valueX - 10, startY + 25 + (rowHeight * 3));
     doc.text(new Date(booking.booking_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }), valueX, startY + 25 + (rowHeight * 3));
+
+    doc.font('Helvetica').text(`Method`, labelX, startY + 25 + (rowHeight * 4));
+    doc.text(`:`, valueX - 10, startY + 25 + (rowHeight * 4));
+    doc.font('Helvetica-Bold').fillColor('#b91c1c').text(booking.payment_method || 'Cash', valueX, startY + 25 + (rowHeight * 4));
+    doc.fillColor('#000'); // Reset color
 
     // Right Column: Vehicle Description
     const rightLabelX = 320;

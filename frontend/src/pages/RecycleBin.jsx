@@ -146,7 +146,7 @@ const RecycleBin = () => {
     transmission: 'Transmisi', fuel_type: 'Bahan Bakar', sales_agent_id: 'Agen Sales',
     sold_date: 'Tgl Terjual', entry_date: 'Tgl Masuk', file_name: 'Nama File',
     document_type_id: 'Tipe Dokumen', file_path: 'Lokasi File', file_size: 'Ukuran File',
-    mime_type: 'Tipe File', uploaded_by: 'Diunggah Oleh', vehicle_id: 'ID Kendaraan', booking_id: 'ID Transaksi'
+    mime_type: 'Tipe File', uploaded_by: 'Diunggah Oleh', vehicle_id: 'ID Kendaraan', booking_id: 'ID Transaksi', payment_method: 'Metode Bayar'
   };
 
   const tableLabels = {
@@ -713,6 +713,15 @@ const RecycleBin = () => {
                             {bh.status === 'Cancelled' ? 'Batal' : bh.status === 'Sold' ? 'Terjual' : 'Booked'}
                           </span>
                           <p className="text-sm font-black text-gray-900 dark:text-white mt-1 uppercase">{bh.customer_name}</p>
+                          {bh.payment_method && (
+                            <span className={`mt-1 px-1.5 py-0.5 rounded text-[7px] font-black uppercase shadow-sm inline-block ${
+                              bh.payment_method === 'Credit' ? 'bg-indigo-600 text-white' : 
+                              bh.payment_method === 'Tukar Tambah' ? 'bg-orange-500 text-white' : 
+                              'bg-emerald-600 text-white'
+                            }`}>
+                              {bh.payment_method}
+                            </span>
+                          )}
                         </div>
                         <div className="text-right">
                           <p className="text-[9px] text-gray-400 font-bold uppercase">{new Date(bh.booking_date).toLocaleDateString('id-ID')}</p>

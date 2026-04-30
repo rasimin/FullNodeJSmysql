@@ -70,6 +70,10 @@ const Booking = sequelize.define('Booking', {
   delivery_photo: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+  payment_method: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 }, {
   tableName: 'bookings',

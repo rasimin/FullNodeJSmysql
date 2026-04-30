@@ -55,7 +55,8 @@ const Vehicles = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [bookingData, setBookingData] = useState({
     vehicle_id: '', customer_name: '', customer_phone: '', id_number: '',
-    booking_date: new Date().toISOString().split('T')[0], down_payment: '', notes: '', sales_agent_id: ''
+    booking_date: new Date().toISOString().split('T')[0], down_payment: '', notes: '', sales_agent_id: '',
+    payment_method: 'Cash'
   });
   const [printReceipt, setPrintReceipt] = useState(localStorage.getItem('pref_print_receipt') === 'true');
   const [printInvoice, setPrintInvoice] = useState(localStorage.getItem('pref_print_invoice') === 'true');
@@ -402,7 +403,8 @@ const Vehicles = () => {
     mime_type: 'Tipe File',
     uploaded_by: 'Diunggah Oleh',
     vehicle_id: 'ID Kendaraan',
-    booking_id: 'ID Transaksi'
+    booking_id: 'ID Transaksi',
+    payment_method: 'Metode Bayar'
   };
 
   const tableLabels = {
@@ -630,7 +632,8 @@ const Vehicles = () => {
         id_number: existingBooking.id_number || '',
         notes: existingBooking.notes || '',
         nik: existingBooking.nik || '',
-        sales_agent_id: existingBooking.sales_agent_id || ''
+        sales_agent_id: existingBooking.sales_agent_id || '',
+        payment_method: existingBooking.payment_method || 'Cash'
       });
       // Fetch documents for the existing booking
       api.get(`/documents/booking/${existingBooking.id}`).then(r => {
@@ -642,7 +645,8 @@ const Vehicles = () => {
     } else {
       setBookingData({
         vehicle_id: v.id, customer_name: '', customer_phone: '', nik: '', id_number: '',
-        booking_date: new Date().toISOString().split('T')[0], down_payment: '', notes: '', sales_agent_id: ''
+        booking_date: new Date().toISOString().split('T')[0], down_payment: '', notes: '', sales_agent_id: '',
+        payment_method: 'Cash'
       });
       setActiveBookingDocs([]);
     }
@@ -759,7 +763,8 @@ const Vehicles = () => {
           nik: r.data.nik || '',
           id_number: r.data.id_number || '',
           notes: r.data.notes || '',
-          sales_agent_id: r.data.sales_agent_id || '' 
+          sales_agent_id: r.data.sales_agent_id || '',
+          payment_method: r.data.payment_method || 'Cash'
         });
       } else {
         setActiveBookingDocs([]);
@@ -772,7 +777,8 @@ const Vehicles = () => {
           nik: '',
           id_number: '',
           notes: '',
-          sales_agent_id: user?.sales_agent_id || '' // Default to current user's agent if applicable
+          sales_agent_id: user?.sales_agent_id || '', // Default to current user's agent if applicable
+          payment_method: 'Cash'
         });
       }
       setIsConfirmActionModalOpen(true);
@@ -799,6 +805,7 @@ const Vehicles = () => {
       formData.append('notes', bookingData.notes || '');
       formData.append('sold_date', new Date().toISOString().split('T')[0]);
       formData.append('sales_agent_id', bookingData.sales_agent_id);
+      formData.append('payment_method', bookingData.payment_method || 'Cash');
       
       if (dealPhoto) {
         formData.append('delivery_photo', dealPhoto);
@@ -1522,7 +1529,16 @@ const Vehicles = () => {
                             <div className="flex justify-between items-start mb-3">
                               <div>
                                 <p className="text-[9px] font-black text-orange-600 uppercase mb-1">Transaksi #{bh.id}</p>
-                                <p className="text-[8px] text-gray-400 font-bold uppercase">{new Date(bh.booking_date).toLocaleDateString('id-ID')}</p>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-[8px] text-gray-400 font-bold uppercase">{new Date(bh.booking_date).toLocaleDateString('id-ID')}</p>
+                                  <span className={`px-1.5 py-0.5 rounded text-[7px] font-black uppercase ${
+                                    bh.payment_method === 'Credit' ? 'bg-indigo-600 text-white' : 
+                                    bh.payment_method === 'Tukar Tambah' ? 'bg-orange-500 text-white' : 
+                                    'bg-emerald-600 text-white'
+                                  }`}>
+                                    {bh.payment_method || 'Cash'}
+                                  </span>
+                                </div>
                               </div>
                               <div className="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
                                 <Bookmark size={14} />
@@ -1732,6 +1748,19 @@ const Vehicles = () => {
                       <div className="grid grid-cols-2 gap-4">
                         <Input label="NIK (Nomor ID)" value={bookingData.nik} onChange={e => setBookingData({ ...bookingData, nik: e.target.value.replace(/\D/g, '').slice(0, 16) })} required />
                         <Input label="Nomor Telepon" value={bookingData.customer_phone} onChange={e => setBookingData({ ...bookingData, customer_phone: sanitizePhone(e.target.value) })} required />
+                      </div>
+                      <div className="grid grid-cols-1 gap-4">
+                        <Select 
+                          label="Metode Pembayaran" 
+                          value={bookingData.payment_method} 
+                          onChange={e => setBookingData({ ...bookingData, payment_method: e.target.value })} 
+                          options={[
+                            { value: 'Cash', label: 'Cash (Tunai)' },
+                            { value: 'Credit', label: 'Credit (Leasing)' },
+                            { value: 'Tukar Tambah', label: 'Tukar Tambah (Trade-in)' }
+                          ]} 
+                          required 
+                        />
                       </div>
                       <textarea 
                         className="input min-h-[80px] p-3 text-xs" 
@@ -1983,7 +2012,20 @@ const Vehicles = () => {
                   <Input label="NIK (Nomor ID)" placeholder="16-digit NIK" value={bookingData.nik} onChange={e => setBookingData({ ...bookingData, nik: e.target.value.replace(/\D/g, '').slice(0, 16) })} required />
                   <Input label="Nomor Telepon" placeholder="+62..." value={bookingData.customer_phone} onChange={e => setBookingData({ ...bookingData, customer_phone: sanitizePhone(e.target.value) })} required />
                 </div>
-                <Input label="Uang Muka (DP)" value={displayCurrency(bookingData.down_payment)} onChange={e => handleCurrencyChange(setBookingData, bookingData, 'down_payment', e.target.value)} />
+                <div className="grid grid-cols-2 gap-4">
+                  <Input label="Uang Muka (DP)" value={displayCurrency(bookingData.down_payment)} onChange={e => handleCurrencyChange(setBookingData, bookingData, 'down_payment', e.target.value)} />
+                  <Select 
+                    label="Metode Pembayaran" 
+                    value={bookingData.payment_method} 
+                    onChange={e => setBookingData({ ...bookingData, payment_method: e.target.value })} 
+                    options={[
+                      { value: 'Cash', label: 'Cash (Tunai)' },
+                      { value: 'Credit', label: 'Credit (Leasing)' },
+                      { value: 'Tukar Tambah', label: 'Tukar Tambah (Trade-in)' }
+                    ]} 
+                    required 
+                  />
+                </div>
               <Select
                 label="Agen Penjualan (Opsional)"
                 value={bookingData.sales_agent_id}

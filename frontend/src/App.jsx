@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { Toaster } from 'react-hot-toast';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -26,6 +27,7 @@ import AnalysisReport from './pages/AnalysisReport';
 import FinanceReport from './pages/FinanceReport';
 import Transactions from './pages/Transactions';
 import RecycleBin from './pages/RecycleBin';
+import Promotions from './pages/Promotions';
 import DashboardLayout from './layouts/DashboardLayout';
 
 function App() {
@@ -33,6 +35,7 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <BrowserRouter>
+          <Toaster position="top-right" reverseOrder={false} />
           <Routes>
             <Route path="/login" element={<Login />} />
             
@@ -50,6 +53,7 @@ function App() {
                 <Route path="/activities" element={<ActivityLog />} />
                 <Route path="/roles" element={<RoleManagement />} />
                 <Route path="/locations" element={<LocationManagement />} />
+                <Route path="/promotions" element={<Promotions />} />
                 <Route path="/audit-trails" element={<AuditTrail />} />
                 <Route path="/standard-reports" element={<Reports />} />
                 <Route path="/finance-report" element={<FinanceReport />} />

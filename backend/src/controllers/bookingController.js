@@ -7,7 +7,7 @@ const fs = require('fs');
 
 exports.createBooking = async (req, res) => {
   try {
-    const { vehicle_id, customer_name, customer_phone, nik, id_number, booking_date, expiry_date, down_payment, notes } = req.body;
+    const { vehicle_id, customer_name, customer_phone, nik, id_number, booking_date, expiry_date, down_payment, notes, payment_method } = req.body;
     
     // Application-level mandatory validation for NIK
     if (!nik) return res.status(400).json({ message: 'NIK (National ID Number) is mandatory' });
@@ -32,6 +32,7 @@ exports.createBooking = async (req, res) => {
       booked_by_agent_id: req.body.sales_agent_id || null,
       user_id: req.user.id,
       office_id: vehicle.office_id,
+      payment_method: payment_method || 'Cash',
       status: 'Active'
     }, { userId: req.user.id });
 
@@ -211,7 +212,7 @@ exports.getAllBookings = async (req, res) => {
 exports.confirmSale = async (req, res) => {
   try {
     const { vehicleId } = req.params;
-    const { sales_agent_id, sold_date, customer_name, customer_phone } = req.body;
+    const { sales_agent_id, sold_date, customer_name, customer_phone, payment_method } = req.body;
 
     const vehicle = await Vehicle.findOne({ where: { id: vehicleId, is_deleted: false } });
     if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
@@ -241,6 +242,7 @@ exports.confirmSale = async (req, res) => {
       // Jika ada booking aktif, update menjadi Sold
       const updateData = { 
         status: 'Sold',
+        payment_method: payment_method || booking.payment_method || 'Cash',
         sales_agent_id: sales_agent_id || booking.sales_agent_id 
       };
       if (deliveryPhotoPath) updateData.delivery_photo = deliveryPhotoPath;
@@ -261,6 +263,7 @@ exports.confirmSale = async (req, res) => {
         sales_agent_id: sales_agent_id || null,
         user_id: req.user.id,
         office_id: vehicle.office_id,
+        payment_method: payment_method || 'Cash',
         delivery_photo: deliveryPhotoPath
       }, { userId: req.user.id });
     }
@@ -370,6 +373,7 @@ exports.updateBooking = async (req, res) => {
       expiry_date: req.body.expiry_date,
       down_payment: req.body.down_payment,
       notes: req.body.notes,
+      payment_method: req.body.payment_method,
       sales_agent_id: req.body.sales_agent_id || null,
       booked_by_agent_id: req.body.sales_agent_id || null // Update also booked_by if it's still being edited
     }, { userId: req.user.id });

@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { 
   LayoutDashboard, Users, Building2, ShieldCheck, LogOut, Shield,
-  Menu, X, History, FileText, Sun, Moon, ChevronLeft, ChevronRight, UserCircle, Car, Tags, BarChart2, BarChart3, Search, Rocket, MapPin, Activity, DollarSign, Trash2
+  Menu, X, History, FileText, Sun, Moon, ChevronLeft, ChevronRight, UserCircle, Car, Tags, BarChart2, BarChart3, Search, Rocket, MapPin, Activity, DollarSign, Trash2, Image
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IMAGE_BASE_URL } from '../config';
@@ -70,6 +70,7 @@ const DashboardLayout = () => {
           { to: '/offices', icon: Building2, label: 'Daftar Kantor' },
           { to: '/sales-agents', icon: Users, label: 'Tim Sales' },
           { to: '/locations', icon: MapPin, label: 'Lokasi & Wilayah' },
+          { to: '/promotions', icon: Image, label: 'Media Promosi' },
           { to: '/catalog', icon: LayoutDashboard, label: 'Katalog Showroom', target: '_blank' },
         ]
       },

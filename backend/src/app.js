@@ -46,6 +46,7 @@ app.use('/api/sales-agents', salesAgentRoutes);
 app.use('/api/settings', settingRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/documents', require('./routes/documentRoutes'));
+app.use('/api/promotions', require('./routes/promotionRoutes'));
 
 
 app.get('/', (req, res) => {
