@@ -14,6 +14,17 @@ import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import ViewSwitcher from '../components/ui/ViewSwitcher';
 import { toast } from 'react-hot-toast';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
+
+const QUILL_MODULES = {
+  toolbar: [
+    [{ 'header': [1, 2, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+    ['link', 'clean']
+  ],
+};
 
 const Promotions = () => {
   const { user } = useAuth();
@@ -93,6 +104,16 @@ const Promotions = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+  };
+
+  const handleDescriptionChange = (content) => {
+    setFormData(prev => ({ ...prev, description: content }));
+  };
+
+  const stripHtml = (html) => {
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || "";
   };
 
   const handleImageChange = (e) => {
@@ -357,7 +378,7 @@ const Promotions = () => {
                 </div>
 
                 <h3 className="font-black text-gray-900 dark:text-white uppercase text-lg tracking-tight line-clamp-1 mb-2 leading-none">{promo.title}</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed mb-6 flex-1 italic">"{promo.description || 'Tidak ada keterangan tambahan'}"</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed mb-6 flex-1 italic">"{stripHtml(promo.description) || 'Tidak ada keterangan tambahan'}"</p>
                 
                 <div className="space-y-3 mb-6">
                   <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-800">
@@ -429,7 +450,7 @@ const Promotions = () => {
                         </div>
                         <div>
                           <p className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-tight">{promo.title}</p>
-                          <p className="text-[10px] text-gray-400 font-medium truncate max-w-[200px]">{promo.description || 'Tidak ada deskripsi'}</p>
+                          <p className="text-[10px] text-gray-400 font-medium truncate max-w-[200px]">{stripHtml(promo.description) || 'Tidak ada deskripsi'}</p>
                         </div>
                       </div>
                     </td>
@@ -541,16 +562,17 @@ const Promotions = () => {
                 required
                 icon={Layout}
               />
-              <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 px-1">Keterangan / Deskripsi Singkat</label>
-                <textarea 
-                  name="description"
-                  rows="3"
-                  className="input min-h-[100px] p-4 text-xs resize-none"
-                  placeholder="Tuliskan detail promosi atau CTA yang ingin disampaikan..."
-                  value={formData.description}
-                  onChange={handleInputChange}
-                />
+              <div className="space-y-3">
+                <label className="block text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1">Keterangan / Deskripsi Singkat</label>
+                <div className="quill-container">
+                  <ReactQuill 
+                    theme="snow"
+                    value={formData.description}
+                    onChange={handleDescriptionChange}
+                    modules={QUILL_MODULES}
+                    placeholder="Tuliskan detail promosi atau CTA yang ingin disampaikan..."
+                  />
+                </div>
               </div>
             </div>
 

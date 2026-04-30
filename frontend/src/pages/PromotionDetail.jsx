@@ -4,12 +4,14 @@ import api from '../services/api';
 import { 
   Calendar, MapPin, Globe, Building2, ChevronLeft, 
   ExternalLink, Sparkles, Share2, Clock, Info,
-  MessageCircle, X, Phone
+  MessageCircle, X, Phone, Sun, Moon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IMAGE_BASE_URL } from '../config';
+import { useTheme } from '../context/ThemeContext';
 
 const PromotionDetail = () => {
+  const { theme, toggleTheme } = useTheme();
   const { id } = useParams();
   const navigate = useNavigate();
   const [promo, setPromo] = useState(null);
@@ -113,12 +115,22 @@ const PromotionDetail = () => {
           >
             <ChevronLeft size={14} /> Kembali
           </button>
-          <button 
-            onClick={handleShare}
-            className="w-8 h-8 rounded-full bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center text-gray-400 hover:text-blue-500 transition-all"
-          >
-            <Share2 size={14} />
-          </button>
+          
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={toggleTheme}
+              className="w-8 h-8 rounded-full bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center text-gray-400 hover:text-blue-500 transition-all shadow-sm"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+            </button>
+            <button 
+              onClick={handleShare}
+              className="w-8 h-8 rounded-full bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center text-gray-400 hover:text-blue-500 transition-all shadow-sm"
+            >
+              <Share2 size={14} />
+            </button>
+          </div>
         </div>
 
         {/* 1. HEADER: JUDUL & PERIODE - COMPACT */}
@@ -176,10 +188,13 @@ const PromotionDetail = () => {
             <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
           </div>
 
-          {/* Single Detailed Description */}
-          <div className="max-w-2xl mx-auto">
-            <div className="text-gray-600 dark:text-gray-400 text-sm md:text-base leading-relaxed font-medium mb-10 px-4">
-              {promo.description || 'Dapatkan penawaran eksklusif ini dengan menghubungi sales agent kami.'}
+          {/* Detailed Description Card */}
+          <div className="w-full mb-10">
+            <div className="bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-white/10 rounded-[32px] p-6 shadow-sm backdrop-blur-sm overflow-hidden">
+              <div 
+                className="text-gray-600 dark:text-gray-400 text-sm md:text-base leading-relaxed font-medium prose dark:prose-invert prose-sm max-w-full text-left break-words overflow-wrap-anywhere"
+                dangerouslySetInnerHTML={{ __html: promo.description || 'Dapatkan penawaran eksklusif ini dengan menghubungi sales agent kami.' }}
+              />
             </div>
           </div>
 

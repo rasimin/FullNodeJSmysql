@@ -413,6 +413,12 @@ const Catalog = () => {
   const formatNumberDots = (val) => (!val && val !== 0) ? '' : parseInt(val).toLocaleString('id-ID');
   const parseNum = (str) => str.replace(/\./g, '').replace(/,/g, '');
 
+  // Utility to strip HTML tags for previews
+  const stripHtml = (html) => {
+    if (!html) return "";
+    return html.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+  };
+
   const handleContact = async (officeId) => {
     setShowContactModal(true); setAgentsLoading(true);
     try {
@@ -986,8 +992,8 @@ const Catalog = () => {
                                 Hingga {new Date(promo.end_date).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })}
                               </div>
                             </div>
-                            <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight mb-2 truncate">{promo.title}</h3>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed mb-6 italic">"{promo.description || 'Syarat dan ketentuan berlaku'}"</p>
+                            <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight mb-2">{promo.title}</h3>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed mb-6 italic">"{stripHtml(promo.description) || 'Syarat dan ketentuan berlaku'}"</p>
                             
                             <div className="w-full h-11 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-xl">
                               <Sparkles size={14} /> Lihat Detail Promo
