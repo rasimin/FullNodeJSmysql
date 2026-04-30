@@ -18,6 +18,7 @@ import Profile from './pages/Profile';
 import Reports from './pages/Reports';
 import SalesAgents from './pages/SalesAgents';
 import Catalog from './pages/Catalog';
+import PromotionDetail from './pages/PromotionDetail';
 import SecuritySettings from './pages/SecuritySettings';
 import Sessions from './pages/Sessions';
 import AdminSessions from './pages/AdminSessions';
@@ -68,6 +69,7 @@ function App() {
 
               {/* Standalone Page (New Tab) */}
               <Route path="/catalog" element={<Catalog />} />
+              <Route path="/promotion/:id" element={<PromotionDetail />} />
               <Route path="/landing-page" element={<LandingPage />} />
             </Route>
           </Routes>

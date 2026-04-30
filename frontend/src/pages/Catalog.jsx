@@ -3,7 +3,8 @@ import api from '../services/api';
 import {
   Search, Filter, Car, Bike, X, Image as ImageIcon,
   ChevronRight, ChevronLeft, Info, CheckCircle, ShoppingCart, Sparkles, TrendingUp,
-  Sun, Moon, UserCircle, LogOut, MapPin, MessageCircle, Phone, ExternalLink
+  Sun, Moon, UserCircle, LogOut, MapPin, MessageCircle, Phone, ExternalLink,
+  Globe, Tag, Building2, Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
@@ -263,6 +264,11 @@ const Catalog = () => {
   const [contactAgents, setContactAgents] = useState([]);
   const [agentsLoading, setAgentsLoading] = useState(false);
 
+  // Promotions State
+  const [promotions, setPromotions] = useState([]);
+  const [isPromoModalOpen, setIsPromoModalOpen] = useState(false);
+  const [promoLoading, setPromoLoading] = useState(false);
+
   // Infinite Scroll Observer
   const observer = useRef();
   const lastElementRef = useCallback(node => {
@@ -321,6 +327,28 @@ const Catalog = () => {
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
   }, []);
+
+  // Fetch Promotions
+  const fetchPromotions = useCallback(async () => {
+    try {
+      setPromoLoading(true);
+      const res = await api.get('/promotions', {
+        params: {
+          status: 'true',
+          office_id: filters.officeId || selectedLocation?.office_id || ''
+        }
+      });
+      setPromotions(res.data);
+    } catch (err) {
+      console.error('Error fetching promotions:', err);
+    } finally {
+      setPromoLoading(false);
+    }
+  }, [filters.officeId, selectedLocation]);
+
+  useEffect(() => {
+    fetchPromotions();
+  }, [fetchPromotions]);
 
   // Main Fetch Logic
   const fetchVehicles = useCallback(async () => {
@@ -414,7 +442,15 @@ const Catalog = () => {
               Katalog <span className="text-gray-400">Showroom</span>
             </h1>
             <p className="text-gray-500 dark:text-gray-400 text-lg font-light tracking-wide max-w-2xl">
-              Temukan unit impian Anda dengan standar kualitas terbaik dan proses yang transparan.
+              Temukan unit impian Anda dengan standar kualitas terbaik dan proses yang transparan. 
+              {promotions.length > 0 && (
+                <button 
+                  onClick={() => setIsPromoModalOpen(true)}
+                  className="ml-2 inline-flex items-center gap-1.5 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 font-bold underline decoration-2 underline-offset-4 cursor-pointer transition-all hover:scale-105 active:scale-95"
+                >
+                  <Sparkles size={16} /> Lihat promo klik disini
+                </button>
+              )}
             </p>
           </header>
         )}
@@ -858,6 +894,112 @@ const Catalog = () => {
                 <div className="p-8 bg-gray-50 dark:bg-black/20 text-center"> <p className="text-[9px] text-gray-400 font-bold uppercase tracking-[0.2em]">Hubungi agent resmi kami untuk transaksi aman.</p> </div>
               </motion.div>
             </div>
+          )}
+        </AnimatePresence>
+
+        {/* PROMOTIONS MODAL */}
+        <AnimatePresence>
+          {isPromoModalOpen && (
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+              onClick={() => setIsPromoModalOpen(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="relative w-full max-w-5xl max-h-[85vh] bg-white dark:bg-[#12141c] rounded-[40px] overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.5)] border border-gray-200 dark:border-white/10 flex flex-col"
+              >
+                {/* Modal Header */}
+                <div className="px-8 py-6 border-b border-gray-100 dark:border-white/5 flex items-center justify-between shrink-0">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-500">
+                      <Sparkles size={24} />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Penawaran Eksklusif</h2>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Dapatkan unit impian dengan promo terbaik</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setIsPromoModalOpen(false)}
+                    className="w-10 h-10 bg-gray-100 dark:bg-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 transition-all cursor-pointer"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                {/* Modal Body - Scrollable */}
+                <div className="p-8 overflow-y-auto no-scrollbar">
+                  {promoLoading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      {[1,2].map(i => <div key={i} className="h-64 bg-gray-100 dark:bg-white/5 rounded-[32px] animate-pulse" />)}
+                    </div>
+                  ) : promotions.length === 0 ? (
+                    <div className="text-center py-20">
+                      <ImageIcon size={48} className="mx-auto mb-4 opacity-10" />
+                      <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest">Belum ada promo tersedia untuk lokasi ini</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      {promotions.map((promo) => (
+                        <motion.div 
+                          key={promo.id}
+                          onClick={() => window.open(`/promotion/${promo.id}`, '_blank')}
+                          className="group relative bg-gray-50 dark:bg-white/5 rounded-[32px] overflow-hidden border border-gray-100 dark:border-white/5 hover:shadow-2xl transition-all duration-500 cursor-pointer"
+                        >
+                          <div className="aspect-[16/9] overflow-hidden relative">
+                            <img 
+                              src={IMAGE_BASE_URL + promo.image_path} 
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                              alt={promo.title}
+                            />
+                            <div className="absolute top-4 left-4">
+                              <span className="h-6 px-3 bg-blue-600 text-white text-[9px] font-black uppercase flex items-center rounded-full shadow-lg">
+                                {promo.placement}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="p-6">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="text-[10px] font-bold">
+                                {promo.office_id === null ? (
+                                  <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                                    <Globe size={12} /> Nasional
+                                  </span>
+                                ) : promo.is_all_branches ? (
+                                  <span className="text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                                    <Building2 size={12} /> {promo.Office?.name} (Regional)
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                                    <MapPin size={12} /> {promo.Office?.name}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[9px] font-bold text-gray-400 flex items-center gap-1">
+                                <Calendar size={12} />
+                                Hingga {new Date(promo.end_date).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })}
+                              </div>
+                            </div>
+                            <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight mb-2 truncate">{promo.title}</h3>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed mb-6 italic">"{promo.description || 'Syarat dan ketentuan berlaku'}"</p>
+                            
+                            <div className="w-full h-11 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-xl">
+                              <Sparkles size={14} /> Lihat Detail Promo
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
           )}
         </AnimatePresence>
       </div>

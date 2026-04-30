@@ -1,4 +1,4 @@
-const { Promotion, Office, User } = require('../models');
+const { Promotion, Office, User, Location } = require('../models');
 const path = require('path');
 const fs = require('fs');
 const { Op } = require('sequelize');
@@ -6,14 +6,14 @@ const { Op } = require('sequelize');
 exports.getPromotions = async (req, res) => {
   try {
     const { office_id, status, placement } = req.query;
-    const user = req.user;
-    const isSuperAdmin = user.Role?.name === 'Super Admin';
-    const userOfficeId = user.office_id;
-    const userParentId = user.Office?.parent_id;
+    const user = req.user || null;
+    const isSuperAdmin = user?.Role?.name === 'Super Admin';
+    const userOfficeId = user?.office_id;
+    const userParentId = user?.Office?.parent_id;
 
     const where = {};
     
-    if (!isSuperAdmin) {
+    if (user && !isSuperAdmin) {
       // Logic Hirarki Tertutup + Global Nasional:
       where[Op.or] = [
         { office_id: userOfficeId }, // Milik kantor sendiri
@@ -31,13 +31,60 @@ exports.getPromotions = async (req, res) => {
         }
       ];
 
-      // Jika HO melakukan filter ke cabang spesifik di bawahnya
+      // Jika melakukan filter ke kantor spesifik (misal dari Katalog)
       if (office_id) {
-        where.office_id = office_id;
-        delete where[Op.or];
+        // Kita perlu tahu parent_id dari kantor yang di-filter untuk menarik promo HO-nya
+        const targetOffice = await Office.findByPk(office_id);
+        const targetParentId = targetOffice?.parent_id;
+
+        where[Op.or] = [
+          { office_id: office_id }, // Promo cabang itu
+          { office_id: null },      // Promo Nasional
+          {
+            // Promo global dari HO kantor tersebut
+            [Op.and]: [
+              { is_all_branches: true },
+              { office_id: targetParentId || -1 }
+            ]
+          }
+        ];
+      }
+    } else if (isSuperAdmin) {
+      if (office_id) {
+        const targetOffice = await Office.findByPk(office_id);
+        const targetParentId = targetOffice?.parent_id;
+        
+        where[Op.or] = [
+          { office_id: office_id },
+          { office_id: null },
+          {
+            [Op.and]: [
+              { is_all_branches: true },
+              { office_id: targetParentId || -1 }
+            ]
+          }
+        ];
       }
     } else {
-      if (office_id) where.office_id = office_id;
+      // AKSES PUBLIK (Tanpa Login)
+      if (office_id) {
+        const targetOffice = await Office.findByPk(office_id);
+        const targetParentId = targetOffice?.parent_id;
+
+        where[Op.or] = [
+          { office_id: office_id }, 
+          { office_id: null },      
+          {
+            [Op.and]: [
+              { is_all_branches: true },
+              { office_id: targetParentId || -1 }
+            ]
+          }
+        ];
+      } else {
+        // Default: Hanya promo Nasional
+        where.office_id = null;
+      }
     }
 
     if (status !== undefined && status !== '') {
@@ -53,18 +100,19 @@ exports.getPromotions = async (req, res) => {
       include: [
         { 
           model: Office, 
-          attributes: ['name', 'parent_id'] 
+          include: [{ model: Location, as: 'location' }] 
         },
         { model: User, as: 'creator', attributes: ['name'] }
       ],
       order: [
         ['priority', 'DESC'],
-        ['created_at', 'DESC']
+        ['createdAt', 'DESC']
       ]
     });
 
     res.json(promotions);
   } catch (err) {
+    console.error('Get Promotions Error:', err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -180,6 +228,29 @@ exports.toggleStatus = async (req, res) => {
     if (!promotion) return res.status(404).json({ message: 'Promotion not found' });
 
     await promotion.update({ is_active: !promotion.is_active }, { userId: req.user.id });
+    res.json(promotion);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.getPromotionDetail = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const promotion = await Promotion.findByPk(id, {
+      include: [
+        {
+          model: Office,
+          include: [{ model: Location, as: 'location' }]
+        },
+        { model: User, as: 'creator', attributes: ['name'] }
+      ]
+    });
+
+    if (!promotion) {
+      return res.status(404).json({ message: 'Promo tidak ditemukan' });
+    }
+
     res.json(promotion);
   } catch (err) {
     res.status(500).json({ message: err.message });
