@@ -253,7 +253,8 @@ const getDeletedVehicles = async (req, res) => {
       offset,
       include: [
         { model: Office, attributes: ['name'] },
-        { model: User, attributes: ['name'] }
+        { model: User, attributes: ['name'] },
+        { model: VehicleImage, as: 'images', attributes: ['image_url', 'is_primary'] }
       ],
       order: [['deleted_at', sortOrder === 'ASC' ? 'ASC' : 'DESC']]
     });
