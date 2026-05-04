@@ -30,6 +30,7 @@ import Transactions from './pages/Transactions';
 import RecycleBin from './pages/RecycleBin';
 import Promotions from './pages/Promotions';
 import ProductDetail from './pages/ProductDetail';
+import ShowroomSettings from './pages/ShowroomSettings';
 import DashboardLayout from './layouts/DashboardLayout';
 
 function App() {
@@ -40,6 +41,10 @@ function App() {
           <Toaster position="top-right" reverseOrder={false} />
           <Routes>
             <Route path="/login" element={<Login />} />
+            
+            <Route path="/c/:slug" element={<Catalog />} />
+            <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/promotion/:id" element={<PromotionDetail />} />
             
             <Route element={<ProtectedRoute />}>
               {/* Layout for Admin Pages */}
@@ -65,13 +70,12 @@ function App() {
                 <Route path="/admin-sessions" element={<AdminSessions />} />
                 <Route path="/sales-report" element={<SalesReport />} />
                 <Route path="/analysis-report" element={<AnalysisReport />} />
+                <Route path="/showroom-settings" element={<ShowroomSettings />} />
                 <Route path="/old-dashboard" element={<Dashboard />} />
               </Route>
 
               {/* Standalone Page (New Tab) */}
               <Route path="/catalog" element={<Catalog />} />
-              <Route path="/promotion/:id" element={<PromotionDetail />} />
-              <Route path="/product/:id" element={<ProductDetail />} />
               <Route path="/landing-page" element={<LandingPage />} />
             </Route>
           </Routes>

@@ -31,6 +31,8 @@ const reportRoutes = require('./routes/reportRoutes');
 const salesAgentRoutes = require('./routes/salesAgents');
 const settingRoutes = require('./routes/settingRoutes');
 const locationRoutes = require('./routes/locationRoutes');
+const publicRoutes = require('./routes/publicRoutes');
+const showroomSettingRoutes = require('./routes/showroomSettingRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/roles', roleRoutes);
@@ -47,6 +49,8 @@ app.use('/api/settings', settingRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/documents', require('./routes/documentRoutes'));
 app.use('/api/promotions', require('./routes/promotionRoutes'));
+app.use('/api/public', publicRoutes);
+app.use('/api/showroom-settings', showroomSettingRoutes);
 
 
 app.get('/', (req, res) => {

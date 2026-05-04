@@ -17,6 +17,7 @@ const DocumentType = require('./DocumentType');
 const VehicleDocument = require('./VehicleDocument');
 const BookingDocument = require('./BookingDocument');
 const Promotion = require('./Promotion');
+const ShowroomSetting = require('./ShowroomSetting');
 
 // User Relationships
 User.belongsTo(Role, { foreignKey: 'role_id' });
@@ -91,6 +92,10 @@ Promotion.belongsTo(Office, { foreignKey: 'office_id' });
 Office.hasMany(Promotion, { foreignKey: 'office_id' });
 Promotion.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
 
+// Showroom Settings Relationship
+ShowroomSetting.belongsTo(Office, { foreignKey: 'head_office_id', as: 'office' });
+Office.hasOne(ShowroomSetting, { foreignKey: 'head_office_id', as: 'showroomSetting' });
+
 // Audit Trail Relationship
 AuditTrail.belongsTo(User, { foreignKey: 'user_id', onDelete: 'SET NULL' });
 
@@ -149,6 +154,7 @@ setupHooks(Location);
 setupHooks(VehicleDocument);
 setupHooks(BookingDocument);
 setupHooks(Promotion);
+setupHooks(ShowroomSetting);
 
 module.exports = {
   sequelize,
@@ -169,6 +175,7 @@ module.exports = {
   DocumentType,
   VehicleDocument,
   BookingDocument,
-  Promotion
+  Promotion,
+  ShowroomSetting
 };
 

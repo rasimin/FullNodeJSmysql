@@ -72,6 +72,7 @@ const DashboardLayout = () => {
           { to: '/locations', icon: MapPin, label: 'Lokasi & Wilayah' },
           { to: '/promotions', icon: Image, label: 'Media Promosi' },
           { to: '/catalog', icon: LayoutDashboard, label: 'Katalog Showroom', target: '_blank' },
+          { to: '/showroom-settings', icon: Rocket, label: 'Setelan Katalog' },
         ]
       },
     ];

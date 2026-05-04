@@ -36,11 +36,12 @@ const ProductDetail = () => {
   useEffect(() => {
     const fetchVehicleDetail = async () => {
       try {
-        setLoading(true);
         const realId = decryptId(encryptedId);
         if (!realId) throw new Error('ID tidak valid');
-        
-        const res = await api.get(`/vehicles/${realId}`);
+
+        const token = localStorage.getItem('token');
+        const endpoint = token ? `/vehicles/${realId}` : `/public/vehicle-detail/${realId}`;
+        const res = await api.get(endpoint);
         setVehicle(res.data);
       } catch (err) {
         console.error('Error fetching vehicle detail:', err);
@@ -57,7 +58,9 @@ const ProductDetail = () => {
     try {
       setAgentsLoading(true);
       setIsContactModalOpen(true);
-      const res = await api.get('/sales-agents/active', { 
+      const token = localStorage.getItem('token');
+      const endpoint = token ? '/sales-agents/active' : '/public/sales-agents';
+      const res = await api.get(endpoint, { 
         params: { officeId: vehicle.office_id || '' } 
       });
       setAgents(res.data);

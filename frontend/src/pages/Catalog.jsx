@@ -10,7 +10,8 @@ import { encryptId } from '../utils/crypto';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, NavLink, useLocation } from 'react-router-dom';
+import { useNavigate, NavLink, useLocation, useParams } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { IMAGE_BASE_URL } from '../config';
 
 // ----------------------------------------------------------------------
@@ -221,6 +222,23 @@ const SearchInput = React.memo(({ onSearch, allSuggestions, initialValue }) => {
 const Catalog = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
+  const { slug: pathSlug } = useParams();
+  
+  // Subdomain Readiness Logic
+  const getActiveSlug = () => {
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1' || /^(\d{1,3}\.){3}\d{1,3}$/.test(host)) {
+      return pathSlug;
+    }
+    const parts = host.split('.');
+    if (parts.length >= 3) return parts[0];
+    return pathSlug;
+  };
+
+  const slug = getActiveSlug();
+  const isPublicMode = !!slug;
+  const [showroomInfo, setShowroomInfo] = useState(null);
+  const [publicOffices, setPublicOffices] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -301,39 +319,67 @@ const Catalog = () => {
       setPillStyle({ left: bRect.left - cRect.left, width: bRect.width });
     }
   }, [filterType]);
-
   useLayoutEffect(() => { updatePillPosition(); }, [filterType, updatePillPosition]);
 
   // Initial Fetch & Refresh on Focus
   useEffect(() => {
-    const fetchInit = async () => {
+    const fetchPromos = async () => {
       try {
-        const [opt, off, brd] = await Promise.all([
-          api.get('/vehicles/filter-options'), 
-          api.get('/offices'),
-          api.get('/vehicles/brands') // No params = direct array from backend
-        ]);
-        
-        setFilterOptions(opt.data);
-        setOffices(off.data);
-        
-        // Backend returns direct array if no pagination params are sent
-        const brandsData = Array.isArray(brd.data) ? brd.data : (brd.data.items || []);
-        console.log('Catalog: Master Brands Loaded:', brandsData.length);
-        setMasterBrands(brandsData);
-        
-      } catch (err) { 
-        console.error('Catalog Init Error:', err); 
-      }
+        const endpoint = isPublicMode ? `/public/promotions/${slug}` : '/promotions';
+        const res = await api.get(endpoint);
+        setPromotions(res.data);
+      } catch (err) { console.error(err); }
     };
+    fetchPromos();
+  }, [isPublicMode, slug]);
 
+  useEffect(() => {
+    const fetchPublicOffices = async () => {
+      if (!isPublicMode) return;
+      try {
+        const res = await api.get(`/public/offices/${slug}`);
+        setPublicOffices(res.data);
+      } catch (err) { console.error(err); }
+    };
+    fetchPublicOffices();
+  }, [isPublicMode, slug]);
+
+  const fetchInit = useCallback(async () => {
+    try {
+      if (isPublicMode) {
+        const [opt, brd] = await Promise.all([
+          api.get(`/public/filter-options/${slug}`),
+          api.get('/public/brands')
+        ]);
+        setFilterOptions(opt.data);
+        setMasterBrands(brd.data);
+        return;
+      }
+
+      const [opt, off, brd] = await Promise.all([
+        api.get('/vehicles/filter-options'), 
+        api.get('/offices'),
+        api.get('/vehicles/brands')
+      ]);
+      
+      setFilterOptions(opt.data);
+      setOffices(off.data);
+      
+      const brandsData = Array.isArray(brd.data) ? brd.data : (brd.data.items || []);
+      setMasterBrands(brandsData);
+      
+    } catch (err) { 
+      console.error('Catalog Init Error:', err); 
+    }
+  }, [isPublicMode, slug]);
+
+  useEffect(() => {
     fetchInit();
-
-    // Refresh when user returns to this tab
+    
     const handleFocus = () => fetchInit();
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, []);
+  }, [fetchInit]);
 
   // Fetch Promotions
   const fetchPromotions = useCallback(async () => {
@@ -357,12 +403,27 @@ const Catalog = () => {
     fetchPromotions();
   }, [fetchPromotions]);
 
+  // 2. Fetch Showroom Info (Public Only)
+  useEffect(() => {
+    if (!isPublicMode) return;
+    const fetchShowroomInfo = async () => {
+      try {
+        const res = await api.get(`/public/showroom/${slug}`);
+        setShowroomInfo(res.data);
+      } catch (err) {
+        console.error('Error fetching showroom info:', err);
+      }
+    };
+    fetchShowroomInfo();
+  }, [isPublicMode, slug]);
+
   // Main Fetch Logic
   const fetchVehicles = useCallback(async () => {
     const isFirstPage = page === 1;
     if (isFirstPage) setLoading(true); else setMoreLoading(true);
     try {
-      const res = await api.get('/vehicles', {
+      const endpoint = isPublicMode ? `/public/vehicles/${slug}` : '/vehicles';
+      const res = await api.get(endpoint, {
         params: {
           status: 'Available', page, size: 15,
           search: finalSearchTerm, type: filterType,
@@ -380,7 +441,7 @@ const Catalog = () => {
       setTotalItems(res.data.totalItems);
     } catch (err) { console.error(err); }
     finally { setLoading(false); setMoreLoading(false); }
-  }, [page, finalSearchTerm, filterType, filters, selectedLocation]);
+  }, [isPublicMode, slug, page, finalSearchTerm, filterType, filters, selectedLocation]);
 
   useEffect(() => { fetchVehicles(); }, [fetchVehicles]);
 
@@ -398,17 +459,27 @@ const Catalog = () => {
   }, [masterBrands, filterType, filterOptions.brands]);
   const uniqueYears = useMemo(() => filterOptions.years, [filterOptions.years]);
   const hierarchicalOffices = useMemo(() => {
-    if (!offices || offices.length === 0) return [];
-    const heads = offices.filter(o => o.type === 'HEAD_OFFICE' || !o.parent_id);
+    const source = isPublicMode ? publicOffices : offices;
+    if (!source || source.length === 0) return [];
+
     const result = [];
+    // HO typically has type HEAD_OFFICE or no parent_id
+    const heads = source.filter(o => o.type === 'HEAD_OFFICE' || !o.parent_id);
+    
     heads.forEach(h => {
       result.push({ ...h, label: h.name });
-      offices.filter(o => o.parent_id === h.id).forEach(b => {
+      source.filter(o => o.parent_id === h.id).forEach(b => {
         result.push({ ...b, label: `\u00A0\u00A0\u00A0└── ${b.name}` });
       });
     });
+
+    // Fallback for public mode if hierarchy logic fails
+    if (isPublicMode && result.length === 0 && source.length > 0) {
+      return source.map(o => ({ ...o, label: o.name }));
+    }
+
     return result;
-  }, [offices]);
+  }, [offices, publicOffices, isPublicMode]);
   const searchableOptions = useMemo(() => {
     if (!vehicles || vehicles.length === 0) return [];
     return [...new Set([...vehicles.map(v => v.brand), ...vehicles.map(v => v.model)])];
@@ -448,14 +519,23 @@ const Catalog = () => {
 
   return (
     <div className={`relative min-h-screen bg-gray-100 dark:bg-[#0a0b0f] transition-colors duration-500 overflow-x-hidden overflow-y-scroll px-5 md:px-10 lg:px-14 pb-10 ${finalSearchTerm ? 'pt-4 md:pt-6' : 'pt-5 md:p-10 lg:p-14'}`}>
+      <Helmet>
+        <title>{showroomInfo?.title || 'Katalog Showroom'} | Bursa Mobil</title>
+        <meta name="description" content={showroomInfo?.description || 'Temukan unit impian Anda dengan standar kualitas terbaik.'} />
+        {/* Open Graph Tags */}
+        <meta property="og:title" content={showroomInfo?.title || 'Katalog Showroom'} />
+        <meta property="og:description" content={showroomInfo?.description || 'Temukan unit impian Anda.'} />
+        <meta property="og:type" content="website" />
+      </Helmet>
+
       <div className={`relative z-10 w-full max-w-5xl mx-auto ${finalSearchTerm ? 'space-y-10' : 'space-y-12'}`}>
         {!finalSearchTerm && (
           <header className="flex flex-col gap-3 pt-8 px-2 md:items-center md:text-center mb-12 animate-in fade-in duration-500">
             <h1 className="text-5xl md:text-7xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-none">
-              Katalog <span className="text-gray-400">Showroom</span>
+              {showroomInfo?.title || (isPublicMode ? 'Katalog' : 'Katalog')} <span className="text-gray-400">{showroomInfo?.title ? '' : 'Showroom'}</span>
             </h1>
             <p className="text-gray-500 dark:text-gray-400 text-lg font-light tracking-wide max-w-2xl">
-              Temukan unit impian Anda dengan standar kualitas terbaik dan proses yang transparan. 
+              {showroomInfo?.description || 'Temukan unit impian Anda dengan standar kualitas terbaik dan proses yang transparan.'}
               {promotions.length > 0 && (
                 <button 
                   onClick={() => setIsPromoModalOpen(true)}
@@ -478,15 +558,18 @@ const Catalog = () => {
           )}
           <div className="relative z-10 bg-white/95 dark:bg-[#12141c]/95 border border-gray-200 dark:border-white/10 p-2 md:p-2.5 rounded-[32px] md:rounded-[36px] shadow-2xl transition-all backdrop-blur-md">
             <div className="flex flex-wrap md:flex-nowrap items-center gap-x-2 gap-y-2">
-              <LocationSelector
-                selectedLocation={selectedLocation}
-                onSelectLocation={(loc) => { setSelectedLocation(loc); setPage(1); }}
-              />
-              <SearchInput
-                onSearch={(val) => { setFinalSearchTerm(val); setPage(1); }}
-                allSuggestions={searchableOptions}
-                initialValue={finalSearchTerm}
-              />
+              <div className="flex flex-col md:flex-row items-center gap-3 md:gap-4 flex-1 w-full">
+                {!isPublicMode && (
+                  <LocationSelector selectedLocation={selectedLocation} onSelectLocation={(loc) => { setSelectedLocation(loc); setPage(1); }} />
+                )}
+                
+                <SearchInput
+                  onSearch={(val) => { setFinalSearchTerm(val); setPage(1); }}
+                  allSuggestions={searchableOptions}
+                  initialValue={finalSearchTerm}
+                />
+              </div>
+
               <div className="flex items-center justify-between gap-2 w-full md:w-auto mt-0.5 md:mt-0">
                 <div ref={filterContainerRef} className="relative flex-1 md:flex-none flex items-center gap-1 p-1 bg-gray-100 dark:bg-black/20 rounded-full overflow-x-auto no-scrollbar">
                   <motion.div className="absolute top-1 bottom-1 rounded-full bg-gray-900 dark:bg-white shadow-xl z-0" animate={{ left: pillStyle.left, width: pillStyle.width }} transition={{ type: 'spring', stiffness: 350, damping: 30 }} />
@@ -513,24 +596,26 @@ const Catalog = () => {
                   <button onClick={toggleTheme} className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10 bg-gray-100 dark:bg-white/5 transition-colors">
                     {theme === 'dark' ? <Sun size={12} className="md:w-[14px] md:h-[14px]" /> : <Moon size={12} className="md:w-[14px] md:h-[14px]" />}
                   </button>
-                  <div className="relative">
-                    <button onClick={() => setShowUserMenu(!showUserMenu)} className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center text-gray-500 dark:text-gray-400 font-bold text-[9px] md:text-[10px] overflow-hidden border border-transparent hover:ring-2 hover:ring-gray-200 dark:hover:ring-white/10 transition-all">
-                      {user?.avatar ? <img src={`${IMAGE_BASE_URL}${user.avatar}`} alt="" className="w-full h-full object-cover" /> : (user?.name?.charAt(0)?.toUpperCase() || 'U')}
-                    </button>
-                    <AnimatePresence>
-                      {showUserMenu && (
-                        <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute right-0 top-full mt-3 w-48 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[20px] shadow-xl py-2 z-50 overflow-hidden">
-                          <div className="px-4 py-3 border-b border-gray-50 dark:border-gray-800">
-                            <p className="text-[10px] font-bold text-gray-900 dark:text-white truncate">{user?.name}</p>
-                            <p className="text-[8px] text-gray-400 uppercase tracking-widest mt-0.5">{user?.Role?.name || 'User'}</p>
-                          </div>
-                          <NavLink to="/profile" className="flex items-center gap-3 px-4 py-2 text-[10px] font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"> <UserCircle size={14} /> Profil </NavLink>
-                          <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-2 text-[10px] font-bold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"> <LogOut size={14} /> Keluar </button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                    {showUserMenu && <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />}
-                  </div>
+                  {!isPublicMode && (
+                    <div className="relative">
+                      <button onClick={() => setShowUserMenu(!showUserMenu)} className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center text-gray-500 dark:text-gray-400 font-bold text-[9px] md:text-[10px] overflow-hidden border border-transparent hover:ring-2 hover:ring-gray-200 dark:hover:ring-white/10 transition-all">
+                        {user?.avatar ? <img src={`${IMAGE_BASE_URL}${user.avatar}`} alt="" className="w-full h-full object-cover" /> : (user?.name?.charAt(0)?.toUpperCase() || 'U')}
+                      </button>
+                      <AnimatePresence>
+                        {showUserMenu && (
+                          <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute right-0 top-full mt-3 w-48 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[20px] shadow-xl py-2 z-50 overflow-hidden">
+                            <div className="px-4 py-3 border-b border-gray-50 dark:border-gray-800">
+                              <p className="text-[10px] font-bold text-gray-900 dark:text-white truncate">{user?.name}</p>
+                              <p className="text-[8px] text-gray-400 uppercase tracking-widest mt-0.5">{user?.Role?.name || 'User'}</p>
+                            </div>
+                            <NavLink to="/profile" className="flex items-center gap-3 px-4 py-2 text-[10px] font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"> <UserCircle size={14} /> Profil </NavLink>
+                            <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-2 text-[10px] font-bold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"> <LogOut size={14} /> Keluar </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                      {showUserMenu && <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
