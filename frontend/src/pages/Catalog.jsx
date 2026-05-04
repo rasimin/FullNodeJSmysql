@@ -4,8 +4,9 @@ import {
   Search, Filter, Car, Bike, X, Image as ImageIcon,
   ChevronRight, ChevronLeft, Info, CheckCircle, ShoppingCart, Sparkles, TrendingUp,
   Sun, Moon, UserCircle, LogOut, MapPin, MessageCircle, Phone, ExternalLink,
-  Globe, Tag, Building2, Calendar
+  Globe, Tag, Building2, Calendar, Maximize2
 } from 'lucide-react';
+import { encryptId } from '../utils/crypto';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -284,6 +285,12 @@ const Catalog = () => {
   const filterContainerRef = useRef(null);
   const filterButtonRefs = useRef({});
   const [pillStyle, setPillStyle] = useState({ left: 0, width: 0 });
+  const thumbRef = useRef(null);
+  const scrollThumbs = (dir) => {
+    if (thumbRef.current) {
+      thumbRef.current.scrollBy({ left: dir === 'left' ? -200 : 200, behavior: 'smooth' });
+    }
+  };
 
   const updatePillPosition = useCallback(() => {
     const btn = filterButtonRefs.current[filterType || ''];
@@ -440,7 +447,7 @@ const Catalog = () => {
   };
 
   return (
-    <div className={`relative min-h-screen bg-slate-50 dark:bg-[#0a0b0f] transition-colors duration-500 overflow-x-hidden overflow-y-scroll px-5 md:px-10 lg:px-14 pb-10 ${finalSearchTerm ? 'pt-4 md:pt-6' : 'pt-5 md:p-10 lg:p-14'}`}>
+    <div className={`relative min-h-screen bg-gray-100 dark:bg-[#0a0b0f] transition-colors duration-500 overflow-x-hidden overflow-y-scroll px-5 md:px-10 lg:px-14 pb-10 ${finalSearchTerm ? 'pt-4 md:pt-6' : 'pt-5 md:p-10 lg:p-14'}`}>
       <div className={`relative z-10 w-full max-w-5xl mx-auto ${finalSearchTerm ? 'space-y-10' : 'space-y-12'}`}>
         {!finalSearchTerm && (
           <header className="flex flex-col gap-3 pt-8 px-2 md:items-center md:text-center mb-12 animate-in fade-in duration-500">
@@ -482,13 +489,13 @@ const Catalog = () => {
               />
               <div className="flex items-center justify-between gap-2 w-full md:w-auto mt-0.5 md:mt-0">
                 <div ref={filterContainerRef} className="relative flex-1 md:flex-none flex items-center gap-1 p-1 bg-gray-100 dark:bg-black/20 rounded-full overflow-x-auto no-scrollbar">
-                  <motion.div className="absolute top-1 bottom-1 rounded-full bg-white dark:bg-white shadow-sm z-0" animate={{ left: pillStyle.left, width: pillStyle.width }} transition={{ type: 'spring', stiffness: 350, damping: 30 }} />
+                  <motion.div className="absolute top-1 bottom-1 rounded-full bg-gray-900 dark:bg-white shadow-xl z-0" animate={{ left: pillStyle.left, width: pillStyle.width }} transition={{ type: 'spring', stiffness: 350, damping: 30 }} />
                   {FILTER_OPTIONS.map(opt => (
                     <button
                       key={opt.value}
                       ref={el => filterButtonRefs.current[opt.value] = el}
                       onClick={() => { setFilterType(opt.value); setPage(1); }}
-                      className={`relative z-10 whitespace-nowrap h-9 rounded-full text-[11px] font-bold transition-colors duration-200 flex items-center justify-center gap-2 ${!opt.value ? 'px-6 flex-1 md:flex-none' : 'w-11 md:w-12 flex-shrink-0'} ${filterType === opt.value ? 'text-gray-900 dark:text-gray-900' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                      className={`relative z-10 whitespace-nowrap h-9 rounded-full text-[11px] font-bold transition-colors duration-200 flex items-center justify-center gap-2 ${!opt.value ? 'px-6 flex-1 md:flex-none' : 'w-11 md:w-12 flex-shrink-0'} ${filterType === opt.value ? 'text-white dark:text-gray-900' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
                     >
                       {opt.value === 'Mobil' && <Car size={16} />}
                       {opt.value === 'Motor' && <Bike size={18} />}
@@ -701,7 +708,10 @@ const Catalog = () => {
                       </div>
                     </div>
                     <div className="px-5 pb-5">
-                      <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">{v.brand} • {v.year}</p>
+                      <div className="flex justify-between items-center mb-1">
+                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{v.brand} • {v.year}</p>
+                        <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest">{v.unit_code}</span>
+                      </div>
                       <h3 className="text-sm md:text-base font-bold text-gray-900 dark:text-white truncate mb-2 uppercase tracking-tight">{v.model}</h3>
                       
                       {/* Location & Branch */}
@@ -768,42 +778,75 @@ const Catalog = () => {
 
                   {/* Navigation Thumbnails */}
                   {selectedVehicle.images?.length > 1 && (
-                    <div className="absolute bottom-4 md:bottom-8 left-0 right-0 flex justify-center gap-3 px-6 overflow-x-auto no-scrollbar z-20">
-                      <div className="flex gap-2 md:gap-3 p-1.5 md:p-2.5 bg-black/40 backdrop-blur-2xl rounded-[20px] md:rounded-[28px] border border-white/10 shadow-2xl">
-                        {selectedVehicle.images.map((img, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => setActiveImageIndex(idx)}
-                            className={`w-10 h-10 md:w-16 md:h-16 rounded-[12px] md:rounded-[20px] overflow-hidden border-2 transition-all shrink-0 ${activeImageIndex === idx ? 'border-white scale-110 shadow-xl' : 'border-transparent opacity-40 hover:opacity-100 hover:scale-105'}`}
-                          >
-                            <img src={`${IMAGE_BASE_URL}${img.image_url}`} className="w-full h-full object-cover" alt="" />
-                          </button>
-                        ))}
+                    <div className="absolute bottom-4 md:bottom-8 left-0 right-0 px-6 z-20 flex justify-center group/thumbs">
+                      <div className="relative max-w-full">
+                        {/* Scroll Arrows */}
+                        <button 
+                          onClick={() => scrollThumbs('left')}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/60 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-white opacity-100 md:opacity-0 md:group-hover/thumbs:opacity-100 transition-all z-40 hover:scale-110 active:scale-95 shadow-lg"
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+                        <button 
+                          onClick={() => scrollThumbs('right')}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/60 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-white opacity-100 md:opacity-0 md:group-hover/thumbs:opacity-100 transition-all z-40 hover:scale-110 active:scale-95 shadow-lg"
+                        >
+                          <ChevronRight size={16} />
+                        </button>
+
+                        <div 
+                          ref={thumbRef}
+                          className="flex gap-2 md:gap-3 p-1.5 md:p-2.5 bg-black/40 backdrop-blur-2xl rounded-[20px] md:rounded-[28px] border border-white/10 shadow-2xl overflow-x-auto no-scrollbar scroll-smooth"
+                        >
+                          {selectedVehicle.images.map((img, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => setActiveImageIndex(idx)}
+                              className={`w-10 h-10 md:w-16 md:h-16 rounded-[12px] md:rounded-[20px] overflow-hidden border-2 transition-all shrink-0 ${activeImageIndex === idx ? 'border-white scale-110 shadow-xl' : 'border-transparent opacity-40 hover:opacity-100 hover:scale-105'}`}
+                            >
+                              <img src={`${IMAGE_BASE_URL}${img.image_url}`} className="w-full h-full object-cover" alt="" />
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Close Button Mobile Header */}
-                  <button
-                    onClick={() => setSelectedVehicle(null)}
-                    className="absolute top-4 left-4 md:top-8 md:left-8 w-10 h-10 md:w-12 md:h-12 bg-black/40 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-black/60 transition-all z-30 shadow-2xl"
-                  >
-                    <X size={24} />
-                  </button>
+                  {/* Actions Header (Close & Maximize) */}
+                  <div className="absolute top-4 right-4 flex items-center gap-2 z-50">
+                    <button
+                      onClick={() => {
+                        const encId = encryptId(selectedVehicle.id);
+                        window.open(`/product/${encId}`, '_blank');
+                      }}
+                      className="w-8 h-8 md:w-10 md:h-10 bg-black/20 hover:bg-blue-600 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center text-white transition-all shadow-xl group"
+                      title="Buka di tab baru"
+                    >
+                      <Maximize2 size={16} className="group-hover:scale-110 transition-transform" />
+                    </button>
+                    <button
+                      onClick={() => setSelectedVehicle(null)}
+                      className="w-8 h-8 md:w-10 md:h-10 bg-black/20 hover:bg-red-500 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center text-white transition-all shadow-xl group"
+                    >
+                      <X size={20} className="group-hover:rotate-90 transition-transform" />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="w-full md:w-[40%] p-6 md:p-8 flex flex-col overflow-hidden bg-white dark:bg-[#0a0b0f]">
+                <div className="w-full md:w-[40%] p-6 md:p-8 flex flex-col overflow-hidden bg-[#f8fafc] dark:bg-[#0a0b0f]">
                   {/* Scrollable Content Area */}
                   <div className="flex-1 overflow-y-auto no-scrollbar pr-1">
-                    <div className="mb-6">
-
-                      <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.4em] mb-1">{selectedVehicle.brand} • {selectedVehicle.year}</p>
+                    <div className="mb-6 bg-white dark:bg-white/[0.03] p-6 rounded-3xl border border-gray-200 dark:border-white/5 shadow-sm">
+                      <div className="flex justify-between items-center mb-1">
+                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.4em]">{selectedVehicle.brand} • {selectedVehicle.year}</p>
+                        <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest bg-blue-600/5 px-2 py-0.5 rounded-md border border-blue-500/10">{selectedVehicle.unit_code}</span>
+                      </div>
                       <h2 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight mb-4 leading-tight">{selectedVehicle.model}</h2>
                       <div className="text-2xl font-black text-blue-600 dark:text-blue-400 font-mono tracking-tighter">{formatPrice(selectedVehicle.price)}</div>
                     </div>
 
                     {/* Unified Vehicle Info Box */}
-                    <div className="p-4 md:p-5 bg-gray-50 dark:bg-white/5 rounded-[16px] md:rounded-[20px] border border-gray-100 dark:border-white/5 mb-4 md:mb-6">
+                    <div className="p-4 md:p-5 bg-white dark:bg-white/5 rounded-[20px] md:rounded-[24px] border border-gray-200 dark:border-white/5 mb-4 md:mb-6 shadow-sm">
                       {/* Compact Specs Grid */}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-y-3 gap-x-4 md:gap-4 mb-4 md:mb-5">
                         {[
@@ -820,11 +863,11 @@ const Catalog = () => {
                       </div>
 
                       {/* Divider */}
-                      <div className="h-px bg-gray-200 dark:bg-white/10 mb-4 md:mb-5" />
+                      <div className="h-px bg-gray-100 dark:bg-white/10 mb-4 md:mb-5" />
 
                       {/* Location Info */}
                       <div className="flex items-center gap-3 md:gap-4">
-                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-blue-600/10 text-blue-600 flex items-center justify-center shrink-0"> <MapPin size={16} className="md:w-[18px] md:h-[18px]" /> </div>
+                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-blue-600/20"> <MapPin size={16} className="md:w-[18px] md:h-[18px]" /> </div>
                         <div className="min-w-0">
                           <p className="text-[7px] md:text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5">Lokasi</p>
                           <p className="text-xs md:text-sm font-bold text-gray-900 dark:text-white truncate">{selectedVehicle.Office?.name}</p>

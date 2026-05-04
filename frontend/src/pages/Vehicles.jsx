@@ -1046,12 +1046,19 @@ const Vehicles = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden ${v.type === 'Mobil' ? 'bg-indigo-50 text-indigo-600' : 'bg-orange-50 text-orange-600'}`}>
-                          {v.images?.length > 0 ? <img src={`${IMAGE_BASE_URL}${v.images[0].image_url}`} className="w-full h-full object-cover" alt="Unit" loading="lazy" /> : <Car size={20} />}
+                          {v.images?.length > 0 ? (
+                            <img 
+                              src={`${IMAGE_BASE_URL}${v.images.find(img => img.is_primary)?.image_url || v.images[0].image_url}`} 
+                              className="w-full h-full object-cover" 
+                              alt="Unit" 
+                              loading="lazy" 
+                            />
+                          ) : <Car size={20} />}
                         </div>
                         <div>
                           <p className="text-sm font-black text-gray-900 dark:text-gray-100">{v.brand} {v.model}</p>
-                          <div className="flex items-center gap-2">
-                            <p className="text-[10px] text-gray-400 font-bold uppercase whitespace-nowrap">{v.type} • {v.year} • {v.plate_number}</p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-[10px] text-gray-400 font-bold uppercase whitespace-nowrap">{v.type} • {v.year} • {v.unit_code} • {v.plate_number}</p>
                             {v.status === 'Available' && (
                               <span className={`px-1.5 py-0.5 rounded text-[7px] font-black uppercase ${
                                 (Math.ceil((new Date() - new Date(v.entry_date)) / (1000 * 60 * 60 * 24))) > 60 ? 'bg-red-100 text-red-600' : 
@@ -1131,7 +1138,10 @@ const Vehicles = () => {
                     {displayImage ? <img src={`${IMAGE_BASE_URL}${displayImage}`} className="w-full h-full object-cover" loading="lazy" /> : <div className="w-full h-full flex items-center justify-center text-gray-300"><ImageIcon size={20} /></div>}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-xs font-black text-gray-900 dark:text-white line-clamp-2 uppercase tracking-tight mb-1 leading-tight">{v.model}</h4>
+                    <div className="flex flex-col mb-1 leading-tight">
+                      <span className="text-[8px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-0.5">{v.unit_code} • {v.plate_number}</span>
+                      <h4 className="text-xs font-black text-gray-900 dark:text-white line-clamp-2 uppercase tracking-tight">{v.model}</h4>
+                    </div>
                     <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mb-1 leading-relaxed">
                       {v.type} <span className="text-blue-500/50 mx-1">/</span> {v.brand} <span className="text-blue-500/50 mx-1">/</span> {v.plate_number} <span className="text-blue-500/50 mx-1">/</span> {v.year}
                     </p>
@@ -1263,6 +1273,7 @@ const Vehicles = () => {
                 <div className="space-y-6">
                   <div className="flex items-center gap-3"><div className="w-1 h-5 bg-blue-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Detail Spesifikasi</h4></div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <Input label="Kode Unit" value={formData.unit_code || '-'} readOnly className="bg-blue-50/30 dark:bg-blue-900/10 text-blue-600 font-black" />
                     <Select
                       label="Kategori"
                       value={formData.type}

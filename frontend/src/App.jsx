@@ -29,6 +29,7 @@ import FinanceReport from './pages/FinanceReport';
 import Transactions from './pages/Transactions';
 import RecycleBin from './pages/RecycleBin';
 import Promotions from './pages/Promotions';
+import ProductDetail from './pages/ProductDetail';
 import DashboardLayout from './layouts/DashboardLayout';
 
 function App() {
@@ -70,6 +71,7 @@ function App() {
               {/* Standalone Page (New Tab) */}
               <Route path="/catalog" element={<Catalog />} />
               <Route path="/promotion/:id" element={<PromotionDetail />} />
+              <Route path="/product/:id" element={<ProductDetail />} />
               <Route path="/landing-page" element={<LandingPage />} />
             </Route>
           </Routes>

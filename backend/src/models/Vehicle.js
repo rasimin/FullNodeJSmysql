@@ -23,6 +23,11 @@ const Vehicle = sequelize.define('Vehicle', {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
+  unit_code: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    unique: true,
+  },
   plate_number: {
     type: DataTypes.STRING(20),
     allowNull: false,
@@ -100,6 +105,24 @@ const Vehicle = sequelize.define('Vehicle', {
   tableName: 'vehicles',
   timestamps: true,
   underscored: true,
+});
+
+// Hooks for auto-generating unit_code
+Vehicle.afterCreate(async (vehicle, options) => {
+  const brand = (vehicle.brand || 'UNK').substring(0, 3).toUpperCase();
+  const year = vehicle.year ? vehicle.year.toString().slice(-2) : '00';
+  const shortId = vehicle.id.toString(36).toUpperCase().padStart(3, '0');
+  vehicle.unit_code = `${brand}${year}-${shortId}`;
+  await vehicle.save({ transaction: options.transaction });
+});
+
+Vehicle.beforeUpdate(async (vehicle, options) => {
+  if (vehicle.changed('brand') || vehicle.changed('year')) {
+    const brand = (vehicle.brand || 'UNK').substring(0, 3).toUpperCase();
+    const year = vehicle.year ? vehicle.year.toString().slice(-2) : '00';
+    const shortId = vehicle.id.toString(36).toUpperCase().padStart(3, '0');
+    vehicle.unit_code = `${brand}${year}-${shortId}`;
+  }
 });
 
 module.exports = Vehicle;

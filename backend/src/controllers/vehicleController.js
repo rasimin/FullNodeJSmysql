@@ -136,6 +136,7 @@ const getVehicles = async (req, res) => {
         { brand: { [Op.like]: `%${search}%` } },
         { model: { [Op.like]: `%${search}%` } },
         { plate_number: { [Op.like]: `%${search}%` } },
+        { unit_code: { [Op.like]: `%${search}%` } },
       ];
     }
 
@@ -244,6 +245,7 @@ const getDeletedVehicles = async (req, res) => {
         { brand: { [Op.like]: `%${search}%` } },
         { model: { [Op.like]: `%${search}%` } },
         { plate_number: { [Op.like]: `%${search}%` } },
+        { unit_code: { [Op.like]: `%${search}%` } },
       ];
     }
 
