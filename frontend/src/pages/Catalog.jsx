@@ -221,7 +221,7 @@ const SearchInput = React.memo(({ onSearch, allSuggestions, initialValue }) => {
 
 const Catalog = () => {
   const { theme, toggleTheme } = useTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, loading: authLoading } = useAuth();
   const { slug: pathSlug } = useParams();
   
   // Subdomain Readiness Logic
@@ -238,9 +238,13 @@ const Catalog = () => {
   const slug = getActiveSlug();
   const isPublicMode = !!slug;
   const [showroomInfo, setShowroomInfo] = useState(null);
+  const [infoLoading, setInfoLoading] = useState(isPublicMode);
   const [publicOffices, setPublicOffices] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   // Data States
   const [vehicles, setVehicles] = useState([]);
@@ -321,18 +325,6 @@ const Catalog = () => {
   }, [filterType]);
   useLayoutEffect(() => { updatePillPosition(); }, [filterType, updatePillPosition]);
 
-  // Initial Fetch & Refresh on Focus
-  useEffect(() => {
-    const fetchPromos = async () => {
-      try {
-        const endpoint = isPublicMode ? `/public/promotions/${slug}` : '/promotions';
-        const res = await api.get(endpoint);
-        setPromotions(res.data);
-      } catch (err) { console.error(err); }
-    };
-    fetchPromos();
-  }, [isPublicMode, slug]);
-
   useEffect(() => {
     const fetchPublicOffices = async () => {
       if (!isPublicMode) return;
@@ -385,19 +377,24 @@ const Catalog = () => {
   const fetchPromotions = useCallback(async () => {
     try {
       setPromoLoading(true);
-      const res = await api.get('/promotions', {
-        params: {
-          status: 'true',
-          office_id: filters.officeId || selectedLocation?.office_id || ''
-        }
-      });
-      setPromotions(res.data);
+      if (isPublicMode) {
+        const res = await api.get(`/public/promotions/${slug}`);
+        setPromotions(res.data);
+      } else {
+        const res = await api.get('/promotions', {
+          params: {
+            status: 'true',
+            office_id: filters.officeId || selectedLocation?.office_id || ''
+          }
+        });
+        setPromotions(res.data);
+      }
     } catch (err) {
       console.error('Error fetching promotions:', err);
     } finally {
       setPromoLoading(false);
     }
-  }, [filters.officeId, selectedLocation]);
+  }, [isPublicMode, slug, filters.officeId, selectedLocation]);
 
   useEffect(() => {
     fetchPromotions();
@@ -407,11 +404,14 @@ const Catalog = () => {
   useEffect(() => {
     if (!isPublicMode) return;
     const fetchShowroomInfo = async () => {
+      setInfoLoading(true);
       try {
         const res = await api.get(`/public/showroom/${slug}`);
         setShowroomInfo(res.data);
       } catch (err) {
         console.error('Error fetching showroom info:', err);
+      } finally {
+        setInfoLoading(false);
       }
     };
     fetchShowroomInfo();
@@ -517,8 +517,10 @@ const Catalog = () => {
     if (raw === '' || /^\d+$/.test(raw)) { setFilters({ ...filters, [key]: raw }); setPage(1); }
   };
 
+  const isNeutral = !isPublicMode || (showroomInfo && showroomInfo.theme_color === 'default' && !showroomInfo.header_image);
+
   return (
-    <div className={`relative min-h-screen bg-gray-100 dark:bg-[#0a0b0f] transition-colors duration-500 overflow-x-hidden overflow-y-scroll px-5 md:px-10 lg:px-14 pb-10 ${finalSearchTerm ? 'pt-4 md:pt-6' : 'pt-5 md:p-10 lg:p-14'}`}>
+    <div className={`relative min-h-screen bg-gray-100 dark:bg-[#0a0b0f] ${mounted ? 'transition-colors duration-500' : ''} overflow-x-hidden overflow-y-scroll pb-10`}>
       <Helmet>
         <title>{showroomInfo?.title || 'Katalog Showroom'} | Bursa Mobil</title>
         <meta name="description" content={showroomInfo?.description || 'Temukan unit impian Anda dengan standar kualitas terbaik.'} />
@@ -528,27 +530,128 @@ const Catalog = () => {
         <meta property="og:type" content="website" />
       </Helmet>
 
-      <div className={`relative z-10 w-full max-w-5xl mx-auto ${finalSearchTerm ? 'space-y-10' : 'space-y-12'}`}>
-        {!finalSearchTerm && (
-          <header className="flex flex-col gap-3 pt-8 px-2 md:items-center md:text-center mb-12 animate-in fade-in duration-500">
-            <h1 className="text-5xl md:text-7xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-none">
-              {showroomInfo?.title || (isPublicMode ? 'Katalog' : 'Katalog')} <span className="text-gray-400">{showroomInfo?.title ? '' : 'Showroom'}</span>
-            </h1>
-            <p className="text-gray-500 dark:text-gray-400 text-lg font-light tracking-wide max-w-2xl">
-              {showroomInfo?.description || 'Temukan unit impian Anda dengan standar kualitas terbaik dan proses yang transparan.'}
+      {/* FULL WIDTH HERO SECTION */}
+      {!finalSearchTerm && (
+        <div className={`relative w-full overflow-hidden transition-all duration-700 ${
+          infoLoading ? 'bg-transparent h-[120px] md:h-[200px]' :
+          isNeutral ? 'bg-transparent pb-4 md:pb-6' : 
+          `shadow-2xl ${
+            showroomInfo?.theme_color === 'indigo' ? 'bg-indigo-900' :
+            showroomInfo?.theme_color === 'purple' ? 'bg-purple-900' :
+            showroomInfo?.theme_color === 'slate' ? 'bg-slate-900' :
+            showroomInfo?.theme_color === 'emerald' ? 'bg-emerald-900' :
+            showroomInfo?.theme_color === 'rose' ? 'bg-rose-900' : 'bg-blue-900'
+          }`
+        }`}>
+          {/* Content Wrapper with Fade */}
+          <div className={`transition-opacity duration-500 ${infoLoading ? 'opacity-0' : 'opacity-100'}`}>
+            {!infoLoading && (
+              <>
+                {/* Dynamic Background */}
+                  {!isNeutral && (
+                    <div className="absolute inset-0 z-0">
+                     {showroomInfo?.header_image ? (
+                       <>
+                         <img src={`${IMAGE_BASE_URL}${showroomInfo.header_image}`} className="w-full h-full object-cover" alt="Header" />
+                         {/* Color Tone Overlay - Only if not default */}
+                         {showroomInfo?.theme_color && showroomInfo?.theme_color !== 'default' ? (
+                           <div className={`absolute inset-0 mix-blend-multiply ${
+                              showroomInfo?.theme_color === 'indigo' ? 'bg-indigo-950/70' :
+                              showroomInfo?.theme_color === 'purple' ? 'bg-purple-950/70' :
+                              showroomInfo?.theme_color === 'slate' ? 'bg-slate-950/70' :
+                              showroomInfo?.theme_color === 'emerald' ? 'bg-emerald-950/70' :
+                              showroomInfo?.theme_color === 'rose' ? 'bg-rose-950/70' : 'bg-blue-950/70'
+                           }`}></div>
+                         ) : (
+                           // Subtle dark overlay to ensure text is readable even without tone color
+                           <div className="absolute inset-0 bg-black/30 bg-gradient-to-t from-black/60 to-transparent"></div>
+                         )}
+                       </>
+                     ) : (
+                       <div className={`absolute inset-0 opacity-90 bg-gradient-to-br ${
+                          showroomInfo?.theme_color === 'indigo' ? 'from-[#1e1b4b] via-[#3730a3] to-[#6366f1]' :
+                          showroomInfo?.theme_color === 'purple' ? 'from-[#3b0764] via-[#6b21a8] to-[#a855f7]' :
+                          showroomInfo?.theme_color === 'slate' ? 'from-[#0f172a] via-[#334155] to-[#64748b]' :
+                          showroomInfo?.theme_color === 'emerald' ? 'from-[#022c22] via-[#047857] to-[#10b981]' :
+                          showroomInfo?.theme_color === 'rose' ? 'from-[#4c0519] via-[#be123c] to-[#f43f5e]' :
+                          'from-[#0f172a] via-[#1e3a8a] to-[#3b82f6]'
+                       }`}></div>
+                     )}
+                  </div>
+                )}
+
+          {/* Top Navbar */}
+          <nav className="relative z-20 flex items-center justify-between px-5 md:px-10 lg:px-14 max-w-7xl mx-auto py-4 md:py-6">
+                {/* Logo & Name Card */}
+                <div className={`flex items-center gap-3 px-3 py-2 rounded-2xl border-2 backdrop-blur-md transition-all duration-300 ${
+                  isNeutral ? 'bg-white/80 dark:bg-white/5 border-gray-200 dark:border-white/10 shadow-sm' : 'bg-black/20 border-white/30'
+                }`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden ${isNeutral ? 'bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 shadow-sm' : 'bg-white/10 backdrop-blur-md border border-white/20 text-white'}`}>
+                    {showroomInfo?.office?.logo ? <img src={`${IMAGE_BASE_URL}${showroomInfo.office.logo}`} className="w-full h-full object-cover" alt="Logo" /> : <Building2 size={20} />}
+                  </div>
+                  <div className="hidden md:block">
+                    <h2 className={`text-sm font-bold leading-tight ${isNeutral ? 'text-gray-900 dark:text-white' : 'text-white'}`}>{showroomInfo?.office?.name || 'AutoNusa'}</h2>
+                    <p className={`text-[10px] uppercase tracking-widest ${isNeutral ? 'text-gray-500' : 'text-blue-200'}`}>Showroom Platform</p>
+                  </div>
+                </div>
+               
+                {/* Navigation Links Card */}
+                {isPublicMode && (
+                  <div className={`hidden lg:flex items-center gap-8 px-8 py-3 rounded-full border-2 backdrop-blur-md transition-all duration-300 text-sm font-bold ${
+                    isNeutral ? 'bg-white/80 dark:bg-white/5 border-gray-200 dark:border-white/10 shadow-sm text-gray-600 dark:text-gray-400' : 'bg-black/20 border-white/30 text-white'
+                  }`}>
+                    <NavLink to={`/c/${slug}`} className={({isActive}) => `transition-colors ${isActive ? (isNeutral ? 'text-blue-600' : 'text-blue-300') : (isNeutral ? 'hover:text-blue-600 dark:hover:text-white' : 'hover:text-blue-300')}`}>Katalog</NavLink>
+                    <a href="#" onClick={(e) => { e.preventDefault(); setIsPromoModalOpen(true); }} className={`transition-colors ${isNeutral ? 'hover:text-blue-600 dark:hover:text-white' : 'hover:text-blue-300'}`}>Promo</a>
+                    <NavLink to={`/c/${slug}/about`} className={({isActive}) => `transition-colors ${isActive ? (isNeutral ? 'text-blue-600' : 'text-blue-300') : (isNeutral ? 'hover:text-blue-600 dark:hover:text-white' : 'hover:text-blue-300')}`}>Tentang Kami</NavLink>
+                    <NavLink to={`/c/${slug}/contact`} className={({isActive}) => `transition-colors ${isActive ? (isNeutral ? 'text-blue-600' : 'text-blue-300') : (isNeutral ? 'hover:text-blue-600 dark:hover:text-white' : 'hover:text-blue-300')}`}>Kontak</NavLink>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3">
+                  {!authLoading && (
+                    <div className={`flex items-center gap-2 p-1 rounded-full border backdrop-blur-md ${isNeutral ? 'bg-white/80 dark:bg-white/5 border-gray-200 dark:border-white/10' : 'bg-black/20 border-white/20'}`}>
+                      <button onClick={toggleTheme} className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isNeutral ? 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10' : 'text-white hover:bg-white/10'}`}>
+                        {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+                      </button>
+                      {user && (
+                        <div className={`w-8 h-8 rounded-full border flex items-center justify-center font-bold text-[10px] ${isNeutral ? 'bg-blue-600 text-white border-white dark:border-gray-800' : 'bg-blue-500 text-white border-white'}`}>
+                          {user.name?.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+             </nav>
+
+          {/* Header Content */}
+          <header className={`relative z-10 flex flex-col gap-4 pt-6 md:pt-10 ${isNeutral ? 'pb-20' : 'pb-32'} px-5 md:px-10 lg:px-14 md:items-start text-left max-w-5xl mx-auto animate-in fade-in duration-500`}>
+              <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest w-fit ${isNeutral ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50' : 'bg-white/10 border border-white/20 text-white backdrop-blur-md'}`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" /> Showroom Terpercaya
+              </div>
+              <h1 className={`text-5xl md:text-7xl font-extrabold tracking-tight leading-tight ${isNeutral ? 'text-gray-900 dark:text-white' : 'text-white'}`}>
+                {showroomInfo?.title || 'Katalog'} <br className="hidden md:block" /> <span className={isNeutral ? 'text-blue-600 dark:text-blue-400' : 'text-blue-300'}>{showroomInfo?.title ? '' : 'Showroom'}</span>
+              </h1>
+              <p className={`text-lg md:text-xl font-light tracking-wide max-w-2xl leading-relaxed ${isNeutral ? 'text-gray-600 dark:text-gray-400' : 'text-blue-100'}`}>
+                {showroomInfo?.description || 'Temukan unit impian Anda dengan standar kualitas terbaik dan proses yang transparan.'}
+              </p>
               {promotions.length > 0 && (
                 <button 
                   onClick={() => setIsPromoModalOpen(true)}
-                  className="ml-2 inline-flex items-center gap-1.5 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 font-bold underline decoration-2 underline-offset-4 cursor-pointer transition-all hover:scale-105 active:scale-95"
+                  className="mt-4 inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-400 text-white rounded-full font-bold shadow-lg shadow-blue-500/50 transition-all hover:-translate-y-1"
                 >
-                  <Sparkles size={16} /> Lihat promo klik disini
+                  <Sparkles size={18} /> Lihat Promo Klik Disini
                 </button>
               )}
-            </p>
-          </header>
-        )}
+            </header>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
-        <div className={`sticky ${finalSearchTerm ? 'top-1 md:top-2' : 'top-4 md:top-8'} z-40 transition-[top] duration-300`}>
+      {/* CATALOG CONTENT (Constrained) */}
+      <div className={`relative z-10 w-full max-w-5xl mx-auto px-5 md:px-10 lg:px-14 ${finalSearchTerm ? 'pt-4 md:pt-6 space-y-10' : 'space-y-12'}`}>
+        <div className={`sticky ${finalSearchTerm ? 'top-1 md:top-2' : 'top-4 md:top-8'} z-40 transition-[top] duration-300 ${!finalSearchTerm ? '-mt-10 md:-mt-12' : ''}`}>
           {finalSearchTerm && (
             <div className="flex justify-center -mb-5 relative z-0 animate-in fade-in slide-in-from-top-4 duration-500">
               <div className="bg-gray-100 dark:bg-[#1a1c26] border border-gray-200 dark:border-white/5 px-10 pt-2 pb-6 rounded-t-[24px]">
@@ -592,34 +695,10 @@ const Catalog = () => {
                 >
                   <Filter size={14} /> <span className="md:hidden">Filter</span>
                 </button>
-                <div className="flex items-center gap-1 md:gap-1.5 flex-shrink-0">
-                  <button onClick={toggleTheme} className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10 bg-gray-100 dark:bg-white/5 transition-colors">
-                    {theme === 'dark' ? <Sun size={12} className="md:w-[14px] md:h-[14px]" /> : <Moon size={12} className="md:w-[14px] md:h-[14px]" />}
-                  </button>
-                  {!isPublicMode && (
-                    <div className="relative">
-                      <button onClick={() => setShowUserMenu(!showUserMenu)} className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center text-gray-500 dark:text-gray-400 font-bold text-[9px] md:text-[10px] overflow-hidden border border-transparent hover:ring-2 hover:ring-gray-200 dark:hover:ring-white/10 transition-all">
-                        {user?.avatar ? <img src={`${IMAGE_BASE_URL}${user.avatar}`} alt="" className="w-full h-full object-cover" /> : (user?.name?.charAt(0)?.toUpperCase() || 'U')}
-                      </button>
-                      <AnimatePresence>
-                        {showUserMenu && (
-                          <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute right-0 top-full mt-3 w-48 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[20px] shadow-xl py-2 z-50 overflow-hidden">
-                            <div className="px-4 py-3 border-b border-gray-50 dark:border-gray-800">
-                              <p className="text-[10px] font-bold text-gray-900 dark:text-white truncate">{user?.name}</p>
-                              <p className="text-[8px] text-gray-400 uppercase tracking-widest mt-0.5">{user?.Role?.name || 'User'}</p>
-                            </div>
-                            <NavLink to="/profile" className="flex items-center gap-3 px-4 py-2 text-[10px] font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"> <UserCircle size={14} /> Profil </NavLink>
-                            <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-2 text-[10px] font-bold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"> <LogOut size={14} /> Keluar </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                      {showUserMenu && <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />}
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
           </div>
+
 
           <AnimatePresence>
             {showAdvanced && (

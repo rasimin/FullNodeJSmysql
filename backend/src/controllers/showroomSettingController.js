@@ -43,7 +43,7 @@ exports.getShowroomSetting = async (req, res) => {
 exports.updateShowroomSetting = async (req, res) => {
   try {
     const { id } = req.params;
-    const { slug, title, description, is_published } = req.body;
+    const { slug, title, description, is_published, theme_color, remove_image } = req.body;
 
     const setting = await ShowroomSetting.findByPk(id);
     if (!setting) return res.status(404).json({ message: 'Setting not found' });
@@ -68,7 +68,16 @@ exports.updateShowroomSetting = async (req, res) => {
         if (existing) return res.status(400).json({ message: 'Slug sudah digunakan oleh showroom lain' });
     }
 
-    await setting.update({ slug, title, description, is_published }, { userId: req.user.id });
+    const updateData = { slug, title, description, is_published };
+    if (theme_color !== undefined) updateData.theme_color = theme_color;
+    
+    if (remove_image === 'true') {
+        updateData.header_image = null;
+    } else if (req.file) {
+        updateData.header_image = `/uploads/${req.file.filename}`;
+    }
+
+    await setting.update(updateData, { userId: req.user.id });
     res.json({ message: 'Pengaturan berhasil disimpan', setting });
   } catch (err) {
     res.status(500).json({ message: err.message });

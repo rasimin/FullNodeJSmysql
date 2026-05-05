@@ -32,6 +32,8 @@ import Promotions from './pages/Promotions';
 import ProductDetail from './pages/ProductDetail';
 import ShowroomSettings from './pages/ShowroomSettings';
 import DashboardLayout from './layouts/DashboardLayout';
+import AboutUs from './pages/AboutUs';
+import ContactUs from './pages/ContactUs';
 
 function App() {
   return (
@@ -43,6 +45,8 @@ function App() {
             <Route path="/login" element={<Login />} />
             
             <Route path="/c/:slug" element={<Catalog />} />
+            <Route path="/c/:slug/about" element={<AboutUs />} />
+            <Route path="/c/:slug/contact" element={<ContactUs />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/promotion/:id" element={<PromotionDetail />} />
             

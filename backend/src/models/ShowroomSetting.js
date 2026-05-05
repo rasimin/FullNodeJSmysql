@@ -20,6 +20,15 @@ const ShowroomSetting = sequelize.define('ShowroomSetting', {
     allowNull: false,
     unique: true
   },
+  header_image: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
+  theme_color: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    defaultValue: 'blue'
+  },
   title: {
     type: DataTypes.STRING(255),
     allowNull: false,

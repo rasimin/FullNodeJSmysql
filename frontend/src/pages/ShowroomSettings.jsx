@@ -4,6 +4,7 @@ import { Rocket, Save, CheckCircle, XCircle, Globe, Layout, Type, AlignLeft, Inf
 import DynamicIsland from '../components/DynamicIsland';
 import Input from '../components/ui/Input';
 import { motion, AnimatePresence } from 'framer-motion';
+import { IMAGE_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 
 const ShowroomSettings = () => {
@@ -15,8 +16,12 @@ const ShowroomSettings = () => {
     slug: '',
     title: '',
     description: '',
-    is_published: false
+    is_published: false,
+    theme_color: 'blue'
   });
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [removeImage, setRemoveImage] = useState(false);
   const [slugStatus, setSlugStatus] = useState('idle'); // idle, checking, available, taken
   const [notification, setNotification] = useState({ status: 'idle', message: '' });
   const [headOffices, setHeadOffices] = useState([]);
@@ -38,8 +43,15 @@ const ShowroomSettings = () => {
         slug: res.data.slug,
         title: res.data.title,
         description: res.data.description,
-        is_published: res.data.is_published
+        is_published: res.data.is_published,
+        theme_color: res.data.theme_color || 'blue'
       });
+      if (res.data.header_image) {
+        setImagePreview(`${IMAGE_BASE_URL}${res.data.header_image}`);
+      } else {
+        setImagePreview(null);
+      }
+      setRemoveImage(false);
       setSelectedOfficeId(res.data.head_office_id);
     } catch (err) {
       console.error(err);
@@ -93,8 +105,25 @@ const ShowroomSettings = () => {
     setSaving(true);
     notify('loading', 'Menyimpan pengaturan...');
     try {
-      const res = await api.put(`/showroom-settings/${setting.id}`, formData);
+      const form = new FormData();
+      form.append('slug', formData.slug);
+      form.append('title', formData.title);
+      form.append('description', formData.description);
+      form.append('is_published', formData.is_published);
+      form.append('theme_color', formData.theme_color);
+      form.append('remove_image', removeImage);
+      if (imageFile) {
+        form.append('header_image', imageFile);
+      }
+
+      const res = await api.put(`/showroom-settings/${setting.id}`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
       setSetting(res.data.setting);
+      if (res.data.setting.header_image) {
+        setImagePreview(`${IMAGE_BASE_URL}${res.data.setting.header_image}`);
+      }
       notify('success', 'Pengaturan berhasil disimpan');
     } catch (err) {
       notify('error', err.response?.data?.message || 'Gagal menyimpan pengaturan');
@@ -181,6 +210,91 @@ const ShowroomSettings = () => {
                 </p>
                 {slugStatus === 'taken' && <p className="text-[10px] text-red-500 font-bold uppercase italic">Slug sudah digunakan showroom lain</p>}
                 {slugStatus === 'invalid' && <p className="text-[10px] text-red-500 font-bold uppercase italic">Slug hanya boleh huruf, angka, dan tanda hubung (-)</p>}
+              </div>
+            </div>
+
+            {/* Banner Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                <Layout size={18} />
+                <h3 className="text-xs font-black uppercase tracking-widest">Banner Header</h3>
+              </div>
+              <div className="space-y-2">
+                <div 
+                  className={`relative w-full h-40 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center overflow-hidden transition-all ${
+                    imagePreview ? 'border-transparent' : 'border-gray-300 dark:border-white/20 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10'
+                  }`}
+                >
+                  {imagePreview ? (
+                    <>
+                      <img src={imagePreview} alt="Banner Preview" className="absolute inset-0 w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity">
+                        <label className="cursor-pointer bg-white text-gray-900 px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-xl hover:scale-105 transition-transform">
+                          Ganti Gambar
+                          <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                            if (e.target.files[0]) {
+                              setImageFile(e.target.files[0]);
+                              setImagePreview(URL.createObjectURL(e.target.files[0]));
+                            }
+                          }} />
+                        </label>
+                      </div>
+                    </>
+                  ) : (
+                    <label className="cursor-pointer flex flex-col items-center gap-2 text-gray-500 dark:text-gray-400 p-8 w-full h-full justify-center">
+                      <Layout size={32} className="opacity-50" />
+                      <span className="text-xs font-bold">Pilih Gambar Banner</span>
+                      <span className="text-[10px]">Format: JPG, PNG, WEBP (Max: 2MB)</span>
+                      <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                        if (e.target.files[0]) {
+                          setImageFile(e.target.files[0]);
+                          setImagePreview(URL.createObjectURL(e.target.files[0]));
+                        }
+                      }} />
+                    </label>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex flex-col gap-2 mt-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Atau Pilih Tone Warna Default</label>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setFormData({ ...formData, theme_color: 'default' });
+                      setImageFile(null);
+                      setImagePreview(null);
+                      setRemoveImage(true);
+                    }}
+                    className="text-[10px] font-bold text-gray-400 hover:text-red-500 uppercase tracking-widest"
+                  >
+                    Reset Header
+                  </button>
+                </div>
+                <div className="flex gap-3">
+                  {[
+                    { id: 'blue', hex: '#1e3a8a' },
+                    { id: 'indigo', hex: '#312e81' },
+                    { id: 'purple', hex: '#581c87' },
+                    { id: 'slate', hex: '#0f172a' },
+                    { id: 'emerald', hex: '#064e3b' },
+                    { id: 'rose', hex: '#881337' }
+                  ].map(c => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => {
+                        setFormData({ ...formData, theme_color: c.id });
+                        // Don't remove image if they just click a color, or do we?
+                        // If they click a color, maybe we want to keep the image and just change the overlay tone.
+                      }}
+                      className={`w-8 h-8 rounded-full border-2 transition-transform ${formData.theme_color === c.id ? 'border-gray-900 dark:border-white scale-110 shadow-lg ring-2 ring-blue-500' : 'border-transparent hover:scale-105 shadow-sm'}`}
+                      style={{ backgroundColor: c.hex }}
+                      title={`Tone ${c.id}`}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
 
