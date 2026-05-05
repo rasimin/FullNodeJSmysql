@@ -590,7 +590,7 @@ const Catalog = () => {
                   onClick={() => setShowAdvanced(!showAdvanced)}
                   className={`h-9 w-[80px] md:w-auto px-0 md:px-6 rounded-full text-[11px] font-extrabold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 flex-shrink-0 ${showAdvanced ? 'bg-gray-950 text-white dark:bg-white dark:text-gray-950' : 'bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'}`}
                 >
-                  <Filter size={14} /> <span className="md:hidden">{showAdvanced ? 'Sembunyikan' : 'Filter'}</span>
+                  <Filter size={14} /> <span className="md:hidden">Filter</span>
                 </button>
                 <div className="flex items-center gap-1 md:gap-1.5 flex-shrink-0">
                   <button onClick={toggleTheme} className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10 bg-gray-100 dark:bg-white/5 transition-colors">
@@ -775,8 +775,8 @@ const Catalog = () => {
         <div className="min-h-[400px]">
           <AnimatePresence mode="wait">
             {loading ? (
-              <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid grid-cols-2 lg:grid-cols-3 gap-6">
-                {[...Array(6)].map((_, i) => <div key={i} className="aspect-[3/4] bg-gray-200/50 dark:bg-white/5 rounded-[32px] animate-pulse" />)}
+              <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                {[...Array(6)].map((_, i) => <div key={i} className="aspect-[3/4] bg-gray-200/50 dark:bg-white/5 rounded-xl animate-pulse" />)}
               </motion.div>
             ) : vehicles.length === 0 ? (
               <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-32 text-gray-400">
@@ -784,15 +784,15 @@ const Catalog = () => {
                 <p>Belum ada unit yang tersedia.</p>
               </motion.div>
             ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                 {vehicles.map((v) => (
-                  <article key={v.id} onClick={() => { setSelectedVehicle(v); setActiveImageIndex(0); }} className="group relative bg-white dark:bg-[#12141c] rounded-[24px] overflow-hidden border border-gray-200 dark:border-white/5 shadow-sm hover:shadow-2xl transition-all cursor-pointer">
-                    <div className="p-3">
-                      <div className="aspect-[4/3] rounded-[18px] overflow-hidden bg-gray-50 dark:bg-gray-800 relative">
+                  <article key={v.id} onClick={() => { setSelectedVehicle(v); setActiveImageIndex(0); }} className="group relative bg-white dark:bg-[#12141c] rounded-xl overflow-hidden border border-gray-200 dark:border-white/5 shadow-sm hover:shadow-2xl transition-all cursor-pointer">
+                    <div className="p-2">
+                      <div className="aspect-[4/3] rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-800 relative">
                         {v.images?.[0] ? <img src={`${IMAGE_BASE_URL}${v.images.find(img => img.is_primary)?.image_url || v.images[0].image_url}`} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> : <div className="w-full h-full flex items-center justify-center text-gray-300"><ImageIcon size={40} /></div>}
                       </div>
                     </div>
-                    <div className="px-5 pb-5">
+                    <div className="px-4 pb-4">
                       <div className="flex justify-between items-center mb-1">
                         <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{v.brand} • {v.year}</p>
                         <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest">{v.unit_code}</span>

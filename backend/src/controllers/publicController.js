@@ -38,7 +38,7 @@ exports.getPublicVehicles = async (req, res) => {
 
     const where = {
       is_deleted: false,
-      status: { [Op.in]: ['Available', 'Booked', 'Sold'] },
+      status: 'Available',
       office_id: officeId ? parseInt(officeId) : { [Op.in]: officeIds }
     };
 
@@ -84,7 +84,7 @@ exports.getPublicVehicleDetail = async (req, res) => {
   try {
     const { id } = req.params;
     const vehicle = await Vehicle.findOne({
-      where: { id, is_deleted: false, status: { [Op.in]: ['Available', 'Booked', 'Sold'] } },
+      where: { id, is_deleted: false, status: 'Available' },
       include: [
         { model: VehicleImage, as: 'images' },
         { model: Office, include: [{ model: Location, as: 'location' }] }
