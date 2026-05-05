@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
-import { Rocket, Save, CheckCircle, XCircle, Globe, Layout, Type, AlignLeft, Info, ExternalLink, Shield, Building2 } from 'lucide-react';
+import { Rocket, Save, CheckCircle, XCircle, Globe, Layout, Type, AlignLeft, Info, ExternalLink, Shield, Building2, Pipette } from 'lucide-react';
 import DynamicIsland from '../components/DynamicIsland';
 import Input from '../components/ui/Input';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -272,7 +272,7 @@ const ShowroomSettings = () => {
                     Reset Header
                   </button>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                   {[
                     { id: 'blue', hex: '#1e3a8a' },
                     { id: 'indigo', hex: '#312e81' },
@@ -284,16 +284,34 @@ const ShowroomSettings = () => {
                     <button
                       key={c.id}
                       type="button"
-                      onClick={() => {
-                        setFormData({ ...formData, theme_color: c.id });
-                        // Don't remove image if they just click a color, or do we?
-                        // If they click a color, maybe we want to keep the image and just change the overlay tone.
-                      }}
+                      onClick={() => setFormData({ ...formData, theme_color: c.id })}
                       className={`w-8 h-8 rounded-full border-2 transition-transform ${formData.theme_color === c.id ? 'border-gray-900 dark:border-white scale-110 shadow-lg ring-2 ring-blue-500' : 'border-transparent hover:scale-105 shadow-sm'}`}
                       style={{ backgroundColor: c.hex }}
                       title={`Tone ${c.id}`}
                     />
                   ))}
+                  
+                  {/* Custom Color Picker */}
+                  <div className="relative group">
+                    <input 
+                      type="color" 
+                      id="customColor"
+                      className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                      value={formData.theme_color.startsWith('#') ? formData.theme_color : '#3b82f6'}
+                      onChange={(e) => setFormData({ ...formData, theme_color: e.target.value })}
+                    />
+                    <button
+                      type="button"
+                      className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all pointer-events-none ${
+                        formData.theme_color.startsWith('#') 
+                          ? 'border-gray-900 dark:border-white scale-110 shadow-lg ring-2 ring-blue-500' 
+                          : 'border-dashed border-gray-300 dark:border-white/20 text-gray-400 hover:border-blue-500 hover:text-blue-500'
+                      }`}
+                      style={formData.theme_color.startsWith('#') ? { backgroundColor: formData.theme_color } : {}}
+                    >
+                      <Pipette size={14} className={formData.theme_color.startsWith('#') ? 'text-white mix-blend-difference' : ''} />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

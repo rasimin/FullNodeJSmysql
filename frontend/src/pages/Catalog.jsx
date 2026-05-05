@@ -532,17 +532,21 @@ const Catalog = () => {
 
       {/* FULL WIDTH HERO SECTION */}
       {!finalSearchTerm && (
-        <div className={`relative w-full overflow-hidden transition-all duration-700 ${
-          infoLoading ? 'bg-transparent h-[120px] md:h-[200px]' :
-          isNeutral ? 'bg-transparent pb-4 md:pb-6' : 
-          `shadow-2xl ${
-            showroomInfo?.theme_color === 'indigo' ? 'bg-indigo-900' :
-            showroomInfo?.theme_color === 'purple' ? 'bg-purple-900' :
-            showroomInfo?.theme_color === 'slate' ? 'bg-slate-900' :
-            showroomInfo?.theme_color === 'emerald' ? 'bg-emerald-900' :
-            showroomInfo?.theme_color === 'rose' ? 'bg-rose-900' : 'bg-blue-900'
-          }`
-        }`}>
+        <div 
+          className={`relative z-0 w-full overflow-hidden transition-all duration-700 ${
+            infoLoading ? 'bg-transparent h-[120px] md:h-[200px]' :
+            isNeutral ? 'bg-transparent pb-4 md:pb-6' : 
+            `shadow-2xl ${
+              showroomInfo?.theme_color?.startsWith('#') ? '' :
+              showroomInfo?.theme_color === 'indigo' ? 'bg-indigo-900' :
+              showroomInfo?.theme_color === 'purple' ? 'bg-purple-900' :
+              showroomInfo?.theme_color === 'slate' ? 'bg-slate-900' :
+              showroomInfo?.theme_color === 'emerald' ? 'bg-emerald-900' :
+              showroomInfo?.theme_color === 'rose' ? 'bg-rose-900' : 'bg-blue-900'
+            }`
+          }`}
+          style={!infoLoading && !isNeutral && showroomInfo?.theme_color?.startsWith('#') ? { backgroundColor: showroomInfo.theme_color } : {}}
+        >
           {/* Content Wrapper with Fade */}
           <div className={`transition-opacity duration-500 ${infoLoading ? 'opacity-0' : 'opacity-100'}`}>
             {!infoLoading && (
@@ -556,32 +560,32 @@ const Catalog = () => {
                          {/* Color Tone Overlay - Only if not default */}
                          {showroomInfo?.theme_color && showroomInfo?.theme_color !== 'default' ? (
                            <div className={`absolute inset-0 mix-blend-multiply ${
-                              showroomInfo?.theme_color === 'indigo' ? 'bg-indigo-950/70' :
+                              showroomInfo?.theme_color?.startsWith('#') ? '' : showroomInfo?.theme_color === 'indigo' ? 'bg-indigo-950/70' :
                               showroomInfo?.theme_color === 'purple' ? 'bg-purple-950/70' :
                               showroomInfo?.theme_color === 'slate' ? 'bg-slate-950/70' :
                               showroomInfo?.theme_color === 'emerald' ? 'bg-emerald-950/70' :
                               showroomInfo?.theme_color === 'rose' ? 'bg-rose-950/70' : 'bg-blue-950/70'
-                           }`}></div>
+                           }`} style={showroomInfo?.theme_color?.startsWith('#') ? { background: `linear-gradient(135deg, ${showroomInfo.theme_color}, ${showroomInfo.theme_color}dd)` } : {}}></div>
                          ) : (
                            // Subtle dark overlay to ensure text is readable even without tone color
-                           <div className="absolute inset-0 bg-black/30 bg-gradient-to-t from-black/60 to-transparent"></div>
+                           <div className="absolute inset-0 bg-black/30 bg-gradient-to-t from-black/60 to-transparent" style={showroomInfo?.theme_color?.startsWith('#') ? { backgroundColor: `${showroomInfo.theme_color}b3` } : {}}></div>
                          )}
                        </>
                      ) : (
                        <div className={`absolute inset-0 opacity-90 bg-gradient-to-br ${
-                          showroomInfo?.theme_color === 'indigo' ? 'from-[#1e1b4b] via-[#3730a3] to-[#6366f1]' :
+                          showroomInfo?.theme_color?.startsWith('#') ? '' : showroomInfo?.theme_color === 'indigo' ? 'from-[#1e1b4b] via-[#3730a3] to-[#6366f1]' :
                           showroomInfo?.theme_color === 'purple' ? 'from-[#3b0764] via-[#6b21a8] to-[#a855f7]' :
                           showroomInfo?.theme_color === 'slate' ? 'from-[#0f172a] via-[#334155] to-[#64748b]' :
                           showroomInfo?.theme_color === 'emerald' ? 'from-[#022c22] via-[#047857] to-[#10b981]' :
                           showroomInfo?.theme_color === 'rose' ? 'from-[#4c0519] via-[#be123c] to-[#f43f5e]' :
                           'from-[#0f172a] via-[#1e3a8a] to-[#3b82f6]'
-                       }`}></div>
+                       }`} style={showroomInfo?.theme_color?.startsWith('#') ? { background: `linear-gradient(135deg, ${showroomInfo.theme_color}, ${showroomInfo.theme_color}dd)` } : {}}></div>
                      )}
                   </div>
                 )}
 
           {/* Top Navbar */}
-          <nav className="relative z-20 flex items-center justify-between px-5 md:px-10 lg:px-14 max-w-7xl mx-auto py-4 md:py-6">
+          <nav className="relative z-10 flex items-center justify-between px-5 md:px-10 lg:px-14 max-w-7xl mx-auto py-4 md:py-8">
                 {/* Logo & Name Card */}
                 <div className={`flex items-center gap-3 px-3 py-2 rounded-2xl border-2 backdrop-blur-md transition-all duration-300 ${
                   isNeutral ? 'bg-white/80 dark:bg-white/5 border-gray-200 dark:border-white/10 shadow-sm' : 'bg-black/20 border-white/30'
@@ -624,10 +628,8 @@ const Catalog = () => {
              </nav>
 
           {/* Header Content */}
-          <header className={`relative z-10 flex flex-col gap-4 pt-6 md:pt-10 ${isNeutral ? 'pb-20' : 'pb-32'} px-5 md:px-10 lg:px-14 md:items-start text-left max-w-5xl mx-auto animate-in fade-in duration-500`}>
-              <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest w-fit ${isNeutral ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50' : 'bg-white/10 border border-white/20 text-white backdrop-blur-md'}`}>
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" /> Showroom Terpercaya
-              </div>
+          <header className={`relative z-10 flex flex-col gap-4 pt-6 md:pt-10 ${isNeutral ? 'pb-20' : 'pb-32'} px-5 md:px-10 lg:px-14 md:items-start text-left max-w-7xl mx-auto animate-in fade-in duration-500`}>
+
               <h1 className={`text-5xl md:text-7xl font-extrabold tracking-tight leading-tight ${isNeutral ? 'text-gray-900 dark:text-white' : 'text-white'}`}>
                 {showroomInfo?.title || 'Katalog'} <br className="hidden md:block" /> <span className={isNeutral ? 'text-blue-600 dark:text-blue-400' : 'text-blue-300'}>{showroomInfo?.title ? '' : 'Showroom'}</span>
               </h1>
@@ -650,7 +652,7 @@ const Catalog = () => {
       )}
 
       {/* CATALOG CONTENT (Constrained) */}
-      <div className={`relative z-10 w-full max-w-5xl mx-auto px-5 md:px-10 lg:px-14 ${finalSearchTerm ? 'pt-4 md:pt-6 space-y-10' : 'space-y-12'}`}>
+      <div className={`relative z-10 w-full max-w-7xl mx-auto px-5 md:px-10 lg:px-14 ${finalSearchTerm ? 'pt-4 md:pt-6 space-y-10' : 'space-y-12'}`}>
         <div className={`sticky ${finalSearchTerm ? 'top-1 md:top-2' : 'top-4 md:top-8'} z-40 transition-[top] duration-300 ${!finalSearchTerm ? '-mt-10 md:-mt-12' : ''}`}>
           {finalSearchTerm && (
             <div className="flex justify-center -mb-5 relative z-0 animate-in fade-in slide-in-from-top-4 duration-500">
@@ -912,7 +914,7 @@ const Catalog = () => {
         {/* MODALS */}
         <AnimatePresence>
           {selectedVehicle && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={() => setSelectedVehicle(null)}>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={() => setSelectedVehicle(null)}>
               <motion.div
                 initial={{ opacity: 0, scale: 0.98, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1067,7 +1069,7 @@ const Catalog = () => {
 
         <AnimatePresence>
           {showContactModal && (
-            <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowContactModal(false)} className="absolute inset-0 bg-black/90 backdrop-blur-xl" />
               <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-md bg-white dark:bg-[#12141c] rounded-[40px] overflow-hidden shadow-2xl border border-gray-100 dark:border-white/10">
                 <div className="p-8 pb-4 flex justify-between items-center">
@@ -1117,7 +1119,7 @@ const Catalog = () => {
               initial={{ opacity: 0 }} 
               animate={{ opacity: 1 }} 
               exit={{ opacity: 0 }} 
-              className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
               onClick={() => setIsPromoModalOpen(false)}
             >
               <motion.div
