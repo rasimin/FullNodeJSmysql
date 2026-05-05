@@ -71,7 +71,6 @@ const DashboardLayout = () => {
           { to: '/sales-agents', icon: Users, label: 'Tim Sales' },
           { to: '/locations', icon: MapPin, label: 'Lokasi & Wilayah' },
           { to: '/promotions', icon: Image, label: 'Media Promosi' },
-          { to: '/catalog', icon: LayoutDashboard, label: 'Katalog Showroom', target: '_blank' },
           { to: '/showroom-settings', icon: Rocket, label: 'Setelan Katalog' },
         ]
       },
@@ -213,7 +212,15 @@ const DashboardLayout = () => {
             </div>
           )}
           {/* Landing Page Link at Bottom */}
-          <div className="mt-auto px-1 pt-4 border-t border-gray-100 dark:border-gray-800">
+          <div className="mt-auto px-1 pt-4 border-t border-gray-100 dark:border-gray-800 flex flex-col gap-1">
+             <SidebarItem 
+               to="/catalog" 
+               icon={LayoutDashboard} 
+               label="Katalog Showroom" 
+               onClick={() => setSidebarOpen(false)}
+               collapsed={isCollapsed}
+               target="_blank"
+             />
              <SidebarItem 
                to="/landing-page" 
                icon={Rocket} 

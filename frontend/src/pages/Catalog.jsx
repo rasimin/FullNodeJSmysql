@@ -786,7 +786,7 @@ const Catalog = () => {
             ) : (
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                 {vehicles.map((v) => (
-                  <article key={v.id} onClick={() => { setSelectedVehicle(v); setActiveImageIndex(0); }} className="group relative bg-white dark:bg-[#12141c] rounded-xl overflow-hidden border border-gray-200 dark:border-white/5 shadow-sm hover:shadow-2xl transition-all cursor-pointer">
+                  <article key={v.id} onClick={() => { setSelectedVehicle(v); setActiveImageIndex(0); }} className="group relative bg-white dark:bg-[#1c1f26] rounded-xl overflow-hidden border border-gray-300 dark:border-white/10 hover:border-gray-400 dark:hover:border-white/20 transition-all cursor-pointer">
                     <div className="p-2">
                       <div className="aspect-[4/3] rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-800 relative">
                         {v.images?.[0] ? <img src={`${IMAGE_BASE_URL}${v.images.find(img => img.is_primary)?.image_url || v.images[0].image_url}`} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> : <div className="w-full h-full flex items-center justify-center text-gray-300"><ImageIcon size={40} /></div>}
