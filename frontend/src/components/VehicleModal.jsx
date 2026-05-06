@@ -41,7 +41,6 @@ const VehicleModal = ({
   const [auditTrails, setAuditTrails] = useState([]);
   const [isAuditLoading, setIsAuditLoading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
-  const [modelHistory, setModelHistory] = useState([]);
 
   // Sync state with props
   useEffect(() => {
@@ -114,13 +113,6 @@ const VehicleModal = ({
     }
   }, []);
 
-  const fetchModelHistory = useCallback(async (type) => {
-    if (!type) return;
-    try {
-        const res = await api.get(`/vehicles/model-history?type=${type}`);
-        setModelHistory(res.data);
-    } catch (e) { console.error(e); }
-  }, []);
 
   useEffect(() => {
     if (!isOpen || !editingVehicle?.id) return;
@@ -134,11 +126,6 @@ const VehicleModal = ({
     fetchBookingHistory(editingVehicle.id);
   }, [activeTab, editingVehicle, isOpen, fetchAuditTrails, fetchVehicleDocuments, fetchBookingHistory]);
 
-  useEffect(() => {
-    if (isOpen && formData.type) {
-        fetchModelHistory(formData.type);
-    }
-  }, [isOpen, formData.type, fetchModelHistory]);
 
   const formatPrice = (price) => {
     if (!price && price !== 0) return 'Rp 0';
@@ -352,13 +339,7 @@ const VehicleModal = ({
                     onChange={e => setFormData({ ...formData, model: e.target.value })} 
                     required 
                     readOnly={isViewOnly}
-                    list="model-history-list"
                   />
-                  <datalist id="model-history-list">
-                    {modelHistory.map((m, idx) => (
-                      <option key={idx} value={m} />
-                    ))}
-                  </datalist>
                   <Input label="Nomor Plat" value={formData.plate_number} onChange={e => setFormData({ ...formData, plate_number: sanitizePlate(e.target.value) })} required readOnly={isViewOnly} />
                   <Select label="Tahun" value={formData.year} onChange={e => setFormData({ ...formData, year: e.target.value })} options={Array.from({ length: 40 }, (_, i) => ({ value: (new Date().getFullYear() - i).toString(), label: (new Date().getFullYear() - i).toString() }))} required disabled={isViewOnly} />
                   <Select label="Transmisi" value={formData.transmission} onChange={e => setFormData({ ...formData, transmission: e.target.value })} options={[{ value: 'Manual', label: 'Manual' }, { value: 'Automatic', label: 'Automatic' }, { value: 'CVT', label: 'CVT' }, { value: 'Triptonic', label: 'Triptonic' }]} disabled={isViewOnly} />
