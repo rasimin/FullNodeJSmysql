@@ -137,7 +137,7 @@ const ContactUs = () => {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
-          className="bg-white dark:bg-[#12141c] rounded-[40px] p-8 md:p-16 shadow-2xl border border-gray-100 dark:border-white/5"
+          className="bg-white dark:bg-[#12141c] rounded-[40px] p-8 md:p-16 shadow-xl border border-gray-100 dark:border-white/5"
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             <motion.div 

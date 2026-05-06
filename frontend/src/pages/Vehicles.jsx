@@ -115,98 +115,104 @@ const Vehicles = () => {
     } catch (e) { console.error(e); }
   };
 
-  const fetchMetadata = async () => {
-    try {
-      const res = await api.get('/vehicles/initial-data');
-      const { brands: bData, offices: oData, agents: sData, vehicleDocTypes: dtData, bookingDocTypes: bdtData } = res.data;
-
-      setBrands(bData);
-      if (isHeadOffice) setOffices(formatOfficeHierarchy(oData));
-      setSalesAgents(sData);
-      setDocumentTypes(dtData);
-
-      // Deduplicate booking types by name to avoid showing redundant fields like "Kartu Keluarga" twice
-      const uniqueBookingTypes = bdtData.reduce((acc, current) => {
-        const name = current.name.trim().toLowerCase();
-        const cleanName = name.replace(/\s*\(.*\)$/, '');
-        const exists = acc.find(item => {
-          const itemName = item.name.trim().toLowerCase().replace(/\s*\(.*\)$/, '');
-          return itemName === cleanName;
-        });
-        if (!exists) return [...acc, current];
-        return acc;
-      }, []);
-      setBookingDocumentTypes(uniqueBookingTypes);
-    } catch (e) { console.error('Fetch metadata error:', e); }
-  };
-
-
-
-
-
-  const fetchSummary = async () => {
-    try {
-      const res = await api.get('/vehicles/summary', { params: { officeId: selectedBranch } });
-      if (res.data) setSummary(res.data);
-    } catch (e) { console.error('Fetch summary error:', e); }
-  };
-
-  const fetchVehicles = async (page = currentPage, currentSearch = search, signal = null) => {
+  const fetchAllData = async (page = 1, currentSearch = '', signal = null) => {
     setLoading(true);
     try {
-      const params = { page, size: 8, search: currentSearch, officeId: selectedBranch, status: filterStatus };
-      const res = await api.get('/vehicles', { params, signal });
+      // Parallel fetch everything to avoid waterfall delay
+      const [metaRes, sumRes, vehRes] = await Promise.all([
+        api.get('/vehicles/initial-data', { signal }),
+        api.get('/vehicles/summary', { params: { officeId: selectedBranch }, signal }),
+        api.get('/vehicles', { 
+          params: { page, size: 8, search: currentSearch, officeId: selectedBranch, status: filterStatus },
+          signal 
+        })
+      ]);
 
-      setVehicles(res.data.items);
-      setTotalPages(res.data.totalPages);
-      setTotalItems(res.data.totalItems);
-    } catch (e) { 
-      if (e.name !== 'CanceledError' && e.message !== 'canceled') {
-        console.error('Fetch vehicles error:', e); 
+      // Update states in batch
+      if (metaRes.data) {
+        const { brands: bData, offices: oData, agents: sData, vehicleDocTypes: dtData, bookingDocTypes: bdtData } = metaRes.data;
+        setBrands(bData);
+        if (isHeadOffice) setOffices(formatOfficeHierarchy(oData));
+        setSalesAgents(sData);
+        setDocumentTypes(dtData);
+
+        const uniqueBookingTypes = bdtData.reduce((acc, current) => {
+          const name = current.name.trim().toLowerCase().replace(/\s*\(.*\)$/, '');
+          if (!acc.find(item => item.name.trim().toLowerCase().replace(/\s*\(.*\)$/, '') === name)) return [...acc, current];
+          return acc;
+        }, []);
+        setBookingDocumentTypes(uniqueBookingTypes);
       }
+
+      if (sumRes.data) setSummary(sumRes.data);
+      
+      if (vehRes.data) {
+        setVehicles(vehRes.data.items);
+        setTotalPages(vehRes.data.totalPages);
+        setTotalItems(vehRes.data.totalItems);
+      }
+    } catch (e) {
+      if (e.name !== 'CanceledError' && e.message !== 'canceled') console.error('Fetch error:', e);
     } finally {
       setLoading(false);
     }
   };
-  
 
-  useEffect(() => { fetchMetadata(); }, []);
+  const fetchVehiclesOnly = async (page = currentPage, currentSearch = search, signal = null) => {
+    setLoading(true);
+    try {
+      const params = { page, size: 8, search: currentSearch, officeId: selectedBranch, status: filterStatus };
+      const res = await api.get('/vehicles', { params, signal });
+      setVehicles(res.data.items);
+      setTotalPages(res.data.totalPages);
+      setTotalItems(res.data.totalItems);
+    } catch (e) {
+      if (e.name !== 'CanceledError' && e.message !== 'canceled') console.error('Fetch vehicles error:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Fetch summary separately only when branch filter changes
-  useEffect(() => {
-    fetchSummary();
-  }, [selectedBranch]);
-  
+  const fetchSummaryOnly = async (signal = null) => {
+    try {
+      const res = await api.get('/vehicles/summary', { params: { officeId: selectedBranch }, signal });
+      if (res.data) setSummary(res.data);
+    } catch (e) { console.error('Fetch summary error:', e); }
+  };
+
+  // Initial Mount
   useEffect(() => {
     const controller = new AbortController();
     
-    // Immediate fetch if search from location state (redirect from dashboard etc)
     if (location.state?.searchPlate) {
       const plate = location.state.searchPlate;
       setSearch(plate);
       setCurrentPage(1);
-      fetchVehicles(1, plate, controller.signal);
+      fetchAllData(1, plate, controller.signal);
       window.history.replaceState({}, document.title);
       isFirstLoad.current = false;
-      return () => controller.abort();
-    }
-
-    if (isFirstLoad.current) {
-      fetchVehicles(currentPage, search, controller.signal);
-      isFirstLoad.current = false;
     } else {
-      // Debounce for manual search typing or filter changes
-      const timer = setTimeout(() => {
-        fetchVehicles(currentPage, search, controller.signal);
-      }, 400);
-
-      return () => {
-        clearTimeout(timer);
-        controller.abort();
-      };
+      fetchAllData(currentPage, search, controller.signal);
+      isFirstLoad.current = false;
     }
 
     return () => controller.abort();
+  }, []); // Only on mount
+
+  // Handle filter/search changes
+  useEffect(() => {
+    if (isFirstLoad.current) return;
+    
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      fetchVehiclesOnly(currentPage, search, controller.signal);
+      fetchSummaryOnly(controller.signal);
+    }, 300); // Faster debounce
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [currentPage, search, selectedBranch, filterStatus]);
 
   // Modal data sync handled in VehicleModal.jsx
@@ -553,7 +559,7 @@ const Vehicles = () => {
           {vehicles.map((v) => {
             const displayImage = v.images?.find(img => img.is_primary)?.image_url || v.images?.[0]?.image_url;
             return (
-              <div key={v.id} onClick={() => openModal(v, true)} className="card relative group pt-1.5 px-3 pb-3 hover:bg-blue-50/50 hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-400/50 dark:hover:bg-blue-900/20 dark:hover:border-blue-800/50 transition-all duration-500 hover:-translate-y-1.5 cursor-pointer overflow-hidden">
+              <div key={v.id} onClick={() => openModal(v, true)} className="card relative group pt-1.5 px-3 pb-3 hover:bg-blue-50/50 hover:shadow-xl hover:border-blue-400/50 dark:hover:bg-blue-900/20 dark:hover:border-blue-800/50 transition-[transform,background-color,border-color,box-shadow] duration-300 hover:-translate-y-1 cursor-pointer overflow-hidden">
                 <div className="flex justify-between items-center mb-1.5" onClick={e => e.stopPropagation()}>
                   <span className={`text-[8px] md:text-[9px] font-black px-2 py-1 rounded uppercase tracking-tighter ${v.status === 'Available' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : v.status === 'Sold' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'}`}>{v.status === 'Available' ? 'Tersedia' : v.status === 'Sold' ? 'Terjual' : 'Booked'}</span>
                   <div className="relative">

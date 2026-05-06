@@ -689,8 +689,8 @@ const Catalog = () => {
 
       {/* CATALOG CONTENT (Constrained) */}
       <div className={`relative z-10 w-full max-w-7xl mx-auto px-5 md:px-10 lg:px-14 ${finalSearchTerm ? 'pt-2 space-y-8' : 'space-y-12'}`}>
-        <div className={`sticky ${finalSearchTerm ? 'top-1 md:top-2 -mt-24 md:-mt-32' : 'top-4 md:top-8 -mt-10 md:-mt-12'} z-40 transition-all duration-300`}>
-          <div className="relative z-10 bg-white/95 dark:bg-[#12141c]/95 border border-gray-200 dark:border-white/10 p-2 md:p-2.5 rounded-[32px] md:rounded-[36px] shadow-2xl transition-all backdrop-blur-md">
+        <div className={`sticky ${finalSearchTerm ? 'top-1 md:top-2 -mt-24 md:-mt-32' : 'top-4 md:top-8 -mt-10 md:-mt-12'} z-40 transition-colors duration-300`}>
+          <div className="relative z-10 bg-white dark:bg-[#12141c] border border-gray-200 dark:border-white/10 p-2 md:p-2.5 rounded-[32px] md:rounded-[36px] shadow-xl transition-colors">
             <div className="flex flex-wrap md:flex-nowrap items-center gap-x-2 gap-y-2">
               <div className="flex flex-col md:flex-row items-center gap-3 md:gap-4 flex-1 w-full">
                 {!isPublicMode && (
@@ -963,7 +963,7 @@ const Catalog = () => {
                       
                       {/* Top Badges */}
                       <div className="absolute top-4 left-4 z-10">
-                        <div className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
+                        <div className="bg-black px-3 py-1.5 rounded-full">
                           <p className="text-[9px] font-black text-white uppercase tracking-widest">{v.brand} {v.year}</p>
                         </div>
                       </div>

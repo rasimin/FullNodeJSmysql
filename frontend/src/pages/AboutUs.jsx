@@ -120,7 +120,7 @@ const AboutUs = () => {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
-          className="bg-white/60 dark:bg-[#12141c]/30 backdrop-blur-xl rounded-[40px] px-8 md:px-16 pt-10 md:pt-12 pb-12 md:pb-16 shadow-2xl border border-white/20 dark:border-white/10"
+          className="bg-white dark:bg-[#12141c] rounded-[40px] px-8 md:px-16 pt-10 md:pt-12 pb-12 md:pb-16 shadow-xl border border-gray-100 dark:border-white/10"
         >
           <div className="flex flex-col gap-16">
             <div className="w-full">

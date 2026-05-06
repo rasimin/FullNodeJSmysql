@@ -75,123 +75,70 @@ const RecycleBin = () => {
     }
   };
 
-  const fetchMetadata = async () => {
+  const fetchAllData = async (page = 1, currentSearch = '', branch = selectedBranch, order = sortOrder, signal = null) => {
+    setLoading(true);
     try {
-      const res = await api.get('/vehicles/initial-data');
-      setOffices(formatOfficeHierarchy(res.data.offices));
-      setDocumentTypes(res.data.vehicleDocTypes);
-      setBrands(res.data.brands);
-      setSalesAgents(res.data.agents);
-    } catch (e) { console.error('Fetch metadata error:', e); }
-  };
+      const [metaRes, vehRes] = await Promise.all([
+        api.get('/vehicles/initial-data', { signal }),
+        api.get('/vehicles/deleted/list', { 
+          params: { page, size: 10, search: currentSearch, officeId: branch, sortOrder: order },
+          signal 
+        })
+      ]);
 
-  const fetchBookingHistory = async (id) => {
-    try { 
-      const r = await api.get(`/bookings/vehicle/${id}/history`); 
-      setBookingHistory(r.data); 
-    } catch (e) { console.error(e); }
-  };
+      if (metaRes.data) {
+        setOffices(formatOfficeHierarchy(metaRes.data.offices));
+        setDocumentTypes(metaRes.data.vehicleDocTypes);
+        setBrands(metaRes.data.brands);
+        setSalesAgents(metaRes.data.agents);
+      }
 
-  const fetchVehicleDocuments = async (vehicleId) => {
-    try {
-      const r = await api.get(`/documents/vehicle/${vehicleId}`);
-      setVehicleDocuments(r.data);
-    } catch (e) { console.error('Fetch docs error:', e); }
-  };
-
-  const fetchAuditTrails = async (vehicleId) => {
-    setIsAuditLoading(true);
-    try {
-      const r = await api.get('/logs/audits', {
-        params: { vehicle_id: vehicleId, size: 50 }
-      });
-      setAuditTrails(r.data.items || []);
+      if (vehRes.data) {
+        setVehicles(vehRes.data.items);
+        setTotalPages(vehRes.data.totalPages);
+        setTotalItems(vehRes.data.totalItems);
+      }
     } catch (e) {
-      console.error('Fetch audit trails error:', e);
+      if (e.name !== 'CanceledError' && e.message !== 'canceled') console.error('Fetch error:', e);
     } finally {
-      setIsAuditLoading(false);
+      setLoading(false);
     }
   };
 
-  const parseAuditValue = (val) => {
-    if (!val) return null;
-    if (typeof val === 'object') return val;
-    try { return JSON.parse(val); } catch (e) { return val; }
-  };
-
-  const getAuditDisplayValue = (key, value) => {
-    if (value === null || value === undefined || value === '') return '-';
-    if (key === 'office_id') {
-      const office = offices.find(o => o.id.toString() === value.toString());
-      return office ? office.name : `ID: ${value}`;
-    }
-    if (key === 'sales_agent_id') {
-      const agent = salesAgents.find(a => a.id.toString() === value.toString());
-      return agent ? agent.name : `ID: ${value}`;
-    }
-    if (key === 'document_type_id') {
-      const docType = documentTypes.find(dt => dt.id.toString() === value.toString());
-      return docType ? docType.name : `ID: ${value}`;
-    }
-    if (key === 'price' || key === 'purchase_price' || key === 'service_cost') {
-      return formatPrice(value);
-    }
-    return value.toString();
-  };
-
-  const fieldLabels = {
-    type: 'Kategori', brand: 'Merk', model: 'Model', year: 'Tahun', plate_number: 'No. Plat',
-    price: 'Harga Jual', purchase_price: 'Harga Beli', service_cost: 'Biaya Servis', status: 'Status',
-    office_id: 'Kantor Cabang', description: 'Deskripsi', color: 'Warna', odometer: 'Odometer',
-    transmission: 'Transmisi', fuel_type: 'Bahan Bakar', sales_agent_id: 'Agen Sales',
-    sold_date: 'Tgl Terjual', entry_date: 'Tgl Masuk', file_name: 'Nama File',
-    document_type_id: 'Tipe Dokumen', file_path: 'Lokasi File', file_size: 'Ukuran File',
-    mime_type: 'Tipe File', uploaded_by: 'Diunggah Oleh', vehicle_id: 'ID Kendaraan', booking_id: 'ID Transaksi', payment_method: 'Metode Bayar'
-  };
-
-  const tableLabels = {
-    vehicles: 'Data Unit', vehicle_documents: 'Dokumen', vehicle_images: 'Foto Unit', bookings: 'Transaksi'
-  };
-
-  const openDetail = (v) => {
-    setEditingVehicle(v);
-    setActiveTab('main');
-    setBookingHistory([]);
-    setVehicleDocuments([]);
-    setAuditTrails([]);
-    fetchBookingHistory(v.id);
-    fetchVehicleDocuments(v.id);
-    setIsViewModalOpen(true);
-  };
-
-  useEffect(() => {
-    fetchMetadata();
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === 'audit' && editingVehicle?.id) {
-      fetchAuditTrails(editingVehicle.id);
-    }
-  }, [activeTab, editingVehicle]);
-
-  const fetchOffices = async () => {
+  const fetchDeletedOnly = async (page = currentPage, currentSearch = search, branch = selectedBranch, order = sortOrder, signal = null) => {
+    setLoading(true);
     try {
-      const res = await api.get('/offices');
-      setOffices(formatOfficeHierarchy(res.data));
-    } catch (error) {
-      console.error('Error fetching offices:', error);
+      const params = { page, size: 10, search: currentSearch, officeId: branch, sortOrder: order };
+      const res = await api.get('/vehicles/deleted/list', { params, signal });
+      setVehicles(res.data.items);
+      setTotalPages(res.data.totalPages);
+      setTotalItems(res.data.totalItems);
+    } catch (e) {
+      if (e.name !== 'CanceledError' && e.message !== 'canceled') console.error('Fetch error:', e);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (isHeadOffice) fetchOffices();
-  }, []);
+    const controller = new AbortController();
+    fetchAllData(currentPage, search, selectedBranch, sortOrder, controller.signal);
+    return () => controller.abort();
+  }, []); // Mount only
 
   useEffect(() => {
+    // Simple way to avoid double fetch on mount
+    if (!offices.length) return;
+
+    const controller = new AbortController();
     const timer = setTimeout(() => {
-      fetchDeletedVehicles(currentPage, search, selectedBranch, sortOrder);
-    }, 500);
-    return () => clearTimeout(timer);
+      fetchDeletedOnly(currentPage, search, selectedBranch, sortOrder, controller.signal);
+    }, 300); // Faster debounce
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [currentPage, search, selectedBranch, sortOrder]);
 
   const handleRestore = async (id) => {
@@ -438,7 +385,7 @@ const RecycleBin = () => {
                       <div className="w-full h-full flex items-center justify-center text-gray-300"><ImageIcon size={32} /></div>
                     )}
                     <div className="absolute top-2 right-2">
-                        <span className="px-2 py-1 rounded-lg bg-black/50 backdrop-blur-md text-white text-[9px] font-black uppercase">
+                        <span className="px-2 py-1 rounded-lg bg-black/60 text-white text-[9px] font-black uppercase shadow-sm">
                             {calculateAge(v.deleted_at)}
                         </span>
                     </div>
