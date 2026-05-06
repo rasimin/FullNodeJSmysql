@@ -528,6 +528,14 @@ const Catalog = () => {
 
   const isNeutral = !isPublicMode || (showroomInfo && showroomInfo.theme_color === 'default' && !showroomInfo.header_image);
 
+  if (infoLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-[#0a0b0f]">
+        <div className="w-10 h-10 border-4 border-gray-900 dark:border-white border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   if (notFound) {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-[#0a0b0f] flex flex-col items-center justify-center p-6 text-center">
