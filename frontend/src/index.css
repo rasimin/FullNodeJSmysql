@@ -504,3 +504,11 @@
 .prose a:hover {
   text-decoration: underline;
 }
+
+/* Global Word Wrap Fix - Prevent splitting words like 'pelanggan' */
+.prose, .prose *, .about-content-rich, .about-content-rich * {
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  hyphens: none !important;
+}

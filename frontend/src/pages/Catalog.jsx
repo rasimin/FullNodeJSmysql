@@ -327,7 +327,18 @@ const Catalog = () => {
       setPillStyle({ left: bRect.left - cRect.left, width: bRect.width });
     }
   }, [filterType]);
-  useLayoutEffect(() => { updatePillPosition(); }, [filterType, updatePillPosition]);
+  
+  useLayoutEffect(() => { 
+    updatePillPosition(); 
+  }, [filterType, updatePillPosition, loading, infoLoading, showroomInfo]);
+
+  // Extra safety update after mount and short delay
+  useEffect(() => {
+    updatePillPosition();
+    const timer = setTimeout(updatePillPosition, 100);
+    const timer2 = setTimeout(updatePillPosition, 500);
+    return () => { clearTimeout(timer); clearTimeout(timer2); };
+  }, [updatePillPosition]);
 
   useEffect(() => {
     const fetchPublicOffices = async () => {

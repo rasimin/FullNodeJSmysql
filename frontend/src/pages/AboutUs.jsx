@@ -95,8 +95,8 @@ const AboutUs = () => {
                 'from-[#0f172a] via-[#1e3a8a] to-[#3b82f6]'
               }`} style={showroomInfo?.theme_color?.startsWith('#') ? { background: `linear-gradient(135deg, ${showroomInfo.theme_color}, ${showroomInfo.theme_color}dd)` } : {}}></div>
             )}
-            {/* Massive Elegant Bottom Fade Gradient */}
-            <div className="absolute bottom-0 left-0 right-0 h-[80%] bg-gradient-to-t from-gray-100 dark:from-[#0a0b0f] via-gray-100/40 dark:via-[#0a0b0f]/40 to-transparent z-[1]" />
+            {/* Subtle Bottom Fade (Reduced from 80% to 30%) */}
+            <div className="absolute bottom-0 left-0 right-0 h-[30%] bg-gradient-to-t from-gray-100 dark:from-[#0a0b0f] to-transparent z-[1]" />
           </div>
         )}
 
@@ -110,42 +110,51 @@ const AboutUs = () => {
           toggleTheme={toggleTheme}
         />
 
-        <header className="relative z-10 flex flex-col items-center text-center px-5 pt-10 md:pt-20 pb-32 max-w-7xl mx-auto">
-          <motion.h1 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className={`text-5xl md:text-7xl font-black tracking-tighter leading-[0.9] ${isNeutral ? 'text-gray-900 dark:text-white' : 'text-white'}`}
-          >
-            Tentang Kami
-          </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
-            className={`mt-6 text-lg md:text-xl font-medium tracking-wide max-w-2xl leading-relaxed ${isNeutral ? 'text-gray-600 dark:text-gray-400' : 'text-white/80'}`}
-          >
-            Kenali lebih dekat visi dan dedikasi kami dalam menghadirkan unit kendaraan terbaik untuk Anda.
-          </motion.p>
-        </header>
+        <div className="relative z-10 pt-32 pb-48" />
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 max-w-5xl mx-auto px-5 -mt-20 mb-20">
+      <div className="relative z-10 max-w-5xl mx-auto px-5 -mt-64 mb-20">
         <motion.div 
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
-          className="bg-white dark:bg-[#12141c] rounded-[40px] p-8 md:p-16 shadow-2xl border border-gray-100 dark:border-white/5"
+          className="bg-white/60 dark:bg-[#12141c]/30 backdrop-blur-xl rounded-[40px] px-8 md:px-16 pt-10 md:pt-12 pb-12 md:pb-16 shadow-2xl border border-white/20 dark:border-white/10"
         >
           <div className="flex flex-col gap-16">
             <div className="w-full">
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                className="prose dark:prose-invert max-w-none text-gray-600 dark:text-gray-400 leading-[1.8] text-base md:text-lg"
+                transition={{ duration: 0.5, delay: 0.4 }}
+                className="prose dark:prose-invert max-w-none text-gray-900 dark:text-gray-100 leading-[1.8] text-base md:text-lg"
               >
+                <style>{`
+                  .prose, .about-content-rich, .about-content-rich * {
+                    word-break: normal !important;
+                    word-wrap: break-word !important;
+                    overflow-wrap: break-word !important;
+                    white-space: normal !important;
+                    hyphens: none !important;
+                  }
+                  .about-content-rich .ql-align-center { text-align: center !important; }
+                  .about-content-rich .ql-align-right { text-align: right !important; }
+                  .about-content-rich .ql-align-justify { text-align: justify !important; }
+                  .about-content-rich h1, .about-content-rich h2, .about-content-rich h3 { 
+                    color: inherit; 
+                    font-weight: 900; 
+                    text-transform: uppercase; 
+                    letter-spacing: -0.025em;
+                    margin-top: 1.5em;
+                    margin-bottom: 0.5em;
+                  }
+                  .about-content-rich p { margin-bottom: 1em; }
+                  .about-content-rich ul, .about-content-rich ol { 
+                    padding-left: 1.5em; 
+                    margin-bottom: 1em; 
+                  }
+                  .about-content-rich li { margin-bottom: 0.5em; }
+                `}</style>
                 {showroomInfo?.about_content ? (
                   <div 
                     className="about-content-rich"
@@ -166,16 +175,30 @@ const AboutUs = () => {
             </div>
 
             {/* Premium Gallery Section */}
-            {(showroomInfo?.about_image_1 || showroomInfo?.about_image_2 || showroomInfo?.about_image_3) && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-10 border-t border-gray-100 dark:border-white/5">
-                {[showroomInfo.about_image_1, showroomInfo.about_image_2, showroomInfo.about_image_3].map((img, idx) => img && (
+            {[
+              showroomInfo?.about_image_1, showroomInfo?.about_image_2, 
+              showroomInfo?.about_image_3, showroomInfo?.about_image_4, 
+              showroomInfo?.about_image_5
+            ].some(img => img) && (
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-4 md:gap-6 pt-10 border-t border-gray-100 dark:border-white/5">
+                {[
+                  showroomInfo.about_image_1, showroomInfo.about_image_2, 
+                  showroomInfo.about_image_3, showroomInfo.about_image_4, 
+                  showroomInfo.about_image_5
+                ].filter(Boolean).map((img, idx) => (
                   <motion.div
                     key={idx}
                     initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.5, delay: 0.1 * idx }}
-                    className={`relative rounded-[32px] overflow-hidden bg-gray-100 dark:bg-white/5 group shadow-xl ${idx === 0 ? 'md:col-span-2 md:aspect-[21/9]' : 'aspect-square'}`}
+                    className={`relative rounded-[24px] md:rounded-[32px] overflow-hidden bg-gray-100 dark:bg-white/5 group shadow-xl ${
+                      idx === 0 ? 'col-span-2 md:col-span-4 md:row-span-2 aspect-[4/3] md:aspect-auto' : 
+                      idx === 1 ? 'col-span-1 md:col-span-2 aspect-square' :
+                      idx === 2 ? 'col-span-1 md:col-span-2 aspect-square' :
+                      idx === 3 ? 'col-span-1 md:col-span-3 aspect-video md:aspect-square' :
+                      'col-span-1 md:col-span-3 aspect-video md:aspect-square'
+                    }`}
                   >
                     <img 
                       src={`${IMAGE_BASE_URL}${img}`} 

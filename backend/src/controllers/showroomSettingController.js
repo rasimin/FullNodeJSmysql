@@ -49,7 +49,9 @@ exports.updateShowroomSetting = async (req, res) => {
         remove_image,
         remove_about_image_1,
         remove_about_image_2,
-        remove_about_image_3
+        remove_about_image_3,
+        remove_about_image_4,
+        remove_about_image_5
     } = req.body;
 
     const setting = await ShowroomSetting.findByPk(id);
@@ -102,6 +104,18 @@ exports.updateShowroomSetting = async (req, res) => {
         updateData.about_image_3 = null;
     } else if (req.files?.about_image_3) {
         updateData.about_image_3 = `/uploads/${req.files.about_image_3[0].filename}`;
+    }
+
+    if (remove_about_image_4 === 'true') {
+        updateData.about_image_4 = null;
+    } else if (req.files?.about_image_4) {
+        updateData.about_image_4 = `/uploads/${req.files.about_image_4[0].filename}`;
+    }
+
+    if (remove_about_image_5 === 'true') {
+        updateData.about_image_5 = null;
+    } else if (req.files?.about_image_5) {
+        updateData.about_image_5 = `/uploads/${req.files.about_image_5[0].filename}`;
     }
 
     await setting.update(updateData, { userId: req.user.id });
