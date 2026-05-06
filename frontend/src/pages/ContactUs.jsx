@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { ChevronLeft, MapPin, Phone, Mail, Clock, Building2 } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, Building2, Globe } from 'lucide-react';
 import api from '../services/api';
+import { IMAGE_BASE_URL } from '../config';
+import ShowroomNavbar from '../components/ShowroomNavbar';
+import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+
+import { motion } from 'framer-motion';
 
 const ContactUs = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
   const [showroomInfo, setShowroomInfo] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -26,82 +34,191 @@ const ContactUs = () => {
     fetchInfo();
   }, [slug]);
 
+  const isNeutral = !showroomInfo?.header_image || showroomInfo?.theme_color === 'default';
+
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center dark:bg-[#0a0b0f]">
-      <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-    </div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-[#0a0b0f]">
+        <div className="w-10 h-10 border-4 border-gray-900 dark:border-white border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
   const office = showroomInfo?.office;
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-[#0a0b0f] pb-20">
+    <div className="min-h-screen bg-gray-100 dark:bg-[#0a0b0f] transition-colors duration-500 overflow-x-hidden">
       <Helmet>
         <title>Kontak Kami | {showroomInfo?.title || 'Bursa Mobil'}</title>
       </Helmet>
-      
-      {/* Simple Header */}
-      <div className="bg-white dark:bg-[#1c1f26] border-b border-gray-200 dark:border-white/10 sticky top-0 z-50">
-        <div className="max-w-5xl mx-auto px-5 h-16 flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 transition-colors">
-            <ChevronLeft size={20} />
-          </button>
-          <h1 className="text-lg font-bold text-gray-900 dark:text-white">Kontak Kami</h1>
-        </div>
+
+      {/* Hero Section */}
+      <div 
+        className={`relative z-0 w-full overflow-hidden transition-all duration-700 ${
+          isNeutral ? 'bg-transparent pb-4 md:pb-6' : 
+          `${
+            showroomInfo?.theme_color?.startsWith('#') ? '' :
+            showroomInfo?.theme_color === 'indigo' ? 'bg-indigo-900' :
+            showroomInfo?.theme_color === 'purple' ? 'bg-purple-900' :
+            showroomInfo?.theme_color === 'slate' ? 'bg-slate-900' :
+            showroomInfo?.theme_color === 'emerald' ? 'bg-emerald-900' :
+            showroomInfo?.theme_color === 'rose' ? 'bg-rose-900' : 'bg-blue-900'
+          }`
+        }`}
+        style={!isNeutral && showroomInfo?.theme_color?.startsWith('#') ? { backgroundColor: showroomInfo.theme_color } : {}}
+      >
+        {!isNeutral && (
+          <div className="absolute inset-0 z-0 transition-opacity duration-1000">
+            {showroomInfo?.header_image ? (
+              <>
+                <img src={`${IMAGE_BASE_URL}${showroomInfo.header_image}`} className="w-full h-full object-cover" alt="Header" />
+                {/* Color Tone Overlay - Only if not default */}
+                {showroomInfo?.theme_color && showroomInfo?.theme_color !== 'default' ? (
+                  <div className={`absolute inset-0 mix-blend-multiply ${
+                    showroomInfo?.theme_color?.startsWith('#') ? '' : showroomInfo?.theme_color === 'indigo' ? 'bg-indigo-950/70' :
+                    showroomInfo?.theme_color === 'purple' ? 'bg-purple-950/70' :
+                    showroomInfo?.theme_color === 'slate' ? 'bg-slate-950/70' :
+                    showroomInfo?.theme_color === 'emerald' ? 'bg-emerald-950/70' :
+                    showroomInfo?.theme_color === 'rose' ? 'bg-rose-950/70' : 'bg-blue-950/70'
+                  }`} style={showroomInfo?.theme_color?.startsWith('#') ? { background: `linear-gradient(135deg, ${showroomInfo.theme_color}, ${showroomInfo.theme_color}dd)` } : {}}></div>
+                ) : (
+                  // Subtle dark overlay to ensure text is readable even without tone color
+                  <div className="absolute inset-0 bg-black/30 bg-gradient-to-t from-black/60 to-transparent" style={showroomInfo?.theme_color?.startsWith('#') ? { backgroundColor: `${showroomInfo.theme_color}b3` } : {}}></div>
+                )}
+              </>
+            ) : (
+              <div className={`absolute inset-0 opacity-90 bg-gradient-to-br ${
+                showroomInfo?.theme_color?.startsWith('#') ? '' : showroomInfo?.theme_color === 'indigo' ? 'from-[#1e1b4b] via-[#3730a3] to-[#6366f1]' :
+                showroomInfo?.theme_color === 'purple' ? 'from-[#3b0764] via-[#6b21a8] to-[#a855f7]' :
+                showroomInfo?.theme_color === 'slate' ? 'from-[#0f172a] via-[#334155] to-[#64748b]' :
+                showroomInfo?.theme_color === 'emerald' ? 'from-[#022c22] via-[#047857] to-[#10b981]' :
+                showroomInfo?.theme_color === 'rose' ? 'from-[#4c0519] via-[#be123c] to-[#f43f5e]' :
+                'from-[#0f172a] via-[#1e3a8a] to-[#3b82f6]'
+              }`} style={showroomInfo?.theme_color?.startsWith('#') ? { background: `linear-gradient(135deg, ${showroomInfo.theme_color}, ${showroomInfo.theme_color}dd)` } : {}}></div>
+            )}
+            {/* Massive Elegant Bottom Fade Gradient */}
+            <div className="absolute bottom-0 left-0 right-0 h-[80%] bg-gradient-to-t from-gray-100 dark:from-[#0a0b0f] via-gray-100/40 dark:via-[#0a0b0f]/40 to-transparent z-[1]" />
+          </div>
+        )}
+
+        <ShowroomNavbar 
+          showroomInfo={showroomInfo}
+          isNeutral={isNeutral}
+          isPublicMode={true}
+          slug={slug}
+          user={user}
+          theme={theme}
+          toggleTheme={toggleTheme}
+        />
+
+        <header className="relative z-10 flex flex-col items-center text-center px-5 pt-10 md:pt-20 pb-32 max-w-7xl mx-auto">
+          <motion.h1 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className={`text-5xl md:text-7xl font-black tracking-tighter leading-[0.9] ${isNeutral ? 'text-gray-900 dark:text-white' : 'text-white'}`}
+          >
+            Kontak Kami
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
+            className={`mt-6 text-lg md:text-xl font-medium tracking-wide max-w-2xl leading-relaxed ${isNeutral ? 'text-gray-600 dark:text-gray-400' : 'text-white/80'}`}>
+            Ada pertanyaan atau butuh bantuan? Kami siap melayani kebutuhan kendaraan Anda dengan sepenuh hati.
+          </motion.p>
+        </header>
       </div>
 
-      <div className="max-w-3xl mx-auto px-5 mt-10">
-        <div className="bg-white dark:bg-[#1c1f26] rounded-3xl p-8 md:p-12 shadow-sm border border-gray-200 dark:border-white/10">
-          <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-8">
-            Hubungi Kami
-          </h2>
+      {/* Main Content */}
+      <div className="relative z-10 max-w-4xl mx-auto px-5 -mt-20 mb-20">
+        <motion.div 
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
+          className="bg-white dark:bg-[#12141c] rounded-[40px] p-8 md:p-16 shadow-2xl border border-gray-100 dark:border-white/5"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <motion.div 
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
+              className="space-y-10"
+            >
+              <div>
+                <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-6 uppercase tracking-tight">Hubungi Kami</h2>
+                <div className="space-y-8">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center text-gray-900 dark:text-white shrink-0">
+                      <Building2 size={24} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Kantor</p>
+                      <p className="text-base font-bold text-gray-900 dark:text-white leading-tight">{office?.name || 'Kantor Pusat'}</p>
+                    </div>
+                  </div>
 
-          <div className="space-y-6">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center text-blue-500 shrink-0 mt-1">
-                <Building2 size={24} />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Kantor</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">{office?.name || 'Kantor Pusat'}</p>
-              </div>
-            </div>
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center text-gray-900 dark:text-white shrink-0">
+                      <Phone size={24} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Telepon</p>
+                      <p className="text-base font-bold text-gray-900 dark:text-white leading-tight">{office?.phone || '-'}</p>
+                    </div>
+                  </div>
 
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center text-blue-500 shrink-0 mt-1">
-                <MapPin size={24} />
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center text-gray-900 dark:text-white shrink-0">
+                      <Mail size={24} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Email</p>
+                      <p className="text-base font-bold text-gray-900 dark:text-white leading-tight">{office?.email || '-'}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Alamat</p>
-                <p className="text-base text-gray-700 dark:text-gray-300 leading-relaxed">
-                  {office?.address || 'Jl. Contoh Alamat No. 123, Kota, Provinsi'}
-                  {office?.location && <><br />{office.location.name}</>}
-                </p>
-              </div>
-            </div>
+            </motion.div>
 
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center text-blue-500 shrink-0 mt-1">
-                <Phone size={24} />
-              </div>
+            <motion.div 
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4, delay: 0.4 }}
+              className="space-y-10"
+            >
               <div>
-                <p className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Telepon</p>
-                <p className="text-base text-gray-700 dark:text-gray-300">{office?.phone || '-'}</p>
+                <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-6 uppercase tracking-tight">Lokasi & Jam</h2>
+                <div className="space-y-8">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center text-gray-900 dark:text-white shrink-0">
+                      <MapPin size={24} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Alamat</p>
+                      <p className="text-base font-bold text-gray-900 dark:text-white leading-relaxed">
+                        {office?.address || 'Jl. Contoh Alamat No. 123, Kota, Provinsi'}
+                        {office?.location && <><br />{office.location.name}</>}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center text-gray-900 dark:text-white shrink-0">
+                      <Clock size={24} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Operasional</p>
+                      <p className="text-base font-bold text-gray-900 dark:text-white leading-relaxed">
+                        Senin - Sabtu: 08.00 - 17.00<br/>Minggu: Tutup
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-            
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center text-blue-500 shrink-0 mt-1">
-                <Clock size={24} />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Jam Operasional</p>
-                <p className="text-base text-gray-700 dark:text-gray-300">Senin - Sabtu: 08.00 - 17.00<br/>Minggu: Tutup</p>
-              </div>
-            </div>
+            </motion.div>
           </div>
-          
-        </div>
+        </motion.div>
       </div>
     </div>
   );

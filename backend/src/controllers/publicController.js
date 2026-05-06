@@ -55,6 +55,12 @@ exports.getPublicVehicles = async (req, res) => {
       ];
     }
 
+    const sort = req.query.sort || 'Terbaru';
+    let order = [['created_at', 'DESC']];
+    if (sort === 'Harga Terendah') order = [['price', 'ASC']];
+    else if (sort === 'Harga Tertinggi') order = [['price', 'DESC']];
+    else if (sort === 'Tahun Terbaru') order = [['year', 'DESC']];
+
     const { count, rows } = await Vehicle.findAndCountAll({
       where,
       include: [
@@ -64,7 +70,7 @@ exports.getPublicVehicles = async (req, res) => {
           include: [{ model: Location, as: 'location' }] 
         }
       ],
-      order: [['created_at', 'DESC']],
+      order,
       limit: finalLimit,
       offset: (parseInt(page) - 1) * finalLimit,
       distinct: true
@@ -89,21 +95,33 @@ exports.getPublicVehicleDetail = async (req, res) => {
         { model: VehicleImage, as: 'images' },
         { 
           model: Office, 
-          as: 'office',
           include: [
             { model: Location, as: 'location' },
             {
               model: ShowroomSetting,
               as: 'showroomSetting',
-              required: true,
-              where: { is_published: true }
+            },
+            {
+              model: Office,
+              as: 'parent',
+              include: [{
+                model: ShowroomSetting,
+                as: 'showroomSetting'
+              }]
             }
           ] 
         }
       ]
     });
 
-    if (!vehicle) return res.status(404).json({ message: 'Unit tidak ditemukan atau showroom belum dipublikasi.' });
+    if (!vehicle) return res.status(404).json({ message: 'Unit tidak ditemukan.' });
+
+    // Verify that either the office or its parent has a published showroom setting
+    const showroom = vehicle.Office?.showroomSetting || vehicle.Office?.parent?.showroomSetting;
+    if (!showroom || !showroom.is_published) {
+      return res.status(404).json({ message: 'Unit tidak ditemukan atau showroom belum dipublikasi.' });
+    }
+
     res.json(vehicle);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -165,17 +183,26 @@ exports.getPublicSalesAgents = async (req, res) => {
 
     const { SalesAgent, Office, ShowroomSetting } = require('../models');
     
-    // Check if the office belongs to a published showroom
+    // Check if the office or its parent belongs to a published showroom
     const office = await Office.findByPk(officeId, {
-      include: [{
-        model: ShowroomSetting,
-        as: 'showroomSetting',
-        required: true,
-        where: { is_published: true }
-      }]
+      include: [
+        {
+          model: ShowroomSetting,
+          as: 'showroomSetting',
+        },
+        {
+          model: Office,
+          as: 'parent',
+          include: [{
+            model: ShowroomSetting,
+            as: 'showroomSetting'
+          }]
+        }
+      ]
     });
 
-    if (!office) {
+    const showroom = office?.showroomSetting || office?.parent?.showroomSetting;
+    if (!office || !showroom || !showroom.is_published) {
       return res.status(404).json({ message: 'Office not found or showroom not published' });
     }
 

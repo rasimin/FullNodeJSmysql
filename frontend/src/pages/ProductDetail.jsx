@@ -95,7 +95,7 @@ const ProductDetail = () => {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-[#0a0b0f] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-12 h-12 border-4 border-gray-900 border-t-transparent rounded-full animate-spin" />
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Memuat Detail Unit...</p>
         </div>
       </div>
@@ -124,7 +124,7 @@ const ProductDetail = () => {
     <div className="min-h-screen bg-gray-100 dark:bg-[#0a0b0f] transition-colors duration-500 pb-20">
       {/* Background Decor */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/[0.03] blur-[120px] rounded-full translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gray-900/[0.03] blur-[120px] rounded-full translate-x-1/2 -translate-y-1/2" />
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-500/[0.03] blur-[120px] rounded-full -translate-x-1/2 translate-y-1/2" />
       </div>
 
@@ -132,8 +132,21 @@ const ProductDetail = () => {
         {/* Navigation */}
         <div className="flex justify-between items-center mb-8">
           <button 
-            onClick={() => navigate('/catalog')}
-            className="group flex items-center gap-2.5 px-5 h-11 bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-full text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest hover:text-blue-500 dark:hover:text-blue-400 transition-all shadow-sm"
+            onClick={() => {
+              const token = localStorage.getItem('token');
+              const showroomSlug = vehicle?.Office?.showroomSetting?.slug || vehicle?.Office?.parent?.showroomSetting?.slug;
+
+              if (showroomSlug) {
+                // If we have a showroom slug, go back to public catalog regardless of token 
+                // to ensure public users don't get trapped in /catalog login redirect
+                navigate(`/c/${showroomSlug}`);
+              } else if (token) {
+                navigate('/catalog');
+              } else {
+                navigate(-1);
+              }
+            }}
+            className="group flex items-center gap-2.5 px-5 h-11 bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-full text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest hover:text-gray-900 dark:hover:text-gray-400 transition-all shadow-sm"
           >
             <ChevronLeft size={16} /> Kembali
           </button>
@@ -141,13 +154,13 @@ const ProductDetail = () => {
           <div className="flex items-center gap-3">
             <button 
               onClick={toggleTheme}
-              className="w-11 h-11 rounded-full bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-blue-500 transition-all shadow-sm"
+              className="w-11 h-11 rounded-full bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-900 transition-all shadow-sm"
             >
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
             <button 
               onClick={handleShare}
-              className="w-11 h-11 rounded-full bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-blue-500 transition-all shadow-sm"
+              className="w-11 h-11 rounded-full bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-900 transition-all shadow-sm"
             >
               <Share2 size={18} />
             </button>
@@ -182,7 +195,7 @@ const ProductDetail = () => {
                 </div>
               )}
               <div className="absolute top-6 left-6 z-20">
-                <div className={`h-8 px-5 ${vehicle.status === 'Sold' ? 'bg-red-500' : vehicle.status === 'Booking' ? 'bg-amber-500' : 'bg-blue-600'} text-white text-[9px] font-black uppercase flex items-center rounded-lg shadow-lg tracking-widest`}>
+                <div className={`h-8 px-5 ${vehicle.status === 'Sold' ? 'bg-red-500' : vehicle.status === 'Booking' ? 'bg-amber-500' : 'bg-gray-900'} text-white text-[9px] font-black uppercase flex items-center rounded-lg shadow-lg tracking-widest`}>
                   {vehicle.status === 'Sold' ? 'Terjual' : vehicle.status === 'Booking' ? 'Terbooking' : 'Ready Stock'}
                 </div>
               </div>
@@ -194,13 +207,13 @@ const ProductDetail = () => {
                 {/* Scroll Arrows */}
                 <button 
                   onClick={() => scrollThumbs('left')}
-                  className="absolute left-1 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-100 dark:border-white/10 rounded-full flex items-center justify-center text-gray-500 hover:text-blue-500 shadow-xl opacity-100 md:opacity-0 md:group-hover/thumbs:opacity-100 transition-all z-20"
+                  className="absolute left-1 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-100 dark:border-white/10 rounded-full flex items-center justify-center text-gray-500 hover:text-gray-900 shadow-xl opacity-100 md:opacity-0 md:group-hover/thumbs:opacity-100 transition-all z-20"
                 >
                   <ChevronLeft size={16} />
                 </button>
                 <button 
                   onClick={() => scrollThumbs('right')}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-100 dark:border-white/10 rounded-full flex items-center justify-center text-gray-500 hover:text-blue-500 shadow-xl opacity-100 md:opacity-0 md:group-hover/thumbs:opacity-100 transition-all z-20"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-100 dark:border-white/10 rounded-full flex items-center justify-center text-gray-500 hover:text-gray-900 shadow-xl opacity-100 md:opacity-0 md:group-hover/thumbs:opacity-100 transition-all z-20"
                 >
                   <ChevronRight size={16} />
                 </button>
@@ -213,11 +226,11 @@ const ProductDetail = () => {
                     <button
                       key={idx}
                       onClick={() => setActiveImageIndex(idx)}
-                      className={`relative w-24 h-16 md:w-32 md:h-20 rounded-xl overflow-hidden border-2 transition-all shrink-0 ${activeImageIndex === idx ? 'border-blue-500 scale-105 shadow-lg' : 'border-transparent opacity-50 hover:opacity-100 hover:border-gray-200 dark:hover:border-white/20'}`}
+                      className={`relative w-24 h-16 md:w-32 md:h-20 rounded-xl overflow-hidden border-2 transition-all shrink-0 ${activeImageIndex === idx ? 'border-gray-900 scale-105 shadow-lg' : 'border-transparent opacity-50 hover:opacity-100 hover:border-gray-200 dark:hover:border-white/20'}`}
                     >
                       <img src={`${IMAGE_BASE_URL}${img.image_url}`} className="w-full h-full object-cover" alt="" />
                       {activeImageIndex === idx && (
-                        <div className="absolute inset-0 bg-blue-500/10 backdrop-blur-[2px]" />
+                        <div className="absolute inset-0 bg-gray-900/10 backdrop-blur-[2px]" />
                       )}
                     </button>
                   ))}
@@ -233,7 +246,7 @@ const ProductDetail = () => {
               className="bg-white dark:bg-white/[0.02] border border-gray-200 dark:border-white/10 rounded-3xl p-8 md:p-10 shadow-xl shadow-gray-200/50 dark:shadow-none backdrop-blur-sm"
             >
               <div className="flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
+                <div className="w-10 h-10 rounded-xl bg-gray-900/10 flex items-center justify-center text-gray-900">
                   <Info size={20} />
                 </div>
                 <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Informasi Unit</h3>
@@ -256,7 +269,7 @@ const ProductDetail = () => {
                   { icon: Globe, label: 'Unit', sub: 'Lolos Cek' }
                 ].map((item, i) => (
                   <div key={i} className="flex flex-col items-center text-center gap-2">
-                    <div className="w-12 h-12 rounded-full bg-gray-50 dark:bg-white/5 flex items-center justify-center text-gray-400 group-hover:text-blue-500 transition-colors">
+                    <div className="w-12 h-12 rounded-full bg-gray-50 dark:bg-white/5 flex items-center justify-center text-gray-400 group-hover:text-gray-900 transition-colors">
                       <item.icon size={20} strokeWidth={1.5} />
                     </div>
                     <div>
@@ -287,13 +300,13 @@ const ProductDetail = () => {
                 </div>
                 <div className="flex justify-between items-center mb-2">
                   <p className="text-[12px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.4em]">{vehicle.brand} • {vehicle.year}</p>
-                  <span className="text-[11px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest bg-blue-600/5 px-3 py-1 rounded-lg border border-blue-500/10 shadow-sm">{vehicle.unit_code}</span>
+                  <span className="text-[11px] font-black text-gray-900 dark:text-gray-400 uppercase tracking-widest bg-gray-900/5 px-3 py-1 rounded-lg border border-gray-900/10 shadow-sm">{vehicle.unit_code}</span>
                 </div>
                 <h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tighter leading-none mb-6">
                   {vehicle.model}
                 </h1>
-                <div className="h-px w-20 bg-blue-600 mb-8" />
-                <p className="text-4xl font-black text-blue-600 dark:text-blue-400 tracking-tight">
+                <div className="h-px w-20 bg-gray-900 mb-8" />
+                <p className="text-4xl font-black text-gray-900 dark:text-gray-400 tracking-tight">
                   {formatPrice(vehicle.price)}
                 </p>
               </div>
@@ -318,13 +331,13 @@ const ProductDetail = () => {
               </div>
 
               {/* Location Box */}
-              <div className="p-6 bg-blue-50/50 dark:bg-blue-400/5 rounded-2xl border border-blue-200 dark:border-blue-500/10 mb-10 shadow-sm">
+              <div className="p-6 bg-blue-50/50 dark:bg-gray-400/5 rounded-2xl border border-blue-200 dark:border-gray-900/10 mb-10 shadow-sm">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-blue-600/30">
+                  <div className="w-12 h-12 rounded-xl bg-gray-900 text-white flex items-center justify-center shrink-0 shadow-lg shadow-gray-900/30">
                     <MapPin size={24} />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">Lokasi Unit</p>
+                    <p className="text-[9px] font-black text-gray-900 dark:text-gray-400 uppercase tracking-widest mb-1">Lokasi Unit</p>
                     <p className="text-lg font-black text-gray-900 dark:text-white leading-tight mb-1 truncate">{vehicle.Office?.name || 'Cabang -'}</p>
                     <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide truncate">{vehicle.Office?.location?.name || '-'}</p>
                   </div>
@@ -336,7 +349,7 @@ const ProductDetail = () => {
                 <button 
                   onClick={handleContact}
                   disabled={vehicle.status === 'Sold'}
-                  className={`w-full h-16 ${vehicle.status === 'Sold' ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 hover:scale-[1.01] active:scale-95'} text-white rounded-xl font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all shadow-lg ${vehicle.status !== 'Sold' ? 'shadow-blue-600/20' : ''} cursor-pointer`}
+                  className={`w-full h-16 ${vehicle.status === 'Sold' ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-blue-700 hover:scale-[1.01] active:scale-95'} text-white rounded-xl font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all shadow-lg ${vehicle.status !== 'Sold' ? 'shadow-gray-900/20' : ''} cursor-pointer`}
                 >
                   <Phone size={18} fill="currentColor" /> {vehicle.status === 'Sold' ? 'Unit Sudah Terjual' : 'Hubungi Sales Agent'}
                 </button>
@@ -391,7 +404,7 @@ const ProductDetail = () => {
               <div className="p-4 max-h-[60vh] overflow-y-auto no-scrollbar space-y-3">
                 {agentsLoading ? (
                   <div className="py-20 flex flex-col items-center justify-center text-gray-400 gap-4">
-                    <div className="w-10 h-10 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin" />
+                    <div className="w-10 h-10 border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
                     <p className="text-xs font-bold uppercase tracking-widest">Mencari Agent...</p>
                   </div>
                 ) : (!Array.isArray(agents) || agents.length === 0) ? (
@@ -401,14 +414,14 @@ const ProductDetail = () => {
                   </div>
                 ) : (
                   agents.map(agent => (
-                    <div key={agent.id} className="group p-5 bg-gray-50 dark:bg-white/5 rounded-[30px] border border-transparent hover:border-blue-500/30 transition-all">
+                    <div key={agent.id} className="group p-5 bg-gray-50 dark:bg-white/5 rounded-[30px] border border-transparent hover:border-gray-900/30 transition-all">
                       <div className="flex items-center gap-4">
                         <div className="w-16 h-16 rounded-2xl bg-gray-200 dark:bg-gray-800 overflow-hidden shrink-0 shadow-md">
                           {agent.avatar ? <img src={`${IMAGE_BASE_URL}${agent.avatar}`} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-gray-400 text-xl font-bold">{agent.name.charAt(0)}</div>}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-base font-black text-gray-900 dark:text-white truncate uppercase">{agent.name}</p>
-                          <p className="text-[9px] text-blue-500 font-black uppercase tracking-widest">{agent.sales_code || 'Official Agent'}</p>
+                          <p className="text-[9px] text-gray-900 font-black uppercase tracking-widest">{agent.sales_code || 'Official Agent'}</p>
                         </div>
                       </div>
                       <button 

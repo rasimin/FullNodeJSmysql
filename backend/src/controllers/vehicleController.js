@@ -162,6 +162,12 @@ const getVehicles = async (req, res) => {
       };
     }
 
+    const sort = req.query.sort || 'Terbaru';
+    let orderArr = [['created_at', 'DESC']];
+    if (sort === 'Harga Terendah') orderArr = [['price', 'ASC']];
+    else if (sort === 'Harga Tertinggi') orderArr = [['price', 'DESC']];
+    else if (sort === 'Tahun Terbaru') orderArr = [['year', 'DESC']];
+
     const { count, rows: vehicles } = await Vehicle.findAndCountAll({
       where: condition,
       limit,
@@ -181,7 +187,7 @@ const getVehicles = async (req, res) => {
         },
         { model: VehicleImage, as: 'images', attributes: ['id', 'image_url', 'is_primary'] }
       ],
-      order: [['created_at', 'DESC']]
+      order: orderArr
     });
 
     res.json(getPagingData({ count, rows: vehicles }, page, limit));
