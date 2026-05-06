@@ -34,7 +34,7 @@ const AboutUs = () => {
     fetchInfo();
   }, [slug]);
 
-  const isNeutral = !showroomInfo?.header_image || showroomInfo?.theme_color === 'default';
+  const isNeutral = !showroomInfo?.header_image && (!showroomInfo?.theme_color || showroomInfo?.theme_color === 'default');
 
   if (loading) {
     return (
@@ -50,7 +50,7 @@ const AboutUs = () => {
         <title>Tentang Kami | {showroomInfo?.title || 'Bursa Mobil'}</title>
       </Helmet>
 
-      {/* Hero Section (Same as Catalog) */}
+      {/* Hero Section (Synchronized with Catalog) */}
       <div 
         className={`relative z-0 w-full overflow-hidden transition-all duration-700 ${
           isNeutral ? 'bg-transparent pb-4 md:pb-6' : 
@@ -66,7 +66,7 @@ const AboutUs = () => {
         style={!isNeutral && showroomInfo?.theme_color?.startsWith('#') ? { backgroundColor: showroomInfo.theme_color } : {}}
       >
         {/* Dynamic Background */}
-        {!isNeutral && (
+        {(showroomInfo?.header_image || (!isNeutral && showroomInfo?.theme_color)) && (
           <div className="absolute inset-0 z-0 transition-opacity duration-1000">
             {showroomInfo?.header_image ? (
               <>
@@ -95,8 +95,8 @@ const AboutUs = () => {
                 'from-[#0f172a] via-[#1e3a8a] to-[#3b82f6]'
               }`} style={showroomInfo?.theme_color?.startsWith('#') ? { background: `linear-gradient(135deg, ${showroomInfo.theme_color}, ${showroomInfo.theme_color}dd)` } : {}}></div>
             )}
-            {/* Subtle Bottom Fade (Reduced from 80% to 30%) */}
-            <div className="absolute bottom-0 left-0 right-0 h-[30%] bg-gradient-to-t from-gray-100 dark:from-[#0a0b0f] to-transparent z-[1]" />
+            {/* Massive Elegant Bottom Fade Gradient */}
+            <div className="absolute bottom-0 left-0 right-0 h-[80%] bg-gradient-to-t from-gray-100 dark:from-[#0a0b0f] via-gray-100/40 dark:via-[#0a0b0f]/40 to-transparent z-[1]" />
           </div>
         )}
 
@@ -110,11 +110,12 @@ const AboutUs = () => {
           toggleTheme={toggleTheme}
         />
 
-        <div className="relative z-10 pt-32 pb-48" />
+        {/* Hero Spacing (Exact match with Catalog's header including text height compensation) */}
+        <header className="relative z-10 flex flex-col items-center text-center px-5 pt-10 md:pt-20 pb-36 md:pb-40 max-w-7xl mx-auto min-h-[160px] md:min-h-[280px]" />
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 max-w-5xl mx-auto px-5 -mt-64 mb-20">
+      <div className="relative z-10 max-w-5xl mx-auto px-5 -mt-10 md:-mt-12 mb-20">
         <motion.div 
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}

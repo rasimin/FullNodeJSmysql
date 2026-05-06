@@ -579,76 +579,88 @@ const Catalog = () => {
         <meta property="og:description" content={showroomInfo?.description || 'Temukan unit impian Anda.'} />
         <meta property="og:type" content="website" />
       </Helmet>
+      <div 
+        className={`relative z-0 w-full overflow-hidden transition-all duration-700 ${
+          infoLoading ? 'h-[120px] md:h-[200px]' :
+          finalSearchTerm ? 'h-[180px] md:h-[240px]' : // Shorter height during search
+          isNeutral ? 'bg-transparent pb-4 md:pb-6' : 
+          `${
+            showroomInfo?.theme_color?.startsWith('#') ? '' :
+            showroomInfo?.theme_color === 'indigo' ? 'bg-indigo-900' :
+            showroomInfo?.theme_color === 'purple' ? 'bg-purple-900' :
+            showroomInfo?.theme_color === 'slate' ? 'bg-slate-900' :
+            showroomInfo?.theme_color === 'emerald' ? 'bg-emerald-900' :
+            showroomInfo?.theme_color === 'rose' ? 'bg-rose-900' : 'bg-blue-900'
+          }`
+        }`}
+        style={!infoLoading && !isNeutral && showroomInfo?.theme_color?.startsWith('#') ? { backgroundColor: showroomInfo.theme_color } : {}}
+      >
+        {/* Content Wrapper with Fade */}
+        <div className={`transition-opacity duration-500 ${infoLoading ? 'opacity-0' : 'opacity-100'}`}>
+          {!infoLoading && (
+            <>
+              {/* Dynamic Background */}
+                {!isNeutral && (
+                  <div className="absolute inset-0 z-0">
+                    {showroomInfo?.header_image ? (
+                      <div className="relative w-full h-full">
+                        <img 
+                          src={`${IMAGE_BASE_URL}${showroomInfo.header_image}`} 
+                          className={`w-full h-full object-cover transition-all duration-1000 ${finalSearchTerm ? 'blur-md scale-110' : ''}`} 
+                          alt="Header" 
+                        />
+                        {/* Color Tone Overlay - Only if not default */}
+                        {showroomInfo?.theme_color && showroomInfo?.theme_color !== 'default' ? (
+                          <div className={`absolute inset-0 mix-blend-multiply ${
+                            showroomInfo?.theme_color?.startsWith('#') ? '' : showroomInfo?.theme_color === 'indigo' ? 'bg-indigo-950/70' :
+                            showroomInfo?.theme_color === 'purple' ? 'bg-purple-950/70' :
+                            showroomInfo?.theme_color === 'slate' ? 'bg-slate-950/70' :
+                            showroomInfo?.theme_color === 'emerald' ? 'bg-emerald-950/70' :
+                            showroomInfo?.theme_color === 'rose' ? 'bg-rose-950/70' : 'bg-blue-950/70'
+                          }`} style={showroomInfo?.theme_color?.startsWith('#') ? { background: `linear-gradient(135deg, ${showroomInfo.theme_color}, ${showroomInfo.theme_color}dd)` } : {}}></div>
+                        ) : (
+                          // Subtle dark overlay to ensure text is readable even without tone color
+                          <div className="absolute inset-0 bg-black/30 bg-gradient-to-t from-black/60 to-transparent" style={showroomInfo?.theme_color?.startsWith('#') ? { backgroundColor: `${showroomInfo.theme_color}b3` } : {}}></div>
+                        )}
+                        
+                        {/* Search Mode Extra Overlay */}
+                        {finalSearchTerm && <div className="absolute inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm transition-all duration-500" />}
+                      </div>
+                    ) : (
+                      <div className={`absolute inset-0 opacity-90 bg-gradient-to-br transition-all duration-500 ${finalSearchTerm ? 'blur-xl scale-110' : ''} ${
+                        showroomInfo?.theme_color?.startsWith('#') ? '' : showroomInfo?.theme_color === 'indigo' ? 'from-[#1e1b4b] via-[#3730a3] to-[#6366f1]' :
+                        showroomInfo?.theme_color === 'purple' ? 'from-[#3b0764] via-[#6b21a8] to-[#a855f7]' :
+                        showroomInfo?.theme_color === 'slate' ? 'from-[#0f172a] via-[#334155] to-[#64748b]' :
+                        showroomInfo?.theme_color === 'emerald' ? 'from-[#022c22] via-[#047857] to-[#10b981]' :
+                        showroomInfo?.theme_color === 'rose' ? 'from-[#4c0519] via-[#be123c] to-[#f43f5e]' :
+                        'from-[#0f172a] via-[#1e3a8a] to-[#3b82f6]'
+                      }`} style={showroomInfo?.theme_color?.startsWith('#') ? { background: `linear-gradient(135deg, ${showroomInfo.theme_color}, ${showroomInfo.theme_color}dd)` } : {}}></div>
+                    )}
+                    {/* Massive Elegant Bottom Fade Gradient */}
+                    <div className="absolute bottom-0 left-0 right-0 h-[80%] bg-gradient-to-t from-gray-100 dark:from-[#0a0b0f] via-gray-100/40 dark:via-[#0a0b0f]/40 to-transparent z-[1]" />
+                </div>
+              )}
+        <ShowroomNavbar 
+          showroomInfo={showroomInfo}
+          isNeutral={isNeutral}
+          isPublicMode={isPublicMode}
+          slug={slug}
+          user={user}
+          theme={theme}
+          toggleTheme={toggleTheme}
+          setIsPromoModalOpen={setIsPromoModalOpen}
+        />
 
-      {/* FULL WIDTH HERO SECTION */}
-      {!finalSearchTerm && (
-        <div 
-          className={`relative z-0 w-full overflow-hidden transition-all duration-700 ${
-            infoLoading ? 'bg-transparent h-[120px] md:h-[200px]' :
-            isNeutral ? 'bg-transparent pb-4 md:pb-6' : 
-            `${
-              showroomInfo?.theme_color?.startsWith('#') ? '' :
-              showroomInfo?.theme_color === 'indigo' ? 'bg-indigo-900' :
-              showroomInfo?.theme_color === 'purple' ? 'bg-purple-900' :
-              showroomInfo?.theme_color === 'slate' ? 'bg-slate-900' :
-              showroomInfo?.theme_color === 'emerald' ? 'bg-emerald-900' :
-              showroomInfo?.theme_color === 'rose' ? 'bg-rose-900' : 'bg-blue-900'
-            }`
-          }`}
-          style={!infoLoading && !isNeutral && showroomInfo?.theme_color?.startsWith('#') ? { backgroundColor: showroomInfo.theme_color } : {}}
-        >
-          {/* Content Wrapper with Fade */}
-          <div className={`transition-opacity duration-500 ${infoLoading ? 'opacity-0' : 'opacity-100'}`}>
-            {!infoLoading && (
-              <>
-                {/* Dynamic Background */}
-                  {!isNeutral && (
-                    <div className="absolute inset-0 z-0">
-                     {showroomInfo?.header_image ? (
-                       <>
-                         <img src={`${IMAGE_BASE_URL}${showroomInfo.header_image}`} className="w-full h-full object-cover" alt="Header" />
-                         {/* Color Tone Overlay - Only if not default */}
-                         {showroomInfo?.theme_color && showroomInfo?.theme_color !== 'default' ? (
-                           <div className={`absolute inset-0 mix-blend-multiply ${
-                              showroomInfo?.theme_color?.startsWith('#') ? '' : showroomInfo?.theme_color === 'indigo' ? 'bg-indigo-950/70' :
-                              showroomInfo?.theme_color === 'purple' ? 'bg-purple-950/70' :
-                              showroomInfo?.theme_color === 'slate' ? 'bg-slate-950/70' :
-                              showroomInfo?.theme_color === 'emerald' ? 'bg-emerald-950/70' :
-                              showroomInfo?.theme_color === 'rose' ? 'bg-rose-950/70' : 'bg-blue-950/70'
-                           }`} style={showroomInfo?.theme_color?.startsWith('#') ? { background: `linear-gradient(135deg, ${showroomInfo.theme_color}, ${showroomInfo.theme_color}dd)` } : {}}></div>
-                         ) : (
-                           // Subtle dark overlay to ensure text is readable even without tone color
-                           <div className="absolute inset-0 bg-black/30 bg-gradient-to-t from-black/60 to-transparent" style={showroomInfo?.theme_color?.startsWith('#') ? { backgroundColor: `${showroomInfo.theme_color}b3` } : {}}></div>
-                         )}
-                       </>
-                     ) : (
-                       <div className={`absolute inset-0 opacity-90 bg-gradient-to-br ${
-                          showroomInfo?.theme_color?.startsWith('#') ? '' : showroomInfo?.theme_color === 'indigo' ? 'from-[#1e1b4b] via-[#3730a3] to-[#6366f1]' :
-                          showroomInfo?.theme_color === 'purple' ? 'from-[#3b0764] via-[#6b21a8] to-[#a855f7]' :
-                          showroomInfo?.theme_color === 'slate' ? 'from-[#0f172a] via-[#334155] to-[#64748b]' :
-                          showroomInfo?.theme_color === 'emerald' ? 'from-[#022c22] via-[#047857] to-[#10b981]' :
-                          showroomInfo?.theme_color === 'rose' ? 'from-[#4c0519] via-[#be123c] to-[#f43f5e]' :
-                          'from-[#0f172a] via-[#1e3a8a] to-[#3b82f6]'
-                       }`} style={showroomInfo?.theme_color?.startsWith('#') ? { background: `linear-gradient(135deg, ${showroomInfo.theme_color}, ${showroomInfo.theme_color}dd)` } : {}}></div>
-                     )}
-                     {/* Massive Elegant Bottom Fade Gradient */}
-                     <div className="absolute bottom-0 left-0 right-0 h-[80%] bg-gradient-to-t from-gray-100 dark:from-[#0a0b0f] via-gray-100/40 dark:via-[#0a0b0f]/40 to-transparent z-[1]" />
-                  </div>
-                )}
-          <ShowroomNavbar 
-            showroomInfo={showroomInfo}
-            isNeutral={isNeutral}
-            isPublicMode={isPublicMode}
-            slug={slug}
-            user={user}
-            theme={theme}
-            toggleTheme={toggleTheme}
-            setIsPromoModalOpen={setIsPromoModalOpen}
-          />
-
-          {/* Header Content */}
-          <header className={`relative z-10 flex flex-col gap-5 pt-10 md:pt-20 ${isNeutral ? 'pb-24' : 'pb-36'} px-5 md:px-10 lg:px-14 items-center text-center max-w-7xl mx-auto animate-in fade-in duration-700`}>
-
+        {/* Header Content - Hidden during search for focus */}
+        <AnimatePresence>
+          {!finalSearchTerm && (
+            <motion.header 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5 }}
+              className={`relative z-10 flex flex-col gap-5 pt-10 md:pt-20 ${isNeutral ? 'pb-24' : 'pb-36'} px-5 md:px-10 lg:px-14 items-center text-center max-w-7xl mx-auto animate-in fade-in duration-700`}
+            >
               <h1 className={`text-5xl md:text-8xl font-black tracking-tighter leading-[0.9] ${isNeutral ? 'text-gray-900 dark:text-white' : 'text-white'}`}>
                 {showroomInfo?.title || 'Katalog Showroom'}
               </h1>
@@ -667,23 +679,17 @@ const Catalog = () => {
                   </button>
                 )}
               </p>
-            </header>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+            </motion.header>
+          )}
+        </AnimatePresence>
+          </>
+        )}
+      </div>
+    </div>
 
       {/* CATALOG CONTENT (Constrained) */}
-      <div className={`relative z-10 w-full max-w-7xl mx-auto px-5 md:px-10 lg:px-14 ${finalSearchTerm ? 'pt-4 md:pt-6 space-y-10' : 'space-y-12'}`}>
-        <div className={`sticky ${finalSearchTerm ? 'top-1 md:top-2' : 'top-4 md:top-8'} z-40 transition-[top] duration-300 ${!finalSearchTerm ? '-mt-10 md:-mt-12' : ''}`}>
-          {finalSearchTerm && (
-            <div className="flex justify-center -mb-5 relative z-0 animate-in fade-in slide-in-from-top-4 duration-500">
-              <div className="bg-gray-100 dark:bg-[#1a1c26] border border-gray-200 dark:border-white/5 px-10 pt-2 pb-6 rounded-t-[24px]">
-                <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 tracking-[0.2em]">Katalog Showroom</p>
-              </div>
-            </div>
-          )}
+      <div className={`relative z-10 w-full max-w-7xl mx-auto px-5 md:px-10 lg:px-14 ${finalSearchTerm ? 'pt-2 space-y-8' : 'space-y-12'}`}>
+        <div className={`sticky ${finalSearchTerm ? 'top-1 md:top-2 -mt-24 md:-mt-32' : 'top-4 md:top-8 -mt-10 md:-mt-12'} z-40 transition-all duration-300`}>
           <div className="relative z-10 bg-white/95 dark:bg-[#12141c]/95 border border-gray-200 dark:border-white/10 p-2 md:p-2.5 rounded-[32px] md:rounded-[36px] shadow-2xl transition-all backdrop-blur-md">
             <div className="flex flex-wrap md:flex-nowrap items-center gap-x-2 gap-y-2">
               <div className="flex flex-col md:flex-row items-center gap-3 md:gap-4 flex-1 w-full">

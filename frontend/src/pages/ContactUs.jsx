@@ -34,7 +34,7 @@ const ContactUs = () => {
     fetchInfo();
   }, [slug]);
 
-  const isNeutral = !showroomInfo?.header_image || showroomInfo?.theme_color === 'default';
+  const isNeutral = !showroomInfo?.header_image && (!showroomInfo?.theme_color || showroomInfo?.theme_color === 'default');
 
   if (loading) {
     return (
@@ -52,7 +52,7 @@ const ContactUs = () => {
         <title>Kontak Kami | {showroomInfo?.title || 'Bursa Mobil'}</title>
       </Helmet>
 
-      {/* Hero Section */}
+      {/* Hero Section (Synchronized with Catalog) */}
       <div 
         className={`relative z-0 w-full overflow-hidden transition-all duration-700 ${
           isNeutral ? 'bg-transparent pb-4 md:pb-6' : 
@@ -67,7 +67,8 @@ const ContactUs = () => {
         }`}
         style={!isNeutral && showroomInfo?.theme_color?.startsWith('#') ? { backgroundColor: showroomInfo.theme_color } : {}}
       >
-        {!isNeutral && (
+        {/* Dynamic Background */}
+        {(showroomInfo?.header_image || (!isNeutral && showroomInfo?.theme_color)) && (
           <div className="absolute inset-0 z-0 transition-opacity duration-1000">
             {showroomInfo?.header_image ? (
               <>
@@ -111,12 +112,12 @@ const ContactUs = () => {
           toggleTheme={toggleTheme}
         />
 
-        <header className="relative z-10 flex flex-col items-center text-center px-5 pt-10 md:pt-20 pb-32 max-w-7xl mx-auto">
+        <header className="relative z-10 flex flex-col items-center text-center px-5 pt-10 md:pt-20 pb-36 md:pb-40 max-w-7xl mx-auto">
           <motion.h1 
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className={`text-5xl md:text-7xl font-black tracking-tighter leading-[0.9] ${isNeutral ? 'text-gray-900 dark:text-white' : 'text-white'}`}
+            className={`text-5xl md:text-8xl font-black tracking-tighter leading-[0.9] ${isNeutral ? 'text-gray-900 dark:text-white' : 'text-white'}`}
           >
             Kontak Kami
           </motion.h1>
@@ -131,7 +132,7 @@ const ContactUs = () => {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 max-w-4xl mx-auto px-5 -mt-20 mb-20">
+      <div className="relative z-10 max-w-4xl mx-auto px-5 -mt-10 md:-mt-12 mb-20">
         <motion.div 
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
