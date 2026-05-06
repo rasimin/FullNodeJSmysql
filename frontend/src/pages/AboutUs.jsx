@@ -131,53 +131,62 @@ const AboutUs = () => {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 max-w-4xl mx-auto px-5 -mt-20 mb-20">
+      <div className="relative z-10 max-w-5xl mx-auto px-5 -mt-20 mb-20">
         <motion.div 
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
           className="bg-white dark:bg-[#12141c] rounded-[40px] p-8 md:p-16 shadow-2xl border border-gray-100 dark:border-white/5"
         >
-          <div className="flex flex-col md:flex-row gap-12 items-start">
-            <motion.div 
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.4, delay: 0.3 }}
-              className="w-20 h-20 bg-gray-100 dark:bg-white/5 rounded-3xl flex items-center justify-center text-gray-900 dark:text-white shrink-0 shadow-inner"
-            >
-              <Building2 size={40} />
-            </motion.div>
-            
-            <div className="flex-1">
-              <motion.h2 
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: 0.35 }}
-                className="text-3xl font-black text-gray-900 dark:text-white mb-8 uppercase tracking-tight"
-              >
-                {showroomInfo?.title || 'Profil Perusahaan'}
-              </motion.h2>
-              
+          <div className="flex flex-col gap-16">
+            <div className="w-full">
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                className="prose dark:prose-invert max-w-none text-gray-600 dark:text-gray-400 leading-[1.8] space-y-6 text-base md:text-lg"
+                transition={{ duration: 0.5, delay: 0.3 }}
+                className="prose dark:prose-invert max-w-none text-gray-600 dark:text-gray-400 leading-[1.8] text-base md:text-lg"
               >
-                {showroomInfo?.description ? (
-                  <p className="whitespace-pre-line">{showroomInfo.description}</p>
+                {showroomInfo?.about_content ? (
+                  <div 
+                    className="about-content-rich"
+                    dangerouslySetInnerHTML={{ __html: showroomInfo.about_content }} 
+                  />
                 ) : (
-                  <>
+                  <div className="text-center space-y-6">
+                    <h2 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Profil Showroom</h2>
                     <p>
                       Selamat datang di platform showroom kendaraan kami. Kami berdedikasi untuk memberikan layanan terbaik dalam memenuhi kebutuhan kendaraan impian Anda.
                     </p>
                     <p>
                       Dengan standar kualitas yang ketat dan proses yang transparan, kami memastikan setiap unit yang kami tawarkan telah melewati inspeksi menyeluruh demi kepuasan dan ketenangan pikiran Anda.
                     </p>
-                  </>
+                  </div>
                 )}
               </motion.div>
             </div>
+
+            {/* Premium Gallery Section */}
+            {(showroomInfo?.about_image_1 || showroomInfo?.about_image_2 || showroomInfo?.about_image_3) && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-10 border-t border-gray-100 dark:border-white/5">
+                {[showroomInfo.about_image_1, showroomInfo.about_image_2, showroomInfo.about_image_3].map((img, idx) => img && (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: 0.1 * idx }}
+                    className={`relative rounded-[32px] overflow-hidden bg-gray-100 dark:bg-white/5 group shadow-xl ${idx === 0 ? 'md:col-span-2 md:aspect-[21/9]' : 'aspect-square'}`}
+                  >
+                    <img 
+                      src={`${IMAGE_BASE_URL}${img}`} 
+                      alt={`Gallery ${idx + 1}`} 
+                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </div>
         </motion.div>
       </div>

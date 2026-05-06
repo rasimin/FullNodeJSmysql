@@ -43,7 +43,14 @@ exports.getShowroomSetting = async (req, res) => {
 exports.updateShowroomSetting = async (req, res) => {
   try {
     const { id } = req.params;
-    const { slug, title, description, is_published, theme_color, remove_image } = req.body;
+    const { 
+        slug, title, description, is_published, theme_color, 
+        about_content,
+        remove_image,
+        remove_about_image_1,
+        remove_about_image_2,
+        remove_about_image_3
+    } = req.body;
 
     const setting = await ShowroomSetting.findByPk(id);
     if (!setting) return res.status(404).json({ message: 'Setting not found' });
@@ -68,13 +75,33 @@ exports.updateShowroomSetting = async (req, res) => {
         if (existing) return res.status(400).json({ message: 'Slug sudah digunakan oleh showroom lain' });
     }
 
-    const updateData = { slug, title, description, is_published };
+    const updateData = { slug, title, description, is_published, about_content };
     if (theme_color !== undefined) updateData.theme_color = theme_color;
     
+    // Handle Header Image
     if (remove_image === 'true') {
         updateData.header_image = null;
-    } else if (req.file) {
-        updateData.header_image = `/uploads/${req.file.filename}`;
+    } else if (req.files?.header_image) {
+        updateData.header_image = `/uploads/${req.files.header_image[0].filename}`;
+    }
+
+    // Handle About Images
+    if (remove_about_image_1 === 'true') {
+        updateData.about_image_1 = null;
+    } else if (req.files?.about_image_1) {
+        updateData.about_image_1 = `/uploads/${req.files.about_image_1[0].filename}`;
+    }
+
+    if (remove_about_image_2 === 'true') {
+        updateData.about_image_2 = null;
+    } else if (req.files?.about_image_2) {
+        updateData.about_image_2 = `/uploads/${req.files.about_image_2[0].filename}`;
+    }
+
+    if (remove_about_image_3 === 'true') {
+        updateData.about_image_3 = null;
+    } else if (req.files?.about_image_3) {
+        updateData.about_image_3 = `/uploads/${req.files.about_image_3[0].filename}`;
     }
 
     await setting.update(updateData, { userId: req.user.id });

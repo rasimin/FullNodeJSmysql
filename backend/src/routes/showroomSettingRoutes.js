@@ -6,7 +6,12 @@ const upload = require('../utils/upload');
 router.use(authenticate);
 
 router.get('/', showroomSettingController.getShowroomSetting);
-router.put('/:id', upload.single('header_image'), showroomSettingController.updateShowroomSetting);
+router.put('/:id', upload.fields([
+  { name: 'header_image', maxCount: 1 },
+  { name: 'about_image_1', maxCount: 1 },
+  { name: 'about_image_2', maxCount: 1 },
+  { name: 'about_image_3', maxCount: 1 }
+]), showroomSettingController.updateShowroomSetting);
 router.get('/check-slug', showroomSettingController.checkSlugAvailability);
 
 module.exports = router;
