@@ -341,10 +341,19 @@ const Vehicles = () => {
   }, [currentPage, search, selectedBranch, filterStatus]);
 
   useEffect(() => {
-    if (activeTab === 'audit' && editingVehicle?.id) {
+    if (!editingVehicle?.id) return;
+
+    if (activeTab === 'audit') {
       fetchAuditTrails(editingVehicle.id);
+    } else if (activeTab === 'documents') {
+      fetchVehicleDocuments(editingVehicle.id);
     }
-  }, [activeTab, editingVehicle]);
+    
+    // Always fetch booking history when modal is open as it's used in status box and main tab
+    if (isModalOpen) {
+      fetchBookingHistory(editingVehicle.id);
+    }
+  }, [activeTab, editingVehicle, isModalOpen]);
 
   const parseAuditValue = (val) => {
     if (!val) return null;
@@ -442,8 +451,6 @@ const Vehicles = () => {
         fuel_type: vehicle.fuel_type || 'Bensin',
         cancellation_reason: (vehicle.Bookings?.[0]?.cancellation_reason || vehicle.cancellation_reason) || ''
       });
-      fetchBookingHistory(vehicle.id);
-      fetchVehicleDocuments(vehicle.id);
     } else {
 
       setFormData({
@@ -457,12 +464,7 @@ const Vehicles = () => {
       setBookingHistory([]);
     }
 
-    // Fetch model/type history only when needed
-    if (!viewOnly) {
-      api.get('/vehicles/model-history').then(r => setModelHistory(r.data)).catch(e => console.error(e));
-      api.get('/vehicles/type-history').then(r => setTypeHistory(r.data)).catch(e => console.error(e));
-    }
-    
+    // Removed heavy history fetching to optimize modal opening speed
     setIsModalOpen(true);
   };
   

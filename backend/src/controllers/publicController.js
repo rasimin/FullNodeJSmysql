@@ -87,11 +87,23 @@ exports.getPublicVehicleDetail = async (req, res) => {
       where: { id, is_deleted: false, status: 'Available' },
       include: [
         { model: VehicleImage, as: 'images' },
-        { model: Office, include: [{ model: Location, as: 'location' }] }
+        { 
+          model: Office, 
+          as: 'office',
+          include: [
+            { model: Location, as: 'location' },
+            {
+              model: ShowroomSetting,
+              as: 'showroomSetting',
+              required: true,
+              where: { is_published: true }
+            }
+          ] 
+        }
       ]
     });
 
-    if (!vehicle) return res.status(404).json({ message: 'Unit tidak ditemukan' });
+    if (!vehicle) return res.status(404).json({ message: 'Unit tidak ditemukan atau showroom belum dipublikasi.' });
     res.json(vehicle);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -151,7 +163,22 @@ exports.getPublicSalesAgents = async (req, res) => {
     const { officeId } = req.query;
     if (!officeId) return res.status(400).json({ message: 'Office ID required' });
 
-    const { SalesAgent } = require('../models');
+    const { SalesAgent, Office, ShowroomSetting } = require('../models');
+    
+    // Check if the office belongs to a published showroom
+    const office = await Office.findByPk(officeId, {
+      include: [{
+        model: ShowroomSetting,
+        as: 'showroomSetting',
+        required: true,
+        where: { is_published: true }
+      }]
+    });
+
+    if (!office) {
+      return res.status(404).json({ message: 'Office not found or showroom not published' });
+    }
+
     const agents = await SalesAgent.findAll({
       where: { office_id: officeId, is_active: true },
       order: [['name', 'ASC']]

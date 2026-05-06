@@ -265,6 +265,7 @@ const Catalog = () => {
   const [offices, setOffices] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [notFound, setNotFound] = useState(false);
 
   // Handle Query Parameters from Landing Page
   useEffect(() => {
@@ -405,11 +406,15 @@ const Catalog = () => {
     if (!isPublicMode) return;
     const fetchShowroomInfo = async () => {
       setInfoLoading(true);
+      setNotFound(false);
       try {
         const res = await api.get(`/public/showroom/${slug}`);
         setShowroomInfo(res.data);
       } catch (err) {
         console.error('Error fetching showroom info:', err);
+        if (err.response?.status === 404) {
+          setNotFound(true);
+        }
       } finally {
         setInfoLoading(false);
       }
@@ -518,6 +523,28 @@ const Catalog = () => {
   };
 
   const isNeutral = !isPublicMode || (showroomInfo && showroomInfo.theme_color === 'default' && !showroomInfo.header_image);
+
+  if (notFound) {
+    return (
+      <div className="min-h-screen bg-gray-100 dark:bg-[#0a0b0f] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-24 h-24 bg-gray-200 dark:bg-white/5 rounded-full flex items-center justify-center mb-8">
+          <Globe size={40} className="text-gray-400" />
+        </div>
+        <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tighter mb-4">
+          Katalog Tidak Tersedia
+        </h1>
+        <p className="text-gray-500 dark:text-gray-400 max-w-md text-sm leading-relaxed mb-10">
+          Maaf, halaman katalog yang Anda cari tidak ditemukan atau saat ini sedang tidak dipublikasi oleh pemilik showroom.
+        </p>
+        <button
+          onClick={() => navigate('/')}
+          className="h-12 px-8 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-xl shadow-gray-900/20 dark:shadow-white/5"
+        >
+          Kembali ke Beranda
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className={`relative min-h-screen bg-gray-100 dark:bg-[#0a0b0f] ${mounted ? 'transition-colors duration-500' : ''} overflow-x-hidden overflow-y-scroll pb-10`}>
