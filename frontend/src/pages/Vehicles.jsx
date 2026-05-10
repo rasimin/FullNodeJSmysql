@@ -399,7 +399,12 @@ const Vehicles = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <motion.div 
+      initial={{ opacity: 0, y: 8 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="space-y-6"
+    >
       <DynamicIsland 
         status={confirmDeleteId || confirmAction ? 'confirm' : notification.status} 
         message={confirmDeleteId ? 'Hapus kendaraan ini secara permanen?' : (confirmAction?.message || notification.message)} 
@@ -676,8 +681,7 @@ const Vehicles = () => {
           />
         )}
       </Suspense>
-
-    </div>
+    </motion.div>
   );
 };
 
