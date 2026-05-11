@@ -506,9 +506,17 @@
 }
 
 /* Global Word Wrap Fix - Prevent splitting words like 'pelanggan' */
-.prose, .prose *, .about-content-rich, .about-content-rich * {
+.prose, .about-content-rich {
+  white-space: normal !important;
   word-break: normal !important;
-  overflow-wrap: break-word !important;
-  word-wrap: break-word !important;
+  overflow-wrap: normal !important;
+  word-wrap: normal !important;
   hyphens: none !important;
+}
+
+.prose p, .about-content-rich p, .prose span, .about-content-rich span {
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  word-wrap: normal !important;
 }

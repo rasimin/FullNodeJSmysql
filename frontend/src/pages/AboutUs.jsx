@@ -131,12 +131,19 @@ const AboutUs = () => {
                 className="prose dark:prose-invert max-w-none text-gray-900 dark:text-gray-100 leading-[1.8] text-base md:text-lg"
               >
                 <style>{`
-                  .prose, .about-content-rich, .about-content-rich * {
-                    word-break: normal !important;
-                    word-wrap: break-word !important;
-                    overflow-wrap: break-word !important;
+                  .prose, .about-content-rich {
                     white-space: normal !important;
+                    word-break: normal !important;
+                    overflow-wrap: normal !important;
+                    word-wrap: normal !important;
                     hyphens: none !important;
+                    text-align: left;
+                  }
+                  .prose p, .about-content-rich p, .prose span, .about-content-rich span {
+                    white-space: normal !important;
+                    word-break: normal !important;
+                    overflow-wrap: normal !important;
+                    word-wrap: normal !important;
                   }
                   .about-content-rich .ql-align-center { text-align: center !important; }
                   .about-content-rich .ql-align-right { text-align: right !important; }
@@ -159,7 +166,7 @@ const AboutUs = () => {
                 {showroomInfo?.about_content ? (
                   <div 
                     className="about-content-rich"
-                    dangerouslySetInnerHTML={{ __html: showroomInfo.about_content }} 
+                    dangerouslySetInnerHTML={{ __html: showroomInfo.about_content.replace(/&nbsp;|\u00A0|&#160;/g, ' ') }} 
                   />
                 ) : (
                   <div className="text-center space-y-6">
