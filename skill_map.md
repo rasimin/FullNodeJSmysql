@@ -33,7 +33,7 @@ This document provides a distilled overview of the application's structure and l
 ## 🏗️ Core Backend Modules
 ### 1. Database Models (`backend/src/models/index.js`)
 - **Identity**: `User`, `Role`, `UserSession`.
-- **Org**: `Office` (Hierarchical), `Location`, `SalesAgent`.
+- **Org**: `Office` (Hierarchical, includes email/phone), `Location`, `SalesAgent`.
 - **Inventory**: `Vehicle`, `VehicleBrand`, `VehicleImage`, `VehicleDocument`.
 - **Operations**: `Booking`, `BookingArchive`, `BookingDocument`.
 - **Marketing**: `Promotion`.

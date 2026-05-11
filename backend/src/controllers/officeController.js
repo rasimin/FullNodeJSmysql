@@ -6,14 +6,14 @@ const fs = require('fs');
 
 const createOffice = async (req, res) => {
   try {
-    const { name, type, address, parent_id, phone, region_code, postal_code } = req.body;
+    const { name, type, address, parent_id, phone, email, region_code, postal_code } = req.body;
     
     // Validate hierarchy
     if (type === 'BRANCH_OFFICE' && !parent_id) {
       return res.status(400).json({ message: 'Branch Office must have a Parent Office (Head Office)' });
     }
 
-    const officeData = { name, type, address, parent_id, phone, region_code, postal_code };
+    const officeData = { name, type, address, parent_id, phone, email, region_code, postal_code };
     
     // Normalize parent_id based on office type
     if (officeData.type === 'HEAD_OFFICE') {
@@ -111,8 +111,8 @@ const updateOffice = async (req, res) => {
 
     if (!office) return res.status(404).json({ message: 'Office not found' });
 
-    const { name, type, address, parent_id, phone, region_code, postal_code } = req.body;
-    const updateData = { name, type, address, parent_id, phone, region_code, postal_code };
+    const { name, type, address, parent_id, phone, email, region_code, postal_code } = req.body;
+    const updateData = { name, type, address, parent_id, phone, email, region_code, postal_code };
     
     // Normalize parent_id based on office type
     if (updateData.type === 'HEAD_OFFICE') {

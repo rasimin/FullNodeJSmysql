@@ -31,6 +31,10 @@ const Office = sequelize.define('Office', {
     type: DataTypes.STRING(20),
     allowNull: true,
   },
+  email: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+  },
   region_code: {
     type: DataTypes.STRING(20),
     allowNull: true,

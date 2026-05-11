@@ -18,7 +18,7 @@ const OfficeManagement = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingOffice, setEditingOffice] = useState(null);
-  const [formData, setFormData] = useState({ name: '', type: 'BRANCH_OFFICE', address: '', parent_id: '', phone: '' });
+  const [formData, setFormData] = useState({ name: '', type: 'BRANCH_OFFICE', address: '', parent_id: '', phone: '', email: '' });
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
   const [notification, setNotification] = useState({ status: 'idle', message: '' });
@@ -115,8 +115,8 @@ const OfficeManagement = () => {
     skipCascade.current = true;
     setEditingOffice(office);
     setFormData(office
-      ? { name: office.name, type: office.type, address: office.address || '', parent_id: office.parent_id || '', phone: office.phone || '', region_code: office.region_code || '', postal_code: office.postal_code || '' }
-      : { name: '', type: 'BRANCH_OFFICE', address: '', parent_id: '', phone: '', region_code: '', postal_code: '' }
+      ? { name: office.name, type: office.type, address: office.address || '', parent_id: office.parent_id || '', phone: office.phone || '', email: office.email || '', region_code: office.region_code || '', postal_code: office.postal_code || '' }
+      : { name: '', type: 'BRANCH_OFFICE', address: '', parent_id: '', phone: '', email: '', region_code: '', postal_code: '' }
     );
 
     if (office && office.region_code) {
@@ -347,16 +347,18 @@ const OfficeManagement = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input label="Nama Kantor" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Misal: Pusat Jakarta" />
           
+          <Select label="Tipe" value={formData.type} onChange={e => {
+            const newType = e.target.value;
+            setFormData({
+              ...formData, 
+              type: newType,
+              parent_id: newType === 'HEAD_OFFICE' ? '' : formData.parent_id
+            });
+          }} options={[{ value: 'HEAD_OFFICE', label: 'Kantor Pusat' }, { value: 'BRANCH_OFFICE', label: 'Kantor Cabang' }]} />
+
           <div className="grid grid-cols-2 gap-4">
-            <Select label="Tipe" value={formData.type} onChange={e => {
-              const newType = e.target.value;
-              setFormData({
-                ...formData, 
-                type: newType,
-                parent_id: newType === 'HEAD_OFFICE' ? '' : formData.parent_id
-              });
-            }} options={[{ value: 'HEAD_OFFICE', label: 'Kantor Pusat' }, { value: 'BRANCH_OFFICE', label: 'Kantor Cabang' }]} />
             <Input label="Nomor Telepon" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="+62..." />
+            <Input label="Email Kantor" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="email@showroom.com" />
           </div>
 
           <Input label="Alamat" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} placeholder="Jl. Raya No. 123..." />
