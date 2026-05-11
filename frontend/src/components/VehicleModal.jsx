@@ -28,7 +28,7 @@ const VehicleModal = ({
   const [isViewOnly, setIsViewOnly] = useState(initialIsViewOnly);
   const [formData, setFormData] = useState({
     type: 'Motor', brand: '', model: '', year: (new Date().getFullYear()).toString(),
-    plate_number: '', price: '', status: 'Available',
+    plate_number: '', price: '', status: 'Available', unit_code: '',
     purchase_price: '', service_cost: '', sold_date: '',
     entry_date: new Date().toISOString().split('T')[0],
     description: '', office_id: '', sales_agent_id: '', color: '', odometer: '',
@@ -70,12 +70,13 @@ const VehicleModal = ({
           odometer: vehicle.odometer || '',
           transmission: vehicle.transmission || 'Manual',
           fuel_type: vehicle.fuel_type || 'Bensin',
+          unit_code: vehicle.unit_code || '',
           cancellation_reason: vehicle.cancellation_reason || ''
         });
       } else {
         setFormData({
           type: 'Motor', brand: '', model: '', year: (new Date().getFullYear()).toString(),
-          plate_number: '', price: '', status: 'Available',
+          plate_number: '', price: '', status: 'Available', unit_code: '',
           purchase_price: '', service_cost: '', sold_date: '',
           entry_date: new Date().toISOString().split('T')[0],
           description: '', office_id: user?.office_id || '', sales_agent_id: '', color: '', odometer: '',

@@ -325,8 +325,8 @@ const Vehicles = () => {
       await api.delete(`/vehicles/${confirmDeleteId}`);
       notify('success', 'Kendaraan berhasil dihapus');
       setConfirmDeleteId(null);
-      fetchVehicles();
-      fetchSummary();
+      fetchVehiclesOnly();
+      fetchSummaryOnly();
     } catch (e) {
       console.error('Delete error:', e);
       notify('error', e.response?.data?.message || 'Gagal menghapus kendaraan');
@@ -341,7 +341,7 @@ const Vehicles = () => {
       const r = await api.get(`/vehicles/${editingVehicle.id}`);
       const freshImages = r.data.images || r.data.Images || [];
       setEditingVehicle(prev => ({ ...prev, images: freshImages }));
-      fetchVehicles();
+      fetchVehiclesOnly();
       notify('success', 'Foto utama diperbarui!');
     } catch (e) {
       console.error('Set primary error:', e);
@@ -360,7 +360,7 @@ const Vehicles = () => {
             ...prev,
             images: (prev.images || []).filter(img => img.id !== imgId)
           }));
-          fetchVehicles();
+          fetchVehiclesOnly();
           notify('success', 'Gambar dihapus');
         } catch (e) {
           notify('error', 'Gagal menghapus gambar');
@@ -651,8 +651,8 @@ const Vehicles = () => {
             documentTypes={documentTypes}
             isHeadOffice={isHeadOffice}
             onSuccess={() => {
-              fetchVehicles();
-              fetchSummary();
+              fetchVehiclesOnly();
+              fetchSummaryOnly();
             }}
             notify={notify}
             openBookingModal={openBookingModal}
@@ -673,8 +673,8 @@ const Vehicles = () => {
             salesAgents={salesAgents}
             bookingDocumentTypes={bookingDocumentTypes}
             onSuccess={() => {
-              fetchVehicles();
-              fetchSummary();
+              fetchVehiclesOnly();
+              fetchSummaryOnly();
             }}
             notify={notify}
             handlePrintDoc={handlePrintDoc}
