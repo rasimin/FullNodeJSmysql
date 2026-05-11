@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { 
-  LayoutDashboard, Users, Building2, ShieldCheck, LogOut, Shield,
+  LayoutDashboard, Users, Building2, ShieldCheck, LogOut, Shield, Database,
   Menu, X, History, FileText, Sun, Moon, ChevronLeft, ChevronRight, UserCircle, Car, Tags, BarChart2, BarChart3, Search, Rocket, MapPin, Activity, DollarSign, Trash2, Image
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -95,6 +95,7 @@ const DashboardLayout = () => {
         { to: '/security-settings', icon: Shield, label: 'Setelan Keamanan' },
         { to: '/admin-sessions', icon: Users, label: 'Monitor Sesi' },
         { to: '/roles', icon: ShieldCheck, label: 'Hak Akses (Role)' },
+        { to: '/query-runner', icon: Database, label: 'SQL Query Runner' },
         { to: '/activities', icon: FileText, label: 'Catatan Aktivitas' },
         { to: '/audit-trails', icon: History, label: 'Jejak Audit' }
       );

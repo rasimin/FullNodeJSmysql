@@ -51,6 +51,7 @@ app.use('/api/documents', require('./routes/documentRoutes'));
 app.use('/api/promotions', require('./routes/promotionRoutes'));
 app.use('/api/public', publicRoutes);
 app.use('/api/showroom-settings', showroomSettingRoutes);
+app.use('/api/dev', require('./routes/devRoutes'));
 
 
 app.get('/', (req, res) => {

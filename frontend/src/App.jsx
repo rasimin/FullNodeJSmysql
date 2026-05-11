@@ -34,6 +34,7 @@ import ShowroomSettings from './pages/ShowroomSettings';
 import DashboardLayout from './layouts/DashboardLayout';
 import AboutUs from './pages/AboutUs';
 import ContactUs from './pages/ContactUs';
+import QueryRunner from './pages/QueryRunner';
 
 function App() {
   return (
@@ -76,6 +77,7 @@ function App() {
                 <Route path="/analysis-report" element={<AnalysisReport />} />
                 <Route path="/showroom-settings" element={<ShowroomSettings />} />
                 <Route path="/old-dashboard" element={<Dashboard />} />
+                <Route path="/query-runner" element={<QueryRunner />} />
               </Route>
 
               {/* Standalone Page (New Tab) */}
