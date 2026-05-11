@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Database, Play, Terminal, AlertCircle, CheckCircle2, Clock, Search, Download, Trash2 } from 'lucide-react';
+import { Database, Play, Terminal, AlertCircle, CheckCircle2, Clock, Search, Download, Trash2, Copy, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../services/api';
 import DynamicIsland from '../components/DynamicIsland';
+import Pagination from '../components/ui/Pagination';
 
 const QueryRunner = () => {
   const [query, setQuery] = useState('');
@@ -11,10 +12,23 @@ const QueryRunner = () => {
   const [activeTab, setActiveTab] = useState('grid'); // 'grid' or 'text'
   const [notification, setNotification] = useState({ status: 'idle', message: '' });
   const [executionInfo, setExecutionInfo] = useState(null);
+  
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(25);
 
   const notify = (status, message, delay = 3000) => {
     setNotification({ status, message });
     if (status !== 'loading') setTimeout(() => setNotification({ status: 'idle' }), delay);
+  };
+
+  const handleReset = () => {
+    setQuery('');
+    setResults(null);
+    setExecutionInfo(null);
+    setCurrentPage(1);
+    setActiveTab('grid');
+    notify('success', 'Halaman berhasil di-reset');
   };
 
   const handleExecute = async () => {
@@ -24,6 +38,7 @@ const QueryRunner = () => {
     notify('loading', 'Mengeksekusi query...');
     setResults(null);
     setExecutionInfo(null);
+    setCurrentPage(1);
 
     try {
       const res = await api.post('/dev/query', { sql: query });
@@ -59,31 +74,49 @@ const QueryRunner = () => {
     }
 
     const columns = Object.keys(results[0]);
+    
+    // Pagination Logic
+    const totalPages = Math.ceil(results.length / itemsPerPage);
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = results.slice(indexOfFirstItem, indexOfLastItem);
 
     return (
-      <div className="overflow-x-auto custom-scrollbar border border-gray-100 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-900/50">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
-              {columns.map(col => (
-                <th key={col} className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">
-                  {col}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-            {results.map((row, i) => (
-              <tr key={i} className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors">
-                {columns.map(col => (
-                  <td key={col} className="px-4 py-3 text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap">
-                    {row[col] === null ? <span className="italic text-gray-400">null</span> : String(row[col])}
-                  </td>
+      <div className="space-y-4">
+        <div className="border border-gray-100 dark:border-gray-800 rounded-xl bg-white dark:bg-gray-900/50 overflow-hidden">
+          <div className="max-h-[500px] overflow-auto custom-scrollbar">
+            <table className="w-full text-left border-collapse min-w-max">
+              <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-800">
+                <tr>
+                  {columns.map(col => (
+                    <th key={col} className="px-4 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">
+                      {col}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                {currentItems.map((row, i) => (
+                  <tr key={i} className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors">
+                    {columns.map(col => (
+                      <td key={col} className="px-4 py-3 text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                        {row[col] === null ? <span className="italic text-gray-400">null</span> : String(row[col])}
+                      </td>
+                    ))}
+                  </tr>
                 ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        {totalPages > 1 && (
+          <Pagination 
+            page={currentPage} 
+            totalPages={totalPages} 
+            setPage={setCurrentPage} 
+          />
+        )}
       </div>
     );
   };
@@ -107,11 +140,11 @@ const QueryRunner = () => {
         </div>
         <div className="flex gap-2">
             <button 
-                onClick={() => setQuery('')}
-                className="btn-icon h-11 w-11 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
-                title="Clear Query"
+                onClick={handleReset}
+                className="h-11 px-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-black uppercase tracking-widest text-gray-500 hover:text-red-500 hover:border-red-500/50 transition-all flex items-center gap-2"
             >
-                <Trash2 size={18} />
+                <RotateCcw size={18} />
+                Reset
             </button>
             <button 
                 onClick={handleExecute}
@@ -207,10 +240,23 @@ SELECT * FROM vehicles LIMIT 10;"
                         ) : results ? (
                             <div className="p-4 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-xl text-gray-600 dark:text-gray-400 space-y-4">
                                 <div>
-                                    <p className="font-bold uppercase tracking-widest text-[10px] mb-2 text-blue-600">Response Object:</p>
-                                    <pre className="custom-scrollbar overflow-x-auto whitespace-pre-wrap">
-                                        {JSON.stringify(results, null, 2)}
-                                    </pre>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <p className="font-bold uppercase tracking-widest text-[10px] text-blue-600">Response Object:</p>
+                                        <button 
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(JSON.stringify(results, null, 2));
+                                                notify('success', 'Berhasil disalin ke clipboard');
+                                            }}
+                                            className="flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg text-[9px] font-black uppercase text-gray-500 hover:text-blue-600 transition-all active:scale-95 shadow-sm"
+                                        >
+                                            <Copy size={12} /> Salin JSON
+                                        </button>
+                                    </div>
+                                    <div className="max-h-[500px] overflow-auto custom-scrollbar rounded-lg bg-gray-100/50 dark:bg-black/20 p-4">
+                                        <pre className="whitespace-pre-wrap">
+                                            {JSON.stringify(results, null, 2)}
+                                        </pre>
+                                    </div>
                                 </div>
                             </div>
                         ) : (

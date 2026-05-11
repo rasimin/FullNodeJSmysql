@@ -2,7 +2,9 @@
 
 > [!NOTE]
 > This file is designed to help Antigravity (and other AI agents) quickly understand the project structure and logic, saving tokens and improving accuracy.
-> **AGENT INSTRUCTION**: Every time you perform significant research, debugging, or feature implementation, you MUST update this mapping file with new insights, patterns, or critical fixes discovered.
+> **AGENT INSTRUCTION**: 
+> - Every time you perform significant research, debugging, or feature implementation, you MUST update this mapping file with new insights, patterns, or critical fixes discovered.
+> - **GIT WORKFLOW**: DO NOT auto-commit or auto-push. Only perform git operations (commit/push) when explicitly commanded by the USER.
 
 ## 🛠 Tech Stack
 - **Backend**: Express.js, MySQL (Sequelize ORM)
@@ -43,6 +45,8 @@
 3. **Admin Dashboard & Reporting**: Secured admin portal offering rich analytics through Analysis, Finance, and Sales report pages.
 4. **Recycle Bin (Soft Deletion)**: Soft-deleted records (like vehicles, bookings, etc.) are hidden from normal views and manageable via the dedicated Recycle Bin page for restoration or permanent deletion.
 5. **Session Management**: Admins can monitor and terminate active user sessions across the system (`AdminSessions.jsx`).
+
+6. SQL Query Runner: A developer tool for Super Admins to execute raw SQL queries and view results in a grid or console format (`QueryRunner.jsx`). Only accessible by Super Admin.
 
 ## ⚠️ Known Implementation Patterns & Gotchas
 - **Rich Text Handling**: When rendering content from WYSIWYG editors (like Quill), non-breaking spaces (`&nbsp;` or `\u00A0`) can break layout wrapping. Use `.replace(/&nbsp;|\u00A0|&#160;/g, ' ')` before rendering with `dangerouslySetInnerHTML`.
