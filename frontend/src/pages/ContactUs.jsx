@@ -137,88 +137,127 @@ const ContactUs = () => {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
-          className="bg-white dark:bg-[#12141c] rounded-[40px] p-8 md:p-16 shadow-xl border border-gray-100 dark:border-white/5"
+          className="bg-white dark:bg-[#12141c] rounded-[40px] p-8 md:p-16 shadow-xl border border-gray-100 dark:border-white/5 overflow-hidden"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            <motion.div 
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: 0.3 }}
-              className="space-y-10"
-            >
-              <div>
-                <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-6 uppercase tracking-tight">Hubungi Kami</h2>
-                <div className="space-y-8">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center text-gray-900 dark:text-white shrink-0">
-                      <Building2 size={24} />
+          {showroomInfo?.use_default_contact ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+              <motion.div 
+                initial={{ opacity: 0, x: -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.3 }}
+                className="space-y-10"
+              >
+                <div>
+                  <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-6 uppercase tracking-tight">Hubungi Kami</h2>
+                  <div className="space-y-8">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center text-gray-900 dark:text-white shrink-0">
+                        <Building2 size={24} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Kantor</p>
+                        <p className="text-base font-bold text-gray-900 dark:text-white leading-tight">{office?.name || 'Kantor Pusat'}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Kantor</p>
-                      <p className="text-base font-bold text-gray-900 dark:text-white leading-tight">{office?.name || 'Kantor Pusat'}</p>
-                    </div>
-                  </div>
 
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center text-gray-900 dark:text-white shrink-0">
-                      <Phone size={24} />
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center text-gray-900 dark:text-white shrink-0">
+                        <Phone size={24} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Telepon</p>
+                        <p className="text-base font-bold text-gray-900 dark:text-white leading-tight">{office?.phone || '-'}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Telepon</p>
-                      <p className="text-base font-bold text-gray-900 dark:text-white leading-tight">{office?.phone || '-'}</p>
-                    </div>
-                  </div>
 
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center text-gray-900 dark:text-white shrink-0">
-                      <Mail size={24} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Email</p>
-                      <p className="text-base font-bold text-gray-900 dark:text-white leading-tight">{office?.email || '-'}</p>
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center text-gray-900 dark:text-white shrink-0">
+                        <Mail size={24} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Email</p>
+                        <p className="text-base font-bold text-gray-900 dark:text-white leading-tight">{office?.email || '-'}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
 
-            <motion.div 
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: 0.4 }}
-              className="space-y-10"
-            >
-              <div>
-                <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-6 uppercase tracking-tight">Lokasi & Jam</h2>
-                <div className="space-y-8">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center text-gray-900 dark:text-white shrink-0">
-                      <MapPin size={24} />
+              <motion.div 
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.4 }}
+                className="space-y-10"
+              >
+                <div>
+                  <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-6 uppercase tracking-tight">Lokasi & Jam</h2>
+                  <div className="space-y-8">
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center text-gray-900 dark:text-white shrink-0">
+                        <MapPin size={24} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Alamat</p>
+                        <p className="text-base font-bold text-gray-900 dark:text-white leading-relaxed">
+                          {office?.address || 'Jl. Contoh Alamat No. 123, Kota, Provinsi'}
+                          {office?.location && <><br />{office.location.name}</>}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Alamat</p>
-                      <p className="text-base font-bold text-gray-900 dark:text-white leading-relaxed">
-                        {office?.address || 'Jl. Contoh Alamat No. 123, Kota, Provinsi'}
-                        {office?.location && <><br />{office.location.name}</>}
-                      </p>
-                    </div>
-                  </div>
 
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center text-gray-900 dark:text-white shrink-0">
-                      <Clock size={24} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Operasional</p>
-                      <p className="text-base font-bold text-gray-900 dark:text-white leading-relaxed">
-                        Senin - Sabtu: 08.00 - 17.00<br/>Minggu: Tutup
-                      </p>
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center text-gray-900 dark:text-white shrink-0">
+                        <Clock size={24} />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Operasional</p>
+                        <p className="text-base font-bold text-gray-900 dark:text-white leading-relaxed">
+                          Senin - Sabtu: 08.00 - 17.00<br/>Minggu: Tutup
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
+              </motion.div>
+            </div>
+          ) : (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="prose dark:prose-invert max-w-none mb-12"
+              dangerouslySetInnerHTML={{ __html: showroomInfo?.contact_content }}
+            />
+          )}
+
+          {/* Map Integration */}
+          {(showroomInfo?.latitude && showroomInfo?.longitude) && (
+            <div className="mt-12 pt-12 border-t border-gray-100 dark:border-white/5">
+              <div className="flex items-center justify-between mb-6">
+                 <div>
+                    <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight">Lokasi Google Maps</h3>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Kunjungi showroom kami langsung melalui navigasi di bawah</p>
+                 </div>
+                 <a 
+                  href={`https://www.google.com/maps?q=${showroomInfo.latitude},${showroomInfo.longitude}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-transform"
+                 >
+                   Buka di Google Maps
+                 </a>
               </div>
-            </motion.div>
-          </div>
+              <div className="w-full h-[300px] md:h-[400px] rounded-3xl overflow-hidden border border-gray-100 dark:border-white/5 shadow-inner">
+                <iframe 
+                  width="100%" 
+                  height="100%" 
+                  frameBorder="0" 
+                  style={{ border: 0 }} 
+                  src={`https://maps.google.com/maps?q=${showroomInfo.latitude},${showroomInfo.longitude}&z=15&output=embed`} 
+                  allowFullScreen
+                ></iframe>
+              </div>
+            </div>
+          )}
         </motion.div>
       </div>
     </div>

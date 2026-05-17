@@ -50,7 +50,7 @@ This document provides a distilled overview of the application's structure and l
 ## 💻 Frontend Architecture
 ### 1. Routing (`frontend/src/App.jsx`)
 - **Public**: `/c/:slug` (Catalog), `/product/:id`, `/promotion/:id`.
-- **Private (Admin)**: `/`, `/users`, `/vehicles`, `/transactions`, `/reports`, etc.
+- **Private (Admin)**: `/`, `/users`, `/vehicles`, `/transactions`, `/reports`, `/ui-gallery` (UI Gallery), etc.
 
 ### 2. State Management
 - `AuthContext`: Handles JWT, user profile, and authentication state.
@@ -59,6 +59,7 @@ This document provides a distilled overview of the application's structure and l
 ### 3. Key Layouts & Patterns
 - `DashboardLayout`: Sidebar-based navigation for the admin panel.
 - **Tabbed Settings Pattern**: Used in `ShowroomSettings.jsx` to lazy-load independent forms (LinkStatus, BannerContent, AboutUs) for better performance and modularity.
+- **UI Component Showcase Pattern**: Documented in `UiGallery.jsx` to serve as a design, animation, and structural code catalog for maintaining consistency across admin pages.
 
 ## 🛠️ Common Workflows
 - **Running Dev**: Run `run_dev.bat` or `npm run dev` in the root.

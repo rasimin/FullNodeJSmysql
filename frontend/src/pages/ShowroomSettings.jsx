@@ -1,6 +1,6 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import api from '../services/api';
-import { Rocket, Globe, Layout, Info, Building2, ExternalLink, Shield } from 'lucide-react';
+import { Rocket, Globe, Layout, Info, Building2, ExternalLink, Shield, Phone } from 'lucide-react';
 import DynamicIsland from '../components/DynamicIsland';
 import { useAuth } from '../context/AuthContext';
 
@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 const LinkStatusTab = lazy(() => import('./showroom-settings/LinkStatusTab'));
 const BannerContentTab = lazy(() => import('./showroom-settings/BannerContentTab'));
 const AboutUsTab = lazy(() => import('./showroom-settings/AboutUsTab'));
+const ContactSettingsTab = lazy(() => import('./showroom-settings/ContactSettingsTab'));
 
 const ShowroomSettings = () => {
   const { user } = useAuth();
@@ -68,7 +69,8 @@ const ShowroomSettings = () => {
   const tabs = [
     { id: 'link-status', label: 'Link & Status', icon: Globe, component: LinkStatusTab },
     { id: 'banner-content', label: 'Banner & Katalog', icon: Layout, component: BannerContentTab },
-    { id: 'about-us', label: 'Tentang Kami', icon: Info, component: AboutUsTab }
+    { id: 'about-us', label: 'Tentang Kami', icon: Info, component: AboutUsTab },
+    { id: 'contact', label: 'Kontak', icon: Phone, component: ContactSettingsTab }
   ];
 
   const ActiveComponent = tabs.find(t => t.id === activeTab)?.component;

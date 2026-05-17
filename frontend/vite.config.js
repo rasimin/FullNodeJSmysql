@@ -8,6 +8,9 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  optimizeDeps: {
+    include: ['react-leaflet', 'leaflet']
+  },
   // Tailwind v4 uses CSS variables for dark mode by default,
   // but we want class-based for manual toggling
   define: {

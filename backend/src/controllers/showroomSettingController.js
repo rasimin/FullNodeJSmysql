@@ -46,6 +46,7 @@ exports.updateShowroomSetting = async (req, res) => {
     const { 
         slug, title, description, is_published, theme_color, 
         about_content,
+        use_default_contact, contact_content, latitude, longitude,
         remove_image,
         remove_about_image_1,
         remove_about_image_2,
@@ -77,7 +78,7 @@ exports.updateShowroomSetting = async (req, res) => {
         if (existing) return res.status(400).json({ message: 'Slug sudah digunakan oleh showroom lain' });
     }
 
-    const updateData = { slug, title, description, is_published, about_content };
+    const updateData = { slug, title, description, is_published, about_content, use_default_contact, contact_content, latitude, longitude };
     if (theme_color !== undefined) updateData.theme_color = theme_color;
     
     // Handle Header Image

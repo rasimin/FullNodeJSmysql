@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { 
   LayoutDashboard, Users, Building2, ShieldCheck, LogOut, Shield, Database,
-  Menu, X, History, FileText, Sun, Moon, ChevronLeft, ChevronRight, UserCircle, Car, Tags, BarChart2, BarChart3, Search, Rocket, MapPin, Activity, DollarSign, Trash2, Image
+  Menu, X, History, FileText, Sun, Moon, ChevronLeft, ChevronRight, UserCircle, Car, Tags, BarChart2, BarChart3, Search, Rocket, MapPin, Activity, DollarSign, Trash2, Image, Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IMAGE_BASE_URL } from '../config';
@@ -96,6 +96,7 @@ const DashboardLayout = () => {
         { to: '/admin-sessions', icon: Users, label: 'Monitor Sesi' },
         { to: '/roles', icon: ShieldCheck, label: 'Hak Akses (Role)' },
         { to: '/query-runner', icon: Database, label: 'SQL Query Runner' },
+        { to: '/ui-gallery', icon: Sparkles, label: 'Katalog Komponen UI' },
         { to: '/activities', icon: FileText, label: 'Catatan Aktivitas' },
         { to: '/audit-trails', icon: History, label: 'Jejak Audit' }
       );

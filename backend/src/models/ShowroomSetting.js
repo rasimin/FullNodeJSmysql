@@ -43,6 +43,22 @@ const ShowroomSetting = sequelize.define('ShowroomSetting', {
     type: DataTypes.BOOLEAN,
     defaultValue: false
   },
+  use_default_contact: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  contact_content: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  latitude: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  longitude: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   about_content: {
     type: DataTypes.TEXT,
     allowNull: true,
