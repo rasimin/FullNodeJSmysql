@@ -199,7 +199,7 @@ const ContactUs = () => {
                       <div>
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Alamat</p>
                         <p className="text-base font-bold text-gray-900 dark:text-white leading-relaxed">
-                          {office?.address || 'Jl. Contoh Alamat No. 123, Kota, Provinsi'}
+                          {showroomInfo?.address || office?.address || 'Jl. Contoh Alamat No. 123, Kota, Provinsi'}
                           {office?.location && <><br />{office.location.name}</>}
                         </p>
                       </div>
@@ -211,8 +211,8 @@ const ContactUs = () => {
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Operasional</p>
-                        <p className="text-base font-bold text-gray-900 dark:text-white leading-relaxed">
-                          Senin - Sabtu: 08.00 - 17.00<br/>Minggu: Tutup
+                        <p className="text-base font-bold text-gray-900 dark:text-white leading-relaxed whitespace-pre-line">
+                          {showroomInfo?.operational_hours || 'Senin - Sabtu: 08.00 - 17.00\nMinggu: Tutup'}
                         </p>
                       </div>
                     </div>

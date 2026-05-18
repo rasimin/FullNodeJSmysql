@@ -70,3 +70,4 @@ This document provides a distilled overview of the application's structure and l
 - Always check `skill_map.md` in the root before proposing architectural changes.
 - Maintain consistency with the **Tabbed Settings Pattern** for complex configuration pages.
 - Ensure all API calls use the wrappers in `frontend/src/services/`.
+- **Dilarang keras melakukan auto-commit atau auto-push ke Git.** Semua operasi Git (add, commit, push) hanya boleh dilakukan secara manual setelah mendapatkan perintah eksplisit dari USER.

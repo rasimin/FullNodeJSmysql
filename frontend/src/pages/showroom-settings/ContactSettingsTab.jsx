@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
-import { Phone, MapPin, Save, Globe, Info, MousePointer2 } from 'lucide-react';
+import { Phone, MapPin, Save, Globe, Info, MousePointer2, Clock } from 'lucide-react';
 import api from '../../services/api';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import { OpenStreetMapProvider, GeoSearchControl } from 'leaflet-geosearch';
@@ -48,7 +48,9 @@ const ContactSettingsTab = ({ setting, onUpdate, notify }) => {
     use_default_contact: setting?.use_default_contact ?? true,
     contact_content: setting?.contact_content || '',
     latitude: setting?.latitude || '-6.200000', // Default Jakarta
-    longitude: setting?.longitude || '106.816666'
+    longitude: setting?.longitude || '106.816666',
+    address: setting?.address || '',
+    operational_hours: setting?.operational_hours || 'Senin - Sabtu: 08.00 - 17.00\nMinggu: Tutup'
   });
   
   const [saving, setSaving] = useState(false);
@@ -57,13 +59,14 @@ const ContactSettingsTab = ({ setting, onUpdate, notify }) => {
     parseFloat(setting?.longitude || '106.816666')
   ]);
 
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(setting?.address || '');
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const provider = new OpenStreetMapProvider();
 
   const handleSearch = async (query) => {
     setSearchQuery(query);
+    setFormData(prev => ({ ...prev, address: query }));
     if (query.length < 3) {
       setSearchResults([]);
       return;
@@ -84,16 +87,59 @@ const ContactSettingsTab = ({ setting, onUpdate, notify }) => {
     const { x, y, label } = result;
     setMarkerPos([y, x]);
     setSearchQuery(label);
+    setFormData(prev => ({
+      ...prev,
+      address: label
+    }));
     setSearchResults([]);
   };
 
-  // Update formData when marker moves
+  const isInitial = useRef(true);
+
+  // Update formData when marker moves and trigger debounced reverse geocoding
   useEffect(() => {
     setFormData(prev => ({
       ...prev,
       latitude: markerPos[0].toString(),
       longitude: markerPos[1].toString()
     }));
+
+    if (isInitial.current) {
+      isInitial.current = false;
+      return;
+    }
+
+    const fetchAddress = async () => {
+      const [lat, lng] = markerPos;
+      setSearchQuery('Mencari alamat...');
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
+          {
+            headers: {
+              'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7'
+            }
+          }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          const addressName = data.display_name || `${lat}, ${lng}`;
+          setSearchQuery(addressName);
+          setFormData(prev => ({
+            ...prev,
+            address: addressName
+          }));
+        } else {
+          setSearchQuery(`${lat}, ${lng}`);
+        }
+      } catch (err) {
+        console.error('Reverse geocoding error:', err);
+        setSearchQuery(`${lat}, ${lng}`);
+      }
+    };
+
+    const timeoutId = setTimeout(fetchAddress, 600);
+    return () => clearTimeout(timeoutId);
   }, [markerPos]);
 
   const handleSubmit = async (e) => {
@@ -197,8 +243,27 @@ const ContactSettingsTab = ({ setting, onUpdate, notify }) => {
           </div>
         )}
 
+        {/* Jam Operasional Section */}
+        <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-white/10">
+          <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+            <Clock size={18} />
+            <h3 className="text-xs font-black uppercase tracking-widest">Jam Operasional Showroom</h3>
+          </div>
+          
+          <div className="space-y-1">
+             <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Jadwal & Jam Operasional</label>
+             <textarea 
+               className="input min-h-[80px] py-3 text-xs font-bold transition-all focus:border-blue-500" 
+               placeholder="Senin - Sabtu: 08.00 - 17.00&#10;Minggu: Tutup"
+               value={formData.operational_hours}
+               onChange={e => setFormData({ ...formData, operational_hours: e.target.value })}
+             />
+             <p className="text-[9px] text-gray-400 italic ml-1">Tips: Gunakan enter untuk menuliskan baris jadwal baru (contoh: Senin - Jumat di baris pertama, Sabtu - Minggu di baris kedua).</p>
+          </div>
+        </div>
+
         {/* Map Picker Section */}
-        <div className="space-y-4">
+        <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-white/10">
           <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
             <MapPin size={18} />
             <h3 className="text-xs font-black uppercase tracking-widest">Titik Lokasi Showroom (Peta)</h3>

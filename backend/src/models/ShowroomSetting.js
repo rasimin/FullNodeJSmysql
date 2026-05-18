@@ -59,6 +59,14 @@ const ShowroomSetting = sequelize.define('ShowroomSetting', {
     type: DataTypes.STRING,
     allowNull: true
   },
+  address: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  operational_hours: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
   about_content: {
     type: DataTypes.TEXT,
     allowNull: true,
