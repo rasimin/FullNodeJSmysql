@@ -108,6 +108,11 @@ const ShowroomSetting = sequelize.define('ShowroomSetting', {
   about_image_5: {
     type: DataTypes.STRING(255),
     allowNull: true
+  },
+  layout_template: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    defaultValue: 'classic'
   }
 }, {
   tableName: 'showroom_settings',

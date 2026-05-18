@@ -9,6 +9,7 @@ const BannerContentTab = ({ setting, onUpdate, notify }) => {
     title: setting?.title || '',
     description: setting?.description || '',
     theme_color: setting?.theme_color || 'blue',
+    layout_template: setting?.layout_template || 'classic',
   });
   
   const [imageFile, setImageFile] = useState(null);
@@ -25,6 +26,7 @@ const BannerContentTab = ({ setting, onUpdate, notify }) => {
       form.append('title', formData.title);
       form.append('description', formData.description);
       form.append('theme_color', formData.theme_color);
+      form.append('layout_template', formData.layout_template);
       form.append('remove_image', removeImage);
       if (imageFile) form.append('header_image', imageFile);
 
@@ -179,10 +181,118 @@ const BannerContentTab = ({ setting, onUpdate, notify }) => {
           </div>
         </div>
 
+        {/* Template Chooser Section */}
+        <div className="space-y-4 pt-6 border-t border-gray-100 dark:border-white/5">
+          <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+            <Layout size={18} />
+            <h3 className="text-xs font-black uppercase tracking-widest">Tema & Tata Letak Katalog</h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Classic Dark Grid Template */}
+            <div 
+              onClick={() => setFormData({ ...formData, layout_template: 'classic' })}
+              className={`cursor-pointer rounded-2xl border p-4 transition-all hover:scale-[1.02] flex flex-col gap-3 relative overflow-hidden ${
+                formData.layout_template === 'classic' 
+                  ? 'border-blue-500 bg-blue-500/[0.03] ring-1 ring-blue-500' 
+                  : 'border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20'
+              }`}
+            >
+              <div className="aspect-[4/3] rounded-xl bg-[#0b0c10] border border-gray-800 relative overflow-hidden shadow-inner p-3 flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <div className="h-2 w-10 bg-white/20 rounded-full" />
+                  <div className="flex gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5 my-2">
+                  <div className="aspect-square rounded-[6px] bg-white/5 border border-white/10 flex items-center justify-center text-[6px] text-white/30 font-black">CAR</div>
+                  <div className="aspect-square rounded-[6px] bg-white/5 border border-white/10 flex items-center justify-center text-[6px] text-white/30 font-black">CAR</div>
+                  <div className="aspect-square rounded-[6px] bg-white/5 border border-white/10 flex items-center justify-center text-[6px] text-white/30 font-black">CAR</div>
+                </div>
+                <div className="h-2 w-full bg-white/10 rounded-full" />
+              </div>
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-wider text-gray-900 dark:text-white">Classic Dark Grid</p>
+                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Desain grid gelap kaca futuristik bawaan.</p>
+              </div>
+              {formData.layout_template === 'classic' && (
+                <div className="absolute top-3 right-3 bg-blue-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black shadow-lg">✓</div>
+              )}
+            </div>
+
+            {/* Minimalist Clean Light/Dark Template */}
+            <div 
+              onClick={() => setFormData({ ...formData, layout_template: 'minimalist' })}
+              className={`cursor-pointer rounded-2xl border p-4 transition-all hover:scale-[1.02] flex flex-col gap-3 relative overflow-hidden ${
+                formData.layout_template === 'minimalist' 
+                  ? 'border-blue-500 bg-blue-500/[0.03] ring-1 ring-blue-500' 
+                  : 'border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20'
+              }`}
+            >
+              <div className="aspect-[4/3] rounded-xl bg-gray-50 dark:bg-[#12141c] border border-gray-200 dark:border-white/5 relative overflow-hidden shadow-inner p-3 flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <div className="h-2 w-10 bg-gray-300 dark:bg-white/20 rounded-full" />
+                  <div className="flex gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-white/20" />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5 my-2">
+                  <div className="h-4 rounded-[6px] bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center px-2 text-[6px] text-gray-400 font-black justify-between">
+                    <span>UNIT YAMAHA</span>
+                    <span className="text-[5px] bg-blue-100 text-blue-600 dark:bg-blue-900/30 px-1 py-0.2 rounded font-black">SLS</span>
+                  </div>
+                  <div className="h-4 rounded-[6px] bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center px-2 text-[6px] text-gray-400 font-black justify-between">
+                    <span>UNIT TOYOTA</span>
+                    <span className="text-[5px] bg-blue-100 text-blue-600 dark:bg-blue-900/30 px-1 py-0.2 rounded font-black">SLS</span>
+                  </div>
+                </div>
+                <div className="h-2 w-full bg-gray-200 dark:bg-white/10 rounded-full" />
+              </div>
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-wider text-gray-900 dark:text-white">Minimalist Clean</p>
+                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Desain terang/gelap minimalis modern super bersih.</p>
+              </div>
+              {formData.layout_template === 'minimalist' && (
+                <div className="absolute top-3 right-3 bg-blue-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black shadow-lg">✓</div>
+              )}
+            </div>
+
+            {/* Metropolis Asymmetric Grid Template */}
+            <div 
+              onClick={() => setFormData({ ...formData, layout_template: 'metropolis' })}
+              className={`cursor-pointer rounded-2xl border p-4 transition-all hover:scale-[1.02] flex flex-col gap-3 relative overflow-hidden ${
+                formData.layout_template === 'metropolis' 
+                  ? 'border-blue-500 bg-blue-500/[0.03] ring-1 ring-blue-500' 
+                  : 'border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20'
+              }`}
+            >
+              <div className="aspect-[4/3] rounded-xl bg-white dark:bg-[#151515] border-2 border-gray-950 dark:border-white relative overflow-hidden shadow-inner p-3 flex flex-col justify-between">
+                <div className="h-1.5 w-full bg-blue-600" />
+                <div className="flex gap-1.5 items-end my-1">
+                  <div className="flex-1 h-8 bg-gray-100 dark:bg-neutral-900 border border-gray-950 dark:border-white flex flex-col justify-end p-0.5">
+                    <div className="h-1.5 w-4 bg-gray-950 dark:bg-white" />
+                  </div>
+                  <div className="w-4 h-8 bg-gray-950 dark:bg-white" />
+                </div>
+                <div className="h-2 w-full bg-gray-200 dark:bg-neutral-800" />
+              </div>
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-wider text-gray-900 dark:text-white">Metropolis Tile</p>
+                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Desain asimetris, retro-shadow, kontras tinggi & tegas.</p>
+              </div>
+              {formData.layout_template === 'metropolis' && (
+                <div className="absolute top-3 right-3 bg-blue-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black shadow-lg">✓</div>
+              )}
+            </div>
+          </div>
+        </div>
+
         <button
           type="submit"
           disabled={saving}
-          className="btn-primary w-full h-12 gap-2 uppercase tracking-widest text-xs font-black disabled:opacity-50 disabled:grayscale"
+          className="btn-primary w-full h-12 gap-2 uppercase tracking-widest text-xs font-black disabled:opacity-50 disabled:grayscale mt-2"
         >
           <Save size={18} /> {saving ? 'Menyimpan...' : 'Simpan Banner & Konten'}
         </button>

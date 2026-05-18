@@ -60,6 +60,7 @@ This document provides a distilled overview of the application's structure and l
 - `DashboardLayout`: Sidebar-based navigation for the admin panel.
 - **Tabbed Settings Pattern**: Used in `ShowroomSettings.jsx` to lazy-load independent forms (LinkStatus, BannerContent, AboutUs) for better performance and modularity.
 - **UI Component Showcase Pattern**: Documented in `UiGallery.jsx` to serve as a design, animation, and structural code catalog for maintaining consistency across admin pages.
+- **Dynamic Catalog Layout Pattern**: Showrooms can choose visual templates (e.g. `Classic Dark Grid` or `Minimalist Clean`). Handled by components in `frontend/src/components/catalog-templates/` and rendered conditionally based on `layout_template` column in `showroom_settings`.
 
 ## 🛠️ Common Workflows
 - **Running Dev**: Run `run_dev.bat` or `npm run dev` in the root.
