@@ -86,8 +86,32 @@ const UserManagement = () => {
   const openModal = (user = null) => {
     setEditingUser(user);
     setFormData(user
-      ? { name: user.name, email: user.email, username: user.username, password: '', role_id: user.role_id, office_id: user.office_id, is_active: user.is_active }
-      : { name: '', email: '', username: '', password: '', role_id: roles[0]?.id || '', office_id: offices[0]?.id || '', is_active: true }
+      ? { 
+          name: user.name, 
+          email: user.email || '', 
+          username: user.username, 
+          password: '', 
+          role_id: user.role_id, 
+          office_id: user.office_id, 
+          is_active: user.is_active,
+          is_sales_agent: !!user.SalesAgent,
+          sales_code: user.SalesAgent?.sales_code || '',
+          sales_phone: user.SalesAgent?.phone || '',
+          sales_bio: user.SalesAgent?.bio || ''
+        }
+      : { 
+          name: '', 
+          email: '', 
+          username: '', 
+          password: '', 
+          role_id: roles[0]?.id || '', 
+          office_id: offices[0]?.id || '', 
+          is_active: true,
+          is_sales_agent: false,
+          sales_code: '',
+          sales_phone: '',
+          sales_bio: ''
+        }
     );
     setIsModalOpen(true);
   };
@@ -260,7 +284,16 @@ const UserManagement = () => {
                         transition={{ duration: 0.2, delay: i * 0.03 }}
                         className="hover:bg-blue-100/40 dark:hover:bg-blue-900/20 transition-colors group"
                       >
-                        <td className="px-5 py-3.5 font-bold text-gray-900 dark:text-white">{u.name}</td>
+                        <td className="px-5 py-3.5 font-bold text-gray-900 dark:text-white">
+                          <div className="flex items-center gap-2">
+                            <span>{u.name}</span>
+                            {u.SalesAgent && (
+                              <span className="text-[9px] font-black bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                {u.SalesAgent.sales_code || 'Sales'}
+                              </span>
+                            )}
+                          </div>
+                        </td>
                         <td className="px-5 py-3.5 text-blue-600 dark:text-blue-400 font-mono text-xs">{u.username}</td>
                         <td className="px-5 py-3.5 text-gray-500 dark:text-gray-400">{u.email || '—'}</td>
                         <td className="px-5 py-3.5"><span className="badge badge-blue">{u.Role?.name || 'N/A'}</span></td>
@@ -301,7 +334,14 @@ const UserManagement = () => {
                         {u.avatar ? <img src={`${IMAGE_BASE_URL}${u.avatar}`} alt={u.name} className="w-full h-full object-cover" /> : u.name?.charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <h3 className="text-xs md:text-sm font-bold text-gray-900 dark:text-white truncate">{u.name}</h3>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h3 className="text-xs md:text-sm font-bold text-gray-900 dark:text-white truncate">{u.name}</h3>
+                          {u.SalesAgent && (
+                            <span className="text-[8px] font-black bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1 py-0.2 rounded uppercase tracking-wider shrink-0">
+                              {u.SalesAgent.sales_code || 'Sales'}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[9px] md:text-[10px] text-blue-600 font-mono truncate">@{u.username}</p>
                       </div>
                     </div>
@@ -350,13 +390,78 @@ const UserManagement = () => {
               onChange={e => setFormData({...formData, office_id: e.target.value})}
               options={offices.map(o => ({ value: o.id, label: o.displayName }))} />
           </div>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={formData.is_active}
-              onChange={e => setFormData({...formData, is_active: e.target.checked})}
-              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-            <span className="text-sm text-gray-700 dark:text-gray-300">Akun Aktif</span>
-          </label>
-          <button type="submit" className="btn-primary w-full py-2.5">{editingUser ? 'Simpan Perubahan' : 'Tambah Pengguna'}</button>
+          {/* Akun Aktif & Jadikan Sales Row */}
+          <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-100 dark:border-white/5">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={formData.is_active}
+                onChange={e => setFormData({...formData, is_active: e.target.checked})}
+                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+              <span className="text-xs font-bold text-gray-700 dark:text-gray-300">Akun Aktif</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={formData.is_sales_agent}
+                onChange={e => {
+                  const checked = e.target.checked;
+                  setFormData({
+                    ...formData, 
+                    is_sales_agent: checked,
+                    sales_code: checked && !formData.sales_code ? `SLS-${Math.floor(100 + Math.random() * 900)}` : formData.sales_code
+                  });
+                }}
+                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">Jadikan Sales Agent</span>
+            </label>
+          </div>
+
+          {/* Collapsible Sales Details Form */}
+          <AnimatePresence>
+            {formData.is_sales_agent && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden space-y-4 pt-4 border-t border-dashed border-gray-200 dark:border-white/10"
+              >
+                <div className="flex items-center gap-2 text-blue-500">
+                  <Smartphone size={16} className="animate-bounce" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Detail Profil Sales Agent</span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <Input 
+                    label="Kode Sales" 
+                    icon={Shield} 
+                    required={formData.is_sales_agent}
+                    disabled={!!editingUser}
+                    value={formData.sales_code}
+                    onChange={e => setFormData({...formData, sales_code: e.target.value})} 
+                    placeholder="SLS-001" 
+                  />
+                  <Input 
+                    label="No. WhatsApp Penjualan" 
+                    icon={Smartphone} 
+                    required={formData.is_sales_agent}
+                    value={formData.sales_phone}
+                    onChange={e => setFormData({...formData, sales_phone: e.target.value})} 
+                    placeholder="0812XXXXXXXX" 
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Bio / Deskripsi Penjualan</label>
+                  <textarea 
+                    className="input min-h-[60px] py-2 text-xs font-bold transition-all focus:border-blue-500" 
+                    placeholder="Tulis bio singkat sales di sini..."
+                    value={formData.sales_bio}
+                    onChange={e => setFormData({...formData, sales_bio: e.target.value})}
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <button type="submit" className="btn-primary w-full py-2.5 mt-2">{editingUser ? 'Simpan Perubahan' : 'Tambah Pengguna'}</button>
         </form>
       </Modal>
 

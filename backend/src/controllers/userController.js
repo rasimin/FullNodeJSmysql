@@ -1,12 +1,15 @@
 const bcrypt = require('bcryptjs');
 const { Op } = require('sequelize');
-const { User, Role, Office, ActivityLog } = require('../models');
+const { User, Role, Office, ActivityLog, SalesAgent } = require('../models');
 const { getPagination, getPagingData } = require('../utils/pagination');
 
 // Create User
 const createUser = async (req, res) => {
   try {
-    const { name, email, username, password, role_id, office_id } = req.body;
+    const { 
+      name, email, username, password, role_id, office_id,
+      is_sales_agent, sales_code, sales_phone, sales_bio, sales_avatar_url
+    } = req.body;
     const currentUser = req.user;
     const currentOffice = await Office.findByPk(currentUser.office_id);
 
@@ -56,6 +59,21 @@ const createUser = async (req, res) => {
       { name, email: email || null, username, password_hash, role_id, office_id },
       { userId: req.user.id }
     );
+
+    if (is_sales_agent === true || is_sales_agent === 'true') {
+      await SalesAgent.create({
+        name: user.name,
+        email: user.email,
+        phone: sales_phone || null,
+        address: null,
+        bio: sales_bio || null,
+        office_id: user.office_id,
+        status: 'Active',
+        avatar_url: sales_avatar_url || null,
+        sales_code: sales_code || null,
+        user_id: user.id
+      }, { userId: req.user.id });
+    }
 
     res.status(201).json({ message: 'User created successfully', userId: user.id });
   } catch (error) {
@@ -117,7 +135,8 @@ const getUsers = async (req, res) => {
       attributes: { exclude: ['password_hash'] },
       include: [
         { model: Role, attributes: ['id', 'name'] },
-        { model: Office, attributes: ['id', 'name', 'type'] }
+        { model: Office, attributes: ['id', 'name', 'type'] },
+        { model: SalesAgent, attributes: ['id', 'sales_code', 'phone'] }
       ],
       order: [['createdAt', 'DESC']]
     });
@@ -137,7 +156,8 @@ const getUserById = async (req, res) => {
       attributes: { exclude: ['password_hash'] },
       include: [
         { model: Role },
-        { model: Office }
+        { model: Office },
+        { model: SalesAgent }
       ]
     });
 
@@ -151,7 +171,10 @@ const getUserById = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, username, password, role_id, office_id, is_active } = req.body;
+    const { 
+      name, email, username, password, role_id, office_id, is_active,
+      is_sales_agent, sales_code, sales_phone, sales_bio, sales_avatar_url 
+    } = req.body;
     
     // Log Attempt
     await ActivityLog.create({
@@ -204,6 +227,60 @@ const updateUser = async (req, res) => {
         userId: req.user.id,
         individualHooks: true 
       });
+    }
+
+    // --- SALES AGENT LINK & AUTO-SYNC LOGIC ---
+    const salesAgent = await SalesAgent.findOne({ where: { user_id: user.id } });
+
+    if (is_sales_agent !== undefined) {
+      const isSales = is_sales_agent === true || is_sales_agent === 'true';
+      if (isSales) {
+        if (salesAgent) {
+          // Update existing sales agent profile
+          await salesAgent.update({
+            name: name || user.name,
+            email: email !== undefined ? (email ? email.trim() : null) : user.email,
+            phone: sales_phone !== undefined ? sales_phone : salesAgent.phone,
+            bio: sales_bio !== undefined ? sales_bio : salesAgent.bio,
+            office_id: office_id || user.office_id,
+            avatar_url: sales_avatar_url !== undefined ? sales_avatar_url : salesAgent.avatar_url,
+            sales_code: sales_code !== undefined ? sales_code : salesAgent.sales_code,
+            status: is_active !== undefined ? (is_active ? 'Active' : 'Inactive') : salesAgent.status
+          }, { userId: req.user.id });
+        } else {
+          // Create new sales agent linked to this user
+          await SalesAgent.create({
+            name: name || user.name,
+            email: email !== undefined ? (email ? email.trim() : null) : user.email,
+            phone: sales_phone || null,
+            address: null,
+            bio: sales_bio || null,
+            office_id: office_id || user.office_id,
+            status: is_active !== undefined ? (is_active ? 'Active' : 'Inactive') : 'Active',
+            avatar_url: sales_avatar_url || null,
+            sales_code: sales_code || null,
+            user_id: user.id
+          }, { userId: req.user.id });
+        }
+      } else {
+        // Disconnect / destroy linked sales agent if untoggled
+        if (salesAgent) {
+          await salesAgent.destroy({ userId: req.user.id });
+        }
+      }
+    } else {
+      // Auto-sync basic details if is_sales_agent is not explicitly sent but user changes details
+      if (salesAgent) {
+        const salesUpdateData = {};
+        if (name) salesUpdateData.name = name;
+        if (email !== undefined) salesUpdateData.email = email ? email.trim() : null;
+        if (office_id) salesUpdateData.office_id = office_id;
+        if (is_active !== undefined) salesUpdateData.status = is_active ? 'Active' : 'Inactive';
+        
+        if (Object.keys(salesUpdateData).length > 0) {
+          await salesAgent.update(salesUpdateData, { userId: req.user.id });
+        }
+      }
     }
 
     res.json({ message: 'User updated successfully' });

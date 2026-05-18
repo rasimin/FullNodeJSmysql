@@ -43,6 +43,10 @@ const SalesAgent = sequelize.define('SalesAgent', {
     type: DataTypes.STRING(10),
     unique: true,
     allowNull: true,
+  },
+  user_id: {
+    type: DataTypes.BIGINT,
+    allowNull: true,
   }
 }, {
   tableName: 'sales_agents',

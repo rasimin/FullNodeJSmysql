@@ -34,6 +34,9 @@ User.hasMany(UserSession, { foreignKey: 'user_id', onDelete: 'CASCADE' });
 SalesAgent.belongsTo(Office, { foreignKey: 'office_id' });
 Office.hasMany(SalesAgent, { foreignKey: 'office_id', as: 'salesAgents' });
 
+SalesAgent.belongsTo(User, { foreignKey: 'user_id', onDelete: 'SET NULL' });
+User.hasOne(SalesAgent, { foreignKey: 'user_id', onDelete: 'SET NULL' });
+
 // Office Hierarchy
 Office.belongsTo(Office, { as: 'parent', foreignKey: 'parent_id' });
 Office.hasMany(Office, { as: 'branches', foreignKey: 'parent_id' });
