@@ -13,7 +13,7 @@ const ShowroomNavbar = ({
   toggleTheme, 
   setIsPromoModalOpen 
 }) => {
-  const isMinimalistLuxury = showroomInfo?.layout_template === 'metropolis';
+  const isMinimalistLuxury = showroomInfo?.layout_template === 'metropolis' || showroomInfo?.layout_template === 'left-sidebar';
 
   return (
     <nav className={`sticky top-0 z-[100] transition-all duration-500 border-b ${
