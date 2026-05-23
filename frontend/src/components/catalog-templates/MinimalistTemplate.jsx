@@ -196,40 +196,72 @@ const MinimalistTemplate = ({
       </Helmet>
 
       {/* Top Navbar */}
-      <ShowroomNavbar 
-        showroomInfo={showroomInfo}
-        isNeutral={true}
-        isPublicMode={isPublicMode}
-        slug={slug}
-        user={user}
-        theme={theme}
-        toggleTheme={toggleTheme}
-        setIsPromoModalOpen={setIsPromoModalOpen}
-      />
-
-      {/* Clean Minimalist Header (Airy text, left aligned or elegant center, no massive images) */}
-      <div className="max-w-7xl mx-auto px-5 md:px-10 lg:px-14 pt-12 pb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-gray-200/60 dark:border-white/5">
-        <div className="space-y-3">
-          <span className="text-[10px] font-black uppercase tracking-[0.25em] text-blue-600 dark:text-blue-400">Premium Catalog</span>
-          <h1 className="text-4xl md:text-6xl font-black tracking-tight text-gray-900 dark:text-white leading-none">
-            {showroomInfo?.title || 'Katalog Showroom'}
-          </h1>
-          <p className="text-sm text-gray-500 max-w-2xl">
-            {showroomInfo?.description || 'Temukan unit impian Anda dengan standar kualitas terbaik.'}
-          </p>
+      {/* Top Navbar & Elegant Edge-to-Edge Hero Banner */}
+      <div 
+        className="relative z-0 w-full overflow-hidden transition-all duration-700 bg-slate-900 dark:bg-zinc-950"
+      >
+        <div className="absolute inset-0 z-0">
+          {showroomInfo?.header_image ? (
+            <div className="relative w-full h-full">
+              <img 
+                src={`${IMAGE_BASE_URL}${showroomInfo.header_image}`} 
+                className="w-full h-full object-cover" 
+                alt="Header" 
+              />
+              <div className="absolute inset-0 bg-black/40 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+            </div>
+          ) : (
+            // Premium Gradient Mesh for Minimalist
+            <div className="w-full h-full bg-gradient-to-br from-slate-900 to-zinc-950 relative overflow-hidden">
+              <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:30px_30px]" />
+              <div className="absolute -top-[20%] -left-[10%] w-[60%] h-[100%] rounded-full bg-blue-600/20 blur-[120px] pointer-events-none" />
+              <div className="absolute -bottom-[20%] -right-[10%] w-[50%] h-[100%] rounded-full bg-indigo-500/15 blur-[120px] pointer-events-none" />
+            </div>
+          )}
+          {/* Bottom fade blending into the page background */}
+          <div className="absolute bottom-0 left-0 right-0 h-[60%] bg-gradient-to-t from-gray-50 dark:from-[#0f1115] to-transparent z-[1]" />
         </div>
-        {promotions.length > 0 && (
-          <button 
-            onClick={() => setIsPromoModalOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2 border border-gray-250 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl text-[10px] font-black uppercase tracking-wider dark:text-white transition-all shadow-sm"
-          >
-            Lihat Promo Spesial
-          </button>
-        )}
+
+        <ShowroomNavbar 
+          showroomInfo={showroomInfo}
+          isNeutral={false}
+          isPublicMode={isPublicMode}
+          slug={slug}
+          user={user}
+          theme={theme}
+          toggleTheme={toggleTheme}
+          setIsPromoModalOpen={setIsPromoModalOpen}
+        />
+
+        <AnimatePresence>
+          {!finalSearchTerm && (
+            <motion.header 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="relative z-10 flex flex-col gap-6 pt-10 md:pt-20 pb-36 px-5 md:px-10 lg:px-14 items-center text-center max-w-7xl mx-auto text-white"
+            >
+              <h1 className="text-5xl md:text-8xl font-black tracking-tighter leading-[0.9] text-white">
+                {showroomInfo?.title || 'Katalog Showroom'}
+              </h1>
+              <p className="text-sm md:text-base font-medium tracking-wide max-w-3xl text-white/80 leading-relaxed">
+                {showroomInfo?.description || 'Temukan unit impian Anda dengan standar kualitas terbaik.'}
+              </p>
+              {promotions.length > 0 && (
+                <button 
+                  onClick={() => setIsPromoModalOpen(true)}
+                  className="flex items-center gap-1.5 px-6 py-2.5 bg-white text-gray-950 hover:bg-gray-100 rounded-full text-[10px] font-black uppercase tracking-wider shadow-2xl transition-all hover:scale-105 active:scale-98 cursor-pointer mt-2"
+                >
+                  Lihat Promo
+                </button>
+              )}
+            </motion.header>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Clean Search & Filter Panel */}
-      <div className="max-w-7xl mx-auto px-5 md:px-10 lg:px-14 pt-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-5 md:px-10 lg:px-14 -mt-12 md:-mt-14 space-y-8 relative z-10">
         <div className="flex flex-col md:flex-row items-center gap-3 w-full">
           <div className="flex flex-col md:flex-row items-center gap-2 flex-1 w-full">
             {!isPublicMode && (
@@ -244,7 +276,7 @@ const MinimalistTemplate = ({
                 <button
                   key={opt.value}
                   onClick={() => { setFilterType(opt.value); setPage(1); }}
-                  className={`h-8 rounded-lg text-[10px] font-black uppercase tracking-wider px-4 transition-all ${filterType === opt.value ? 'bg-white dark:bg-white/10 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-800'}`}
+                  className={`h-8 rounded-lg text-[10px] font-black uppercase tracking-wider px-4 transition-all ${filterType === opt.value ? 'bg-white dark:bg-white/10 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white'}`}
                 >
                   {opt.label}
                 </button>
@@ -252,7 +284,7 @@ const MinimalistTemplate = ({
             </div>
             <button
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className={`h-10 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all ${showAdvanced ? 'bg-blue-600 border-blue-600 text-white shadow-sm' : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-500 hover:bg-gray-50'}`}
+              className={`h-10 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all ${showAdvanced ? 'bg-blue-600 border-blue-600 text-white shadow-sm' : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-500 hover:bg-gray-50 dark:hover:bg-white/10'}`}
             >
               Filter Detail
             </button>
@@ -270,23 +302,23 @@ const MinimalistTemplate = ({
             >
               <div>
                 <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Merk</label>
-                <select value={filters.brand} onChange={(e) => { setFilters({ ...filters, brand: e.target.value }); setPage(1); }} className="w-full h-10 border border-gray-200 dark:border-white/10 rounded-lg px-3 text-xs outline-none bg-transparent">
-                  <option value="">Semua Merk</option>
-                  {uniqueBrands.map(b => <option key={b} value={b}>{b}</option>)}
+                <select value={filters.brand} onChange={(e) => { setFilters({ ...filters, brand: e.target.value }); setPage(1); }} className="w-full h-10 border border-gray-200 dark:border-white/10 rounded-lg px-3 text-xs outline-none bg-transparent text-gray-900 dark:text-white dark:bg-[#151722]">
+                  <option value="" className="bg-white dark:bg-[#151722] text-gray-900 dark:text-white">Semua Merk</option>
+                  {uniqueBrands.map(b => <option key={b} value={b} className="bg-white dark:bg-[#151722] text-gray-900 dark:text-white">{b}</option>)}
                 </select>
               </div>
               <div>
                 <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Tahun</label>
-                <select value={filters.year} onChange={(e) => { setFilters({ ...filters, year: e.target.value }); setPage(1); }} className="w-full h-10 border border-gray-200 dark:border-white/10 rounded-lg px-3 text-xs outline-none bg-transparent">
-                  <option value="">Semua Tahun</option>
-                  {uniqueYears.map(y => <option key={y} value={y}>{y}</option>)}
+                <select value={filters.year} onChange={(e) => { setFilters({ ...filters, year: e.target.value }); setPage(1); }} className="w-full h-10 border border-gray-200 dark:border-white/10 rounded-lg px-3 text-xs outline-none bg-transparent text-gray-900 dark:text-white dark:bg-[#151722]">
+                  <option value="" className="bg-white dark:bg-[#151722] text-gray-900 dark:text-white">Semua Tahun</option>
+                  {uniqueYears.map(y => <option key={y} value={y} className="bg-white dark:bg-[#151722] text-gray-900 dark:text-white">{y}</option>)}
                 </select>
               </div>
               <div>
                 <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Cabang</label>
-                <select value={filters.officeId} onChange={(e) => { setFilters({ ...filters, officeId: e.target.value }); setPage(1); }} className="w-full h-10 border border-gray-200 dark:border-white/10 rounded-lg px-3 text-xs outline-none bg-transparent">
-                  <option value="">Semua Cabang</option>
-                  {hierarchicalOffices.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                <select value={filters.officeId} onChange={(e) => { setFilters({ ...filters, officeId: e.target.value }); setPage(1); }} className="w-full h-10 border border-gray-200 dark:border-white/10 rounded-lg px-3 text-xs outline-none bg-transparent text-gray-900 dark:text-white dark:bg-[#151722]">
+                  <option value="" className="bg-white dark:bg-[#151722] text-gray-900 dark:text-white">Semua Cabang</option>
+                  {hierarchicalOffices.map(o => <option key={o.id} value={o.id} className="bg-white dark:bg-[#151722] text-gray-900 dark:text-white">{o.label}</option>)}
                 </select>
               </div>
               <div>
@@ -306,9 +338,9 @@ const MinimalistTemplate = ({
             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{totalItems} Unit Tersedia</span>
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-gray-400 uppercase font-black">Urut:</span>
-              <select value={sortBy} onChange={(e) => { setSortBy(e.target.value); setPage(1); }} className="text-[10px] font-black bg-transparent border-none outline-none uppercase text-gray-700 dark:text-white cursor-pointer">
+              <select value={sortBy} onChange={(e) => { setSortBy(e.target.value); setPage(1); }} className="text-[10px] font-black bg-transparent border-none outline-none uppercase text-gray-700 dark:text-white cursor-pointer dark:bg-[#0f1115]">
                 {['Terbaru', 'Harga Terendah', 'Harga Tertinggi', 'Tahun Terbaru'].map(opt => (
-                  <option key={opt} value={opt} className="dark:bg-[#0f1115]">{opt}</option>
+                  <option key={opt} value={opt} className="bg-white dark:bg-[#0f1115] text-gray-900 dark:text-white">{opt}</option>
                 ))}
               </select>
             </div>

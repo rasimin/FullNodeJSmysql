@@ -18,9 +18,9 @@ router.use((req, res, next) => {
   next();
 });
 
-// List users (All authenticated users can see list, but maybe restricted in frontend)
-router.get('/', getUsers);
-router.get('/:id', getUserById);
+// List users (Admin only)
+router.get('/', authorize(['Super Admin', 'Admin Pusat']), getUsers);
+router.get('/:id', authorize(['Super Admin', 'Admin Pusat']), getUserById);
 
 // Manage Users (Admin only)
 router.post('/', authorize(['Super Admin', 'Admin Pusat']), createUser);

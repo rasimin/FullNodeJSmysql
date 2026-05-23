@@ -259,7 +259,7 @@ const BannerContentTab = ({ setting, onUpdate, notify }) => {
               )}
             </div>
 
-            {/* Metropolis Asymmetric Grid Template */}
+            {/* Fluent Design Microsoft Template */}
             <div 
               onClick={() => setFormData({ ...formData, layout_template: 'metropolis' })}
               className={`cursor-pointer rounded-2xl border p-4 transition-all hover:scale-[1.02] flex flex-col gap-3 relative overflow-hidden ${
@@ -268,19 +268,23 @@ const BannerContentTab = ({ setting, onUpdate, notify }) => {
                   : 'border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20'
               }`}
             >
-              <div className="aspect-[4/3] rounded-xl bg-white dark:bg-[#151515] border-2 border-gray-950 dark:border-white relative overflow-hidden shadow-inner p-3 flex flex-col justify-between">
-                <div className="h-1.5 w-full bg-blue-600" />
-                <div className="flex gap-1.5 items-end my-1">
-                  <div className="flex-1 h-8 bg-gray-100 dark:bg-neutral-900 border border-gray-950 dark:border-white flex flex-col justify-end p-0.5">
-                    <div className="h-1.5 w-4 bg-gray-950 dark:bg-white" />
+              <div className="aspect-[4/3] rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800/80 relative overflow-hidden shadow-inner p-3 flex flex-col justify-between">
+                {/* Glowing Aurora Blobs in Preview */}
+                <div className="absolute top-0 left-0 w-8 h-8 rounded-full bg-blue-500/20 blur-[10px] pointer-events-none" />
+                <div className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-indigo-500/20 blur-[10px] pointer-events-none" />
+                
+                <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 to-indigo-600 rounded-sm relative z-10" />
+                <div className="flex gap-1.5 items-end my-1 relative z-10">
+                  <div className="flex-1 h-8 bg-white/60 dark:bg-zinc-800/60 backdrop-blur-md border border-slate-200/50 dark:border-zinc-700/50 rounded-lg flex flex-col justify-end p-1 shadow-sm">
+                    <div className="h-1.5 w-4 bg-blue-500/85 rounded-sm" />
                   </div>
-                  <div className="w-4 h-8 bg-gray-950 dark:bg-white" />
+                  <div className="w-4 h-8 bg-white/60 dark:bg-zinc-800/60 backdrop-blur-md border border-slate-200/50 dark:border-zinc-700/50 rounded-lg shadow-sm" />
                 </div>
-                <div className="h-2 w-full bg-gray-200 dark:bg-neutral-800" />
+                <div className="h-2 w-full bg-white/65 dark:bg-zinc-850/65 rounded-sm border border-slate-200/40 dark:border-zinc-800/40 relative z-10" />
               </div>
               <div>
-                <p className="text-[11px] font-black uppercase tracking-wider text-gray-900 dark:text-white">Metropolis Tile</p>
-                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Desain asimetris, retro-shadow, kontras tinggi & tegas.</p>
+                <p className="text-[11px] font-black uppercase tracking-wider text-gray-900 dark:text-white">Minimalist Luxury</p>
+                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Desain studio mewah, bersih, tata letak produk melayang, & tipografi super minimalis modern.</p>
               </div>
               {formData.layout_template === 'metropolis' && (
                 <div className="absolute top-3 right-3 bg-blue-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black shadow-lg">✓</div>

@@ -93,6 +93,11 @@ const Vehicle = sequelize.define('Vehicle', {
     type: DataTypes.STRING(30),
     allowNull: true,
   },
+  view_count: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0
+  },
   is_deleted: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,

@@ -8,8 +8,15 @@ const getActivityLogs = async (req, res) => {
     const { page, size, user_id } = req.query;
     const { limit, offset } = getPagination(page, size);
 
+    const userRole = req.user?.Role?.name;
+    const isAdmin = ['Super Admin', 'Admin Pusat', 'Admin Cabang'].includes(userRole);
+
     const condition = {};
-    if (user_id) condition.user_id = user_id;
+    if (isAdmin) {
+      if (user_id) condition.user_id = user_id;
+    } else {
+      condition.user_id = req.user.id;
+    }
 
     const { count, rows } = await ActivityLog.findAndCountAll({
       where: condition,

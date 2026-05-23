@@ -27,39 +27,43 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (!token) return;
 
+    let timeoutMins = 15;
     let timeoutId;
-    let events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-    let attachedResetTimer = null;
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
 
-    const setup = async () => {
-      let timeoutMins = 15;
+    const attachedResetTimer = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        if (localStorage.getItem('token')) {
+          logout();
+          alert(`Sesi Anda telah berakhir karena tidak ada aktivitas selama ${timeoutMins} menit.`);
+          window.location.href = '/login';
+        }
+      }, timeoutMins * 60 * 1000);
+    };
+
+    // Register event listeners synchronously
+    events.forEach(event => document.addEventListener(event, attachedResetTimer));
+    attachedResetTimer(); // start initially
+
+    // Fetch updated timeout asynchronously without re-registering event listeners
+    const fetchTimeout = async () => {
       try {
         const res = await api.get('/settings');
         const timeoutSetting = res.data.find(s => s.key === 'security_inactivity_timeout');
-        if (timeoutSetting) timeoutMins = parseInt(timeoutSetting.value);
-      } catch (e) {}
-
-      attachedResetTimer = () => {
-        if (timeoutId) clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-          if (localStorage.getItem('token')) {
-            logout();
-            alert(`Sesi Anda telah berakhir karena tidak ada aktivitas selama ${timeoutMins} menit.`);
-            window.location.href = '/login';
-          }
-        }, timeoutMins * 60 * 1000);
-      };
-
-      events.forEach(event => document.addEventListener(event, attachedResetTimer));
-      attachedResetTimer(); // start initially
+        if (timeoutSetting) {
+          timeoutMins = parseInt(timeoutSetting.value);
+          attachedResetTimer(); // restart with new timeout
+        }
+      } catch (e) {
+        console.error('Failed to fetch security timeout setting', e);
+      }
     };
 
-    setup();
+    fetchTimeout();
 
     return () => {
-      if (attachedResetTimer) {
-        events.forEach(event => document.removeEventListener(event, attachedResetTimer));
-      }
+      events.forEach(event => document.removeEventListener(event, attachedResetTimer));
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, [token]);

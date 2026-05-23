@@ -249,6 +249,11 @@ exports.confirmSale = async (req, res) => {
       
       await booking.update(updateData, { userId: req.user.id });
     } else {
+      // Direct sales: NIK wajib diisi
+      if (!req.body.nik) {
+        return res.status(400).json({ message: 'NIK (National ID Number) is mandatory for direct sales' });
+      }
+      
       // Jika jual langsung (tanpa booking), buat record baru di tabel booking sebagai catatan transaksi
       booking = await Booking.create({
         vehicle_id: vehicleId,

@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { Toaster } from 'react-hot-toast';
-import ProtectedRoute from './components/ProtectedRoute';
+import ProtectedRoute, { RoleProtectedRoute } from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import UserManagement from './pages/UserManagement';
@@ -71,15 +71,19 @@ function App() {
                 <Route path="/standard-reports" element={<Reports />} />
                 <Route path="/finance-report" element={<FinanceReport />} />
                 <Route path="/profile" element={<Profile />} />
-                <Route path="/security-settings" element={<SecuritySettings />} />
                 <Route path="/sessions" element={<Sessions />} />
                 <Route path="/admin-sessions" element={<AdminSessions />} />
                 <Route path="/sales-report" element={<SalesReport />} />
                 <Route path="/analysis-report" element={<AnalysisReport />} />
                 <Route path="/showroom-settings" element={<ShowroomSettings />} />
                 <Route path="/old-dashboard" element={<Dashboard />} />
-                <Route path="/query-runner" element={<QueryRunner />} />
                 <Route path="/ui-gallery" element={<UiGallery />} />
+
+                {/* Rute Sensitif Terproteksi Peran */}
+                <Route element={<RoleProtectedRoute allowedRoles={['Super Admin', 'Admin Pusat']} />}>
+                  <Route path="/security-settings" element={<SecuritySettings />} />
+                  <Route path="/query-runner" element={<QueryRunner />} />
+                </Route>
               </Route>
 
               {/* Standalone Page (New Tab) */}

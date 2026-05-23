@@ -73,6 +73,15 @@ const syncDb = async () => {
       console.log('Added deleted_at column to vehicles');
     }
 
+    if (!tableInfo.view_count) {
+      await queryInterface.addColumn('vehicles', 'view_count', {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      });
+      console.log('Added view_count column to vehicles');
+    }
+
     // Check sales_agents table
     const salesAgentsInfo = await queryInterface.describeTable('sales_agents');
     if (!salesAgentsInfo.avatar_url) {

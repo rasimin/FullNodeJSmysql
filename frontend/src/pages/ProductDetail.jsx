@@ -367,7 +367,7 @@ const ProductDetail = () => {
                     <div key={i} className="w-6 h-6 rounded-full border-2 border-white dark:border-gray-900 bg-gray-200 dark:bg-gray-800" />
                   ))}
                 </div>
-                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">5+ Orang melihat unit ini hari ini</p>
+                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">{vehicle.view_count || 1} Orang melihat unit ini hari ini</p>
               </div>
             </motion.div>
           </div>

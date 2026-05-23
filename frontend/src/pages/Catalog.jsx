@@ -16,7 +16,7 @@ import { IMAGE_BASE_URL } from '../config';
 import ShowroomNavbar from '../components/ShowroomNavbar';
 import ClassicTemplate from '../components/catalog-templates/ClassicTemplate';
 import MinimalistTemplate from '../components/catalog-templates/MinimalistTemplate';
-import MetropolisTemplate from '../components/catalog-templates/MetropolisTemplate';
+import MinimalistLuxuryTemplate from '../components/catalog-templates/MinimalistLuxuryTemplate';
 
 // ----------------------------------------------------------------------
 // 1. UTILITY HOOKS
@@ -585,7 +585,7 @@ const Catalog = () => {
   return (
     <>
       {showroomInfo?.layout_template === 'metropolis' ? (
-        <MetropolisTemplate {...templateProps} />
+        <MinimalistLuxuryTemplate {...templateProps} />
       ) : showroomInfo?.layout_template === 'minimalist' ? (
         <MinimalistTemplate {...templateProps} />
       ) : (
@@ -601,9 +601,9 @@ const Catalog = () => {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.98, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
-                className="relative w-full max-w-6xl bg-white dark:bg-[#0a0b0f] rounded-[24px] overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.5)] border border-gray-200 dark:border-white/10 flex flex-col md:flex-row h-[90vh] md:h-[85vh]"
+                className="relative w-full max-w-6xl bg-white dark:bg-[#0a0b0f] rounded-[24px] overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.5)] border border-gray-200 dark:border-white/10 flex flex-col lg:flex-row h-[90vh] lg:h-[85vh]"
               >
-                <div className="w-full md:w-[60%] h-[35vh] md:h-full relative bg-gray-100 dark:bg-gray-950 flex items-center justify-center overflow-hidden border-r border-gray-200 dark:border-white/5 shrink-0">
+                <div className="w-full lg:w-[60%] h-[35vh] lg:h-full relative bg-gray-100 dark:bg-gray-950 flex items-center justify-center overflow-hidden border-r border-gray-200 dark:border-white/5 shrink-0">
                   {selectedVehicle.images?.[activeImageIndex] ? (
                     <>
                       {/* Cinematic Blurred Backdrop */}
@@ -616,7 +616,7 @@ const Catalog = () => {
                       <img
                         src={`${IMAGE_BASE_URL}${selectedVehicle.images[activeImageIndex].image_url}`}
                         alt={selectedVehicle.model}
-                        className="relative z-10 w-full h-full object-contain p-4 md:p-8"
+                        className="relative z-10 w-full h-full object-contain p-4 lg:p-8"
                       />
                     </>
                   ) : (
@@ -625,31 +625,31 @@ const Catalog = () => {
 
                   {/* Navigation Thumbnails */}
                   {selectedVehicle.images?.length > 1 && (
-                    <div className="absolute bottom-4 md:bottom-8 left-0 right-0 px-6 z-20 flex justify-center group/thumbs">
+                    <div className="absolute bottom-4 lg:bottom-8 left-0 right-0 px-6 z-20 flex justify-center group/thumbs">
                       <div className="relative max-w-full">
                         {/* Scroll Arrows */}
                         <button 
                           onClick={() => scrollThumbs('left')}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/60 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-white opacity-100 md:opacity-0 md:group-hover/thumbs:opacity-100 transition-all z-40 hover:scale-110 active:scale-95 shadow-lg"
+                          className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/60 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-white opacity-100 lg:opacity-0 lg:group-hover/thumbs:opacity-100 transition-all z-40 hover:scale-110 active:scale-95 shadow-lg"
                         >
                           <ChevronLeft size={16} />
                         </button>
                         <button 
                           onClick={() => scrollThumbs('right')}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/60 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-white opacity-100 md:opacity-0 md:group-hover/thumbs:opacity-100 transition-all z-40 hover:scale-110 active:scale-95 shadow-lg"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/60 backdrop-blur-xl border border-white/20 rounded-full flex items-center justify-center text-white opacity-100 lg:opacity-0 lg:group-hover/thumbs:opacity-100 transition-all z-40 hover:scale-110 active:scale-95 shadow-lg"
                         >
                           <ChevronRight size={16} />
                         </button>
 
                         <div 
                           ref={thumbRef}
-                          className="flex gap-2 md:gap-3 p-1.5 md:p-2.5 bg-black/40 backdrop-blur-2xl rounded-[20px] md:rounded-[28px] border border-white/10 shadow-2xl overflow-x-auto no-scrollbar scroll-smooth"
+                          className="flex gap-2 lg:gap-3 p-1.5 lg:p-2.5 bg-black/40 backdrop-blur-2xl rounded-[20px] lg:rounded-[28px] border border-white/10 shadow-2xl overflow-x-auto no-scrollbar scroll-smooth"
                         >
                           {selectedVehicle.images.map((img, idx) => (
                             <button
-                              key={idx}
-                              onClick={() => setActiveImageIndex(idx)}
-                              className={`w-10 h-10 md:w-16 md:h-16 rounded-[12px] md:rounded-[20px] overflow-hidden border-2 transition-all shrink-0 ${activeImageIndex === idx ? 'border-white scale-110 shadow-xl' : 'border-transparent opacity-40 hover:opacity-100 hover:scale-105'}`}
+                               key={idx}
+                               onClick={() => setActiveImageIndex(idx)}
+                               className={`w-10 h-10 lg:w-16 lg:h-16 rounded-[12px] lg:rounded-[20px] overflow-hidden border-2 transition-all shrink-0 ${activeImageIndex === idx ? 'border-white scale-110 shadow-xl' : 'border-transparent opacity-40 hover:opacity-100 hover:scale-105'}`}
                             >
                               <img src={`${IMAGE_BASE_URL}${img.image_url}`} className="w-full h-full object-cover" alt="" />
                             </button>
@@ -661,7 +661,7 @@ const Catalog = () => {
 
                 </div>
 
-                <div className="w-full md:w-[40%] p-6 md:p-8 flex flex-col overflow-hidden bg-[#f8fafc] dark:bg-[#0a0b0f]">
+                <div className="w-full lg:w-[40%] p-6 lg:p-8 flex flex-col overflow-hidden bg-[#f8fafc] dark:bg-[#0a0b0f]">
                   {/* Scrollable Content Area */}
                   <div className="flex-1 overflow-y-auto no-scrollbar pr-1 pt-16">
                     <div className="mb-6 bg-white dark:bg-white/[0.03] p-6 rounded-3xl border border-gray-200 dark:border-white/5 shadow-sm">
@@ -674,9 +674,9 @@ const Catalog = () => {
                     </div>
 
                     {/* Unified Vehicle Info Box */}
-                    <div className="p-4 md:p-5 bg-white dark:bg-white/5 rounded-[20px] md:rounded-[24px] border border-gray-200 dark:border-white/5 mb-4 md:mb-6 shadow-sm">
+                    <div className="p-4 lg:p-5 bg-white dark:bg-white/5 rounded-[20px] lg:rounded-[24px] border border-gray-200 dark:border-white/5 mb-4 lg:mb-6 shadow-sm">
                       {/* Compact Specs Grid */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-y-3 gap-x-4 md:gap-4 mb-4 md:mb-5">
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-y-3 gap-x-4 lg:gap-4 mb-4 lg:mb-5">
                         {[
                           { label: 'Odometer', val: `${parseInt(selectedVehicle.odometer || 0).toLocaleString()} KM` },
                           { label: 'Transmisi', val: selectedVehicle.transmission || '-' },
@@ -684,22 +684,22 @@ const Catalog = () => {
                           { label: 'Warna', val: selectedVehicle.color || '-' }
                         ].map((spec, i) => (
                           <div key={i}>
-                            <p className="text-[7px] md:text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 md:mb-1">{spec.label}</p>
-                            <p className="text-[10px] md:text-[11px] font-bold text-gray-900 dark:text-white uppercase truncate">{spec.val}</p>
+                            <p className="text-[7px] lg:text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 lg:mb-1">{spec.label}</p>
+                            <p className="text-[10px] lg:text-[11px] font-bold text-gray-900 dark:text-white uppercase truncate">{spec.val}</p>
                           </div>
                         ))}
                       </div>
 
                       {/* Divider */}
-                      <div className="h-px bg-gray-100 dark:bg-white/10 mb-4 md:mb-5" />
+                      <div className="h-px bg-gray-100 dark:bg-white/10 mb-4 lg:mb-5" />
 
                       {/* Location Info */}
-                      <div className="flex items-center gap-3 md:gap-4">
-                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-gray-900 text-white flex items-center justify-center shrink-0 shadow-lg shadow-gray-900/20"> <MapPin size={16} className="md:w-[18px] md:h-[18px]" /> </div>
+                      <div className="flex items-center gap-3 lg:gap-4">
+                        <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg lg:rounded-xl bg-gray-900 text-white flex items-center justify-center shrink-0 shadow-lg shadow-gray-900/20"> <MapPin size={16} className="lg:w-[18px] lg:h-[18px]" /> </div>
                         <div className="min-w-0">
-                          <p className="text-[7px] md:text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5">Lokasi</p>
-                          <p className="text-xs md:text-sm font-bold text-gray-900 dark:text-white truncate">{selectedVehicle.Office?.name}</p>
-                          <p className="text-[9px] md:text-[10px] text-gray-500 dark:text-gray-400 truncate">{selectedVehicle.Office?.location?.name || selectedVehicle.Office?.address}</p>
+                          <p className="text-[7px] lg:text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5">Lokasi</p>
+                          <p className="text-xs lg:text-sm font-bold text-gray-900 dark:text-white truncate">{selectedVehicle.Office?.name}</p>
+                          <p className="text-[9px] lg:text-[10px] text-gray-500 dark:text-gray-400 truncate">{selectedVehicle.Office?.location?.name || selectedVehicle.Office?.address}</p>
                         </div>
                       </div>
                     </div>
@@ -715,10 +715,10 @@ const Catalog = () => {
                     </div>
 
                   {/* Fixed Footer with Contact Button */}
-                  <div className="pt-2 md:pt-4 pb-4 md:pb-6 mt-auto border-t border-gray-100 dark:border-white/10">
+                  <div className="pt-2 lg:pt-4 pb-4 lg:pb-6 mt-auto border-t border-gray-100 dark:border-white/10">
                     <button
                       onClick={() => handleContact(selectedVehicle.office_id)}
-                      className="w-full h-12 md:h-14 bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-black dark:hover:bg-gray-100 transition-all rounded-xl md:rounded-[20px] font-black text-sm flex items-center justify-center gap-3 active:scale-95 shadow-2xl uppercase tracking-widest"
+                      className="w-full h-12 lg:h-14 bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-black dark:hover:bg-gray-100 transition-all rounded-xl lg:rounded-[20px] font-black text-sm flex items-center justify-center gap-3 active:scale-95 shadow-2xl uppercase tracking-widest"
                     >
                       <MessageCircle size={20} /> <span>Hubungi Sales</span>
                     </button>
@@ -731,14 +731,14 @@ const Catalog = () => {
                       const encId = encryptId(selectedVehicle.id);
                       navigate(`/product/${encId}`);
                     }}
-                    className="w-8 h-8 md:w-9 md:h-9 bg-black/40 hover:bg-black dark:hover:bg-white dark:hover:text-black backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center text-white transition-all shadow-xl group"
+                    className="w-8 h-8 lg:w-9 lg:h-9 bg-black/40 hover:bg-black dark:hover:bg-white dark:hover:text-black backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center text-white transition-all shadow-xl group"
                     title="Buka detail lengkap"
                   >
                     <Maximize2 size={14} className="group-hover:scale-110 transition-transform" />
                   </button>
                   <button
                     onClick={() => setSelectedVehicle(null)}
-                    className="w-8 h-8 md:w-9 md:h-9 bg-black/40 hover:bg-red-500 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center text-white transition-all shadow-xl group"
+                    className="w-8 h-8 lg:w-9 lg:h-9 bg-black/40 hover:bg-red-500 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center text-white transition-all shadow-xl group"
                   >
                     <X size={18} className="group-hover:rotate-90 transition-transform" />
                   </button>

@@ -295,7 +295,7 @@ const ClassicTemplate = ({
       {/* Catalog Search & Filters (Pill design) */}
       <div className="relative z-10 w-full max-w-7xl mx-auto px-5 md:px-10 lg:px-14 -mt-12 md:-mt-14 space-y-12">
         <div className="sticky top-4 md:top-8 z-40">
-          <div className="bg-white dark:bg-[#12141c] border border-gray-200 dark:border-white/10 p-2 md:p-2.5 rounded-[32px] md:rounded-[36px] shadow-xl">
+          <div className="relative z-10 bg-white dark:bg-[#12141c] border border-gray-200 dark:border-white/10 p-2 md:p-2.5 rounded-[32px] md:rounded-[36px] shadow-xl">
             <div className="flex flex-wrap md:flex-nowrap items-center gap-x-2 gap-y-2">
               <div className="flex flex-col md:flex-row items-center gap-3 md:gap-4 flex-1 w-full">
                 {!isPublicMode && (
@@ -403,15 +403,41 @@ const ClassicTemplate = ({
         <div className="min-h-[400px]">
           <div className="flex items-center justify-between mb-8">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{totalItems} unit premium siap dikirim</p>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 relative">
               <span className="text-[10px] font-black text-gray-400 uppercase">Urutkan:</span>
               <button 
                 onClick={() => setShowSortDropdown(!showSortDropdown)}
                 className="flex items-center gap-4 bg-gray-100 dark:bg-white/5 rounded-xl px-5 py-2.5 text-[10px] font-black uppercase text-gray-900 dark:text-white"
               >
                 {sortBy}
-                <ChevronDown size={14} />
+                <ChevronDown size={14} className={`transition-transform duration-300 ${showSortDropdown ? 'rotate-180' : ''}`} />
               </button>
+
+              <AnimatePresence>
+                {showSortDropdown && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 top-full mt-2 w-[180px] bg-white dark:bg-[#12141c] border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 p-1.5 space-y-0.5"
+                  >
+                    {['Terbaru', 'Harga Terendah', 'Harga Tertinggi', 'Tahun Terbaru'].map(opt => (
+                      <button
+                        key={opt}
+                        onClick={() => {
+                          setSortBy(opt);
+                          setPage(1);
+                          setShowSortDropdown(false);
+                        }}
+                        className={`w-full text-left px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-colors ${sortBy === opt ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white'}`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              {showSortDropdown && <div className="fixed inset-0 z-40" onClick={() => setShowSortDropdown(false)} />}
             </div>
           </div>
 

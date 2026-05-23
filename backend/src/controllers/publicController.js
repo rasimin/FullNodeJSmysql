@@ -122,6 +122,10 @@ exports.getPublicVehicleDetail = async (req, res) => {
       return res.status(404).json({ message: 'Unit tidak ditemukan atau showroom belum dipublikasi.' });
     }
 
+    // Increment view count
+    await vehicle.increment('view_count');
+    vehicle.view_count += 1;
+
     res.json(vehicle);
   } catch (err) {
     res.status(500).json({ message: err.message });
