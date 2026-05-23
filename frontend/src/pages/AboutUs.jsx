@@ -35,7 +35,7 @@ const AboutUs = () => {
   }, [slug]);
 
   const isNeutral = !showroomInfo?.header_image && (!showroomInfo?.theme_color || showroomInfo?.theme_color === 'default');
-  const isMetropolis = showroomInfo?.layout_template === 'metropolis';
+  const isMetropolis = showroomInfo?.layout_template === 'metropolis' || showroomInfo?.layout_template === 'left-sidebar';
   const isMinimalist = showroomInfo?.layout_template === 'minimalist';
 
   if (loading) {

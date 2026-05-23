@@ -17,6 +17,7 @@ import ShowroomNavbar from '../components/ShowroomNavbar';
 import ClassicTemplate from '../components/catalog-templates/ClassicTemplate';
 import MinimalistTemplate from '../components/catalog-templates/MinimalistTemplate';
 import MinimalistLuxuryTemplate from '../components/catalog-templates/MinimalistLuxuryTemplate';
+import LeftSidebarTemplate from '../components/catalog-templates/LeftSidebarTemplate';
 
 // ----------------------------------------------------------------------
 // 1. UTILITY HOOKS
@@ -584,7 +585,9 @@ const Catalog = () => {
 
   return (
     <>
-      {showroomInfo?.layout_template === 'metropolis' ? (
+      {showroomInfo?.layout_template === 'left-sidebar' ? (
+        <LeftSidebarTemplate {...templateProps} />
+      ) : showroomInfo?.layout_template === 'metropolis' ? (
         <MinimalistLuxuryTemplate {...templateProps} />
       ) : showroomInfo?.layout_template === 'minimalist' ? (
         <MinimalistTemplate {...templateProps} />

@@ -187,7 +187,7 @@ const BannerContentTab = ({ setting, onUpdate, notify }) => {
             <Layout size={18} />
             <h3 className="text-xs font-black uppercase tracking-widest">Tema & Tata Letak Katalog</h3>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             {/* Classic Dark Grid Template */}
             <div 
               onClick={() => setFormData({ ...formData, layout_template: 'classic' })}
@@ -287,6 +287,41 @@ const BannerContentTab = ({ setting, onUpdate, notify }) => {
                 <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Desain studio mewah, bersih, tata letak produk melayang, & tipografi super minimalis modern.</p>
               </div>
               {formData.layout_template === 'metropolis' && (
+                <div className="absolute top-3 right-3 bg-blue-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black shadow-lg">✓</div>
+              )}
+            </div>
+
+            {/* Left Sidebar Store Template */}
+            <div 
+              onClick={() => setFormData({ ...formData, layout_template: 'left-sidebar' })}
+              className={`cursor-pointer rounded-2xl border p-4 transition-all hover:scale-[1.02] flex flex-col gap-3 relative overflow-hidden ${
+                formData.layout_template === 'left-sidebar' 
+                  ? 'border-blue-500 bg-blue-500/[0.03] ring-1 ring-blue-500' 
+                  : 'border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20'
+              }`}
+            >
+              <div className="aspect-[4/3] rounded-xl bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-white/5 relative overflow-hidden shadow-inner p-3 flex gap-2">
+                {/* Simulated Left Sidebar */}
+                <div className="w-1/4 h-full bg-white dark:bg-neutral-950 border-r border-gray-200 dark:border-white/5 rounded-l flex flex-col gap-1 p-1">
+                  <div className="h-1.5 w-full bg-blue-500/80 rounded-[2px]" />
+                  <div className="h-1 w-full bg-gray-200 dark:bg-white/10 rounded-[2px]" />
+                  <div className="h-1 w-3/4 bg-gray-200 dark:bg-white/10 rounded-[2px]" />
+                  <div className="h-1 w-1/2 bg-gray-200 dark:bg-white/10 rounded-[2px]" />
+                </div>
+                {/* Simulated Main Content */}
+                <div className="flex-1 h-full flex flex-col gap-1.5 justify-between">
+                  <div className="h-4 w-full bg-gray-200 dark:bg-neutral-950 rounded-[4px] relative overflow-hidden" />
+                  <div className="grid grid-cols-2 gap-1 flex-1">
+                    <div className="rounded-[4px] bg-white dark:bg-neutral-950 border border-gray-200 dark:border-white/5 flex items-center justify-center text-[4px] text-gray-400 font-bold">UNIT</div>
+                    <div className="rounded-[4px] bg-white dark:bg-neutral-950 border border-gray-200 dark:border-white/5 flex items-center justify-center text-[4px] text-gray-400 font-bold">UNIT</div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-wider text-gray-900 dark:text-white">Left Sidebar Store</p>
+                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Desain e-commerce profesional dengan sidebar filter terstruktur di sebelah kiri.</p>
+              </div>
+              {formData.layout_template === 'left-sidebar' && (
                 <div className="absolute top-3 right-3 bg-blue-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black shadow-lg">✓</div>
               )}
             </div>
