@@ -263,7 +263,7 @@ const LeftSidebarTemplate = ({
                   <div className="absolute inset-0 bg-black/40 bg-gradient-to-r from-black/85 via-black/40 to-transparent" />
                 </div>
               ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-neutral-850 to-neutral-950 flex items-center">
+                <div className="absolute inset-0 bg-gradient-to-br from-neutral-800 to-neutral-950 flex items-center">
                   <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:30px_30px]" />
                 </div>
               )}
@@ -371,7 +371,7 @@ const LeftSidebarTemplate = ({
 
                         {/* Details Area */}
                         <div className="pt-4 px-2 space-y-1.5">
-                          <h3 className="text-xs font-bold text-neutral-850 dark:text-neutral-100 uppercase tracking-wider truncate group-hover:text-neutral-950 dark:group-hover:text-white transition-colors">
+                          <h3 className="text-xs font-bold text-neutral-800 dark:text-neutral-100 uppercase tracking-wider truncate group-hover:text-neutral-950 dark:group-hover:text-white transition-colors">
                             {v.brand} {v.model}
                           </h3>
                           
@@ -398,7 +398,7 @@ const LeftSidebarTemplate = ({
                             </p>
                             
                             {/* Action Icon mimicking Cart button in watch cards */}
-                            <div className="w-7 h-7 bg-neutral-50 hover:bg-neutral-900 dark:bg-neutral-850 dark:hover:bg-white text-neutral-600 hover:text-white dark:text-neutral-300 dark:hover:text-neutral-900 rounded-lg flex items-center justify-center transition-all shadow-sm">
+                            <div className="w-7 h-7 bg-neutral-100 hover:bg-neutral-900 dark:bg-neutral-800 dark:hover:bg-white text-neutral-600 hover:text-white dark:text-neutral-300 dark:hover:text-neutral-900 rounded-lg flex items-center justify-center transition-all shadow-sm">
                               <Search size={12} strokeWidth={2.5} />
                             </div>
                           </div>

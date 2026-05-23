@@ -115,7 +115,7 @@ const ShowroomNavbar = ({
             onClick={toggleTheme} 
             className={`w-8 h-8 md:w-9 md:h-9 flex items-center justify-center transition-all duration-300 ${
               isMinimalistLuxury
-                ? 'rounded-none bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-850'
+                ? 'rounded-none bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800'
                 : isNeutral 
                 ? 'rounded-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 text-gray-600 dark:text-gray-300 shadow-md hover:scale-105' 
                 : 'rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 shadow-lg'

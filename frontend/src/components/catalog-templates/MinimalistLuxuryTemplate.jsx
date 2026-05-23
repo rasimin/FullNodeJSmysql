@@ -56,7 +56,7 @@ export const MetropolisLocationSelector = ({ selectedLocation, onSelectLocation 
     <div className="relative w-full md:w-auto">
       <button
         onClick={() => setShowLocSuggestions(!showLocSuggestions)}
-        className="flex items-center gap-2.5 px-4 h-10 w-full md:w-auto border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-850 dark:text-neutral-200 font-bold text-[10px] uppercase tracking-widest transition-all duration-300 rounded-none hover:bg-neutral-50 dark:hover:bg-neutral-850 active:scale-98 cursor-pointer"
+        className="flex items-center gap-2.5 px-4 h-10 w-full md:w-auto border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 font-bold text-[10px] uppercase tracking-widest transition-all duration-300 rounded-none hover:bg-neutral-50 dark:hover:bg-neutral-800 active:scale-98 cursor-pointer"
       >
         <MapPin size={13} className="text-neutral-450 dark:text-neutral-500" />
         <span>{selectedLocation ? selectedLocation.name : 'Pilih Lokasi'}</span>
@@ -103,7 +103,7 @@ export const MetropolisLocationSelector = ({ selectedLocation, onSelectLocation 
                       setLocationSearch('');
                       setShowLocSuggestions(false);
                     }}
-                    className="w-full text-left px-3 py-2 hover:bg-neutral-50 dark:hover:bg-neutral-850 hover:text-neutral-900 dark:hover:text-white text-[10px] font-bold text-neutral-700 dark:text-neutral-300 rounded-none transition-all duration-150 uppercase tracking-wider"
+                    className="w-full text-left px-3 py-2 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white text-[10px] font-bold text-neutral-700 dark:text-neutral-300 rounded-none transition-all duration-150 uppercase tracking-wider"
                   >
                     {loc.name}
                   </button>
@@ -166,7 +166,7 @@ export const MetropolisSearchInput = ({ onSearch, allSuggestions, initialValue }
                   onSearch(s);
                   setShowSuggestions(false);
                 }}
-                className="w-full text-left px-3.5 py-2 hover:bg-neutral-50 dark:hover:bg-neutral-850 hover:text-neutral-900 dark:hover:text-white text-[10px] font-bold text-neutral-700 dark:text-neutral-300 rounded-none transition-all duration-150 uppercase tracking-wider"
+                className="w-full text-left px-3.5 py-2 hover:bg-neutral-50 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white text-[10px] font-bold text-neutral-700 dark:text-neutral-300 rounded-none transition-all duration-150 uppercase tracking-wider"
               >
                 {s}
               </button>
@@ -303,7 +303,7 @@ const MinimalistLuxuryTemplate = ({
               className={`h-10 px-5 border text-[10px] font-bold uppercase tracking-widest transition-all duration-300 rounded-none cursor-pointer active:scale-98 ${
                 showAdvanced 
                   ? 'bg-neutral-900 border-neutral-900 text-white dark:bg-white dark:border-white dark:text-neutral-900 shadow-sm' 
-                  : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-850'
+                  : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800'
               }`}
             >
               FILTER DETAIL {showAdvanced ? '✕' : '↓'}

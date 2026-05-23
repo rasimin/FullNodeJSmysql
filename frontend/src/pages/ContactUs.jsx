@@ -261,7 +261,7 @@ const ContactUs = () => {
                     <div className="flex items-start gap-4">
                       <div className={`w-12 h-12 flex items-center justify-center shrink-0 ${
                         isMetropolis 
-                          ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-850 dark:text-neutral-200 rounded-xl border border-neutral-300 dark:border-neutral-750 shadow-none'
+                          ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 rounded-xl border border-neutral-300 dark:border-neutral-750 shadow-none'
                           : isMinimalist
                           ? 'bg-gray-50 dark:bg-white/5 text-blue-600 dark:text-blue-400 border border-gray-200 dark:border-white/10 rounded-xl shadow-sm'
                           : 'bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white rounded-2xl'
@@ -277,7 +277,7 @@ const ContactUs = () => {
                     <div className="flex items-start gap-4">
                       <div className={`w-12 h-12 flex items-center justify-center shrink-0 ${
                         isMetropolis 
-                          ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-850 dark:text-neutral-200 rounded-xl border border-neutral-300 dark:border-neutral-750 shadow-none'
+                          ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 rounded-xl border border-neutral-300 dark:border-neutral-750 shadow-none'
                           : isMinimalist
                           ? 'bg-gray-50 dark:bg-white/5 text-blue-600 dark:text-blue-400 border border-gray-200 dark:border-white/10 rounded-xl shadow-sm'
                           : 'bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white rounded-2xl'
@@ -293,7 +293,7 @@ const ContactUs = () => {
                     <div className="flex items-start gap-4">
                       <div className={`w-12 h-12 flex items-center justify-center shrink-0 ${
                         isMetropolis 
-                          ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-850 dark:text-neutral-200 rounded-xl border border-neutral-300 dark:border-neutral-750 shadow-none'
+                          ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 rounded-xl border border-neutral-300 dark:border-neutral-750 shadow-none'
                           : isMinimalist
                           ? 'bg-gray-50 dark:bg-white/5 text-blue-600 dark:text-blue-400 border border-gray-200 dark:border-white/10 rounded-xl shadow-sm'
                           : 'bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white rounded-2xl'
@@ -321,7 +321,7 @@ const ContactUs = () => {
                     <div className="flex items-start gap-4">
                       <div className={`w-12 h-12 flex items-center justify-center shrink-0 ${
                         isMetropolis 
-                          ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-850 dark:text-neutral-200 rounded-xl border border-neutral-300 dark:border-neutral-750 shadow-none'
+                          ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 rounded-xl border border-neutral-300 dark:border-neutral-750 shadow-none'
                           : isMinimalist
                           ? 'bg-gray-50 dark:bg-white/5 text-blue-600 dark:text-blue-400 border border-gray-200 dark:border-white/10 rounded-xl shadow-sm'
                           : 'bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white rounded-2xl'
@@ -340,7 +340,7 @@ const ContactUs = () => {
                     <div className="flex items-start gap-4">
                       <div className={`w-12 h-12 flex items-center justify-center shrink-0 ${
                         isMetropolis 
-                          ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-850 dark:text-neutral-200 rounded-xl border border-neutral-300 dark:border-neutral-750 shadow-none'
+                          ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 rounded-xl border border-neutral-300 dark:border-neutral-750 shadow-none'
                           : isMinimalist
                           ? 'bg-gray-50 dark:bg-white/5 text-blue-600 dark:text-blue-400 border border-gray-200 dark:border-white/10 rounded-xl shadow-sm'
                           : 'bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white rounded-2xl'
