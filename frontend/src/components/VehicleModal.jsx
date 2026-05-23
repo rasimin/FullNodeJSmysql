@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import Modal from './Modal';
+import DrawerPanel from './DrawerPanel';
 import Input from './ui/Input';
 import Select from './ui/Select';
 import { IMAGE_BASE_URL } from '../config';
@@ -256,7 +257,7 @@ const VehicleModal = ({
   const tableLabels = { vehicles: 'Data Unit', vehicle_images: 'Galeri Foto', vehicle_documents: 'Dokumen Legal', bookings: 'Data Transaksi' };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Ringkasan Master Kendaraan" maxWidth="max-w-5xl">
+    <DrawerPanel isOpen={isOpen} onClose={onClose} title="Ringkasan Master Kendaraan" width="max-w-5xl">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-2xl w-fit shrink-0">
           <button
@@ -602,7 +603,7 @@ const VehicleModal = ({
           </div>
         </div>
       )}
-    </Modal>
+    </DrawerPanel>
   );
 };
 
