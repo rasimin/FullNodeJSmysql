@@ -97,18 +97,29 @@ const BannerContentTab = ({ setting, onUpdate, notify }) => {
           <div className="flex flex-col gap-2 mt-4">
             <div className="flex items-center justify-between">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Atau Pilih Tone Warna Default</label>
-              <button 
-                type="button" 
-                onClick={() => {
-                  setFormData({ ...formData, theme_color: 'default' });
-                  setImageFile(null);
-                  setImagePreview(null);
-                  setRemoveImage(true);
-                }}
-                className="text-[10px] font-bold text-gray-400 hover:text-red-500 uppercase tracking-widest"
-              >
-                Reset Header
-              </button>
+              <div className="flex items-center gap-4">
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setFormData({ ...formData, theme_color: 'default' });
+                  }}
+                  className="text-[10px] font-bold text-blue-500 hover:text-blue-600 uppercase tracking-widest"
+                >
+                  Reset Warna
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setFormData({ ...formData, theme_color: 'default' });
+                    setImageFile(null);
+                    setImagePreview(null);
+                    setRemoveImage(true);
+                  }}
+                  className="text-[10px] font-bold text-gray-400 hover:text-red-500 uppercase tracking-widest"
+                >
+                  Reset Header
+                </button>
+              </div>
             </div>
             <div className="flex flex-wrap gap-3">
               {[

@@ -209,7 +209,36 @@ const MinimalistLuxuryTemplate = ({
 
       {/* Super Minimalist Luxury Hero Section (Alpine Benchmark) */}
       <div className="max-w-7xl mx-auto px-5 md:px-10 lg:px-14 mb-14 mt-4 relative z-10">
-        <div className="relative w-full bg-neutral-100/60 dark:bg-neutral-900/50 border border-neutral-200/80 dark:border-neutral-900/80 rounded-3xl p-8 md:p-14 lg:p-16 flex flex-col md:flex-row items-center justify-between gap-12 overflow-hidden transition-colors duration-500">
+        <div 
+          className={`relative w-full rounded-3xl p-8 md:p-14 lg:p-16 flex flex-col md:flex-row items-center justify-between gap-12 overflow-hidden transition-all duration-500 ${
+            showroomInfo?.theme_color?.startsWith('#') ? 'border' :
+            showroomInfo?.theme_color === 'indigo' ? 'bg-indigo-500/[0.03] dark:bg-indigo-950/20 border border-indigo-500/20 dark:border-indigo-500/10' :
+            showroomInfo?.theme_color === 'purple' ? 'bg-purple-500/[0.03] dark:bg-purple-950/20 border border-purple-500/20 dark:border-purple-500/10' :
+            showroomInfo?.theme_color === 'slate' ? 'bg-slate-500/[0.03] dark:bg-slate-900/20 border border-slate-500/20 dark:border-slate-500/10' :
+            showroomInfo?.theme_color === 'emerald' ? 'bg-emerald-500/[0.03] dark:bg-emerald-950/20 border border-emerald-500/20 dark:border-emerald-500/10' :
+            showroomInfo?.theme_color === 'rose' ? 'bg-rose-500/[0.03] dark:bg-rose-950/20 border border-rose-500/20 dark:border-rose-500/10' :
+            showroomInfo?.theme_color === 'default' ? 'bg-neutral-100/60 dark:bg-neutral-900/50 border border-neutral-200/80 dark:border-neutral-900/80' :
+            'bg-blue-500/[0.03] dark:bg-blue-950/20 border border-blue-500/20 dark:border-blue-500/10' // default blue
+          }`}
+          style={showroomInfo?.theme_color?.startsWith('#') ? {
+            backgroundColor: `${showroomInfo.theme_color}08`,
+            borderColor: `${showroomInfo.theme_color}33`
+          } : {}}
+        >
+          {/* Ambient Glow */}
+          {showroomInfo?.theme_color !== 'default' && (
+            <div 
+              className={`absolute -top-20 -right-20 w-80 h-80 rounded-full blur-[100px] pointer-events-none opacity-30 ${
+                showroomInfo?.theme_color?.startsWith('#') ? '' :
+                showroomInfo?.theme_color === 'indigo' ? 'bg-indigo-500' :
+                showroomInfo?.theme_color === 'purple' ? 'bg-purple-500' :
+                showroomInfo?.theme_color === 'slate' ? 'bg-slate-400' :
+                showroomInfo?.theme_color === 'emerald' ? 'bg-emerald-500' :
+                showroomInfo?.theme_color === 'rose' ? 'bg-rose-500' : 'bg-blue-500'
+              }`}
+              style={showroomInfo?.theme_color?.startsWith('#') ? { backgroundColor: showroomInfo.theme_color } : {}}
+            />
+          )}
           
           {/* Left Column (Details) */}
           <div className="flex-1 space-y-6 text-left max-w-xl relative z-10 pt-4">

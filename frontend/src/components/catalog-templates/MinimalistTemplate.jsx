@@ -198,7 +198,16 @@ const MinimalistTemplate = ({
       {/* Top Navbar */}
       {/* Top Navbar & Elegant Edge-to-Edge Hero Banner */}
       <div 
-        className="relative z-0 w-full overflow-hidden transition-all duration-700 bg-slate-900 dark:bg-zinc-950"
+        className={`relative z-0 w-full overflow-hidden transition-all duration-700 ${
+          showroomInfo?.theme_color?.startsWith('#') ? '' :
+          showroomInfo?.theme_color === 'indigo' ? 'bg-indigo-900' :
+          showroomInfo?.theme_color === 'purple' ? 'bg-purple-900' :
+          showroomInfo?.theme_color === 'slate' ? 'bg-slate-900' :
+          showroomInfo?.theme_color === 'emerald' ? 'bg-emerald-900' :
+          showroomInfo?.theme_color === 'rose' ? 'bg-rose-900' :
+          showroomInfo?.theme_color === 'default' ? 'bg-slate-900 dark:bg-zinc-950' : 'bg-blue-900'
+        }`}
+        style={showroomInfo?.theme_color?.startsWith('#') ? { backgroundColor: showroomInfo.theme_color } : {}}
       >
         <div className="absolute inset-0 z-0">
           {showroomInfo?.header_image ? (
@@ -212,10 +221,20 @@ const MinimalistTemplate = ({
             </div>
           ) : (
             // Premium Gradient Mesh for Minimalist
-            <div className="w-full h-full bg-gradient-to-br from-slate-900 to-zinc-950 relative overflow-hidden">
+            <div className={`w-full h-full relative overflow-hidden ${
+              showroomInfo?.theme_color?.startsWith('#') ? '' :
+              showroomInfo?.theme_color === 'indigo' ? 'bg-gradient-to-br from-indigo-950 to-zinc-950' :
+              showroomInfo?.theme_color === 'purple' ? 'bg-gradient-to-br from-purple-950 to-zinc-950' :
+              showroomInfo?.theme_color === 'slate' ? 'bg-gradient-to-br from-slate-900 to-zinc-950' :
+              showroomInfo?.theme_color === 'emerald' ? 'bg-gradient-to-br from-emerald-950 to-zinc-950' :
+              showroomInfo?.theme_color === 'rose' ? 'bg-gradient-to-br from-rose-950 to-zinc-950' :
+              showroomInfo?.theme_color === 'default' ? 'bg-gradient-to-br from-slate-900 to-zinc-950' : 'bg-gradient-to-br from-blue-950 to-zinc-950'
+            }`}
+            style={showroomInfo?.theme_color?.startsWith('#') ? { background: `linear-gradient(135deg, ${showroomInfo.theme_color}, #09090b)` } : {}}
+            >
               <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:30px_30px]" />
-              <div className="absolute -top-[20%] -left-[10%] w-[60%] h-[100%] rounded-full bg-blue-600/20 blur-[120px] pointer-events-none" />
-              <div className="absolute -bottom-[20%] -right-[10%] w-[50%] h-[100%] rounded-full bg-indigo-500/15 blur-[120px] pointer-events-none" />
+              <div className="absolute -top-[20%] -left-[10%] w-[60%] h-[100%] rounded-full bg-blue-600/10 blur-[120px] pointer-events-none" />
+              <div className="absolute -bottom-[20%] -right-[10%] w-[50%] h-[100%] rounded-full bg-indigo-500/10 blur-[120px] pointer-events-none" />
             </div>
           )}
           {/* Bottom fade blending into the page background */}

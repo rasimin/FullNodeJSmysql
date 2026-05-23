@@ -263,7 +263,19 @@ const LeftSidebarTemplate = ({
                   <div className="absolute inset-0 bg-black/40 bg-gradient-to-r from-black/85 via-black/40 to-transparent" />
                 </div>
               ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-neutral-800 to-neutral-950 flex items-center">
+                <div 
+                  className={`absolute inset-0 flex items-center ${
+                    showroomInfo?.theme_color?.startsWith('#') ? '' :
+                    showroomInfo?.theme_color === 'indigo' ? 'bg-gradient-to-br from-indigo-900 to-zinc-950' :
+                    showroomInfo?.theme_color === 'purple' ? 'bg-gradient-to-br from-purple-900 to-zinc-950' :
+                    showroomInfo?.theme_color === 'slate' ? 'bg-gradient-to-br from-slate-800 to-zinc-950' :
+                    showroomInfo?.theme_color === 'emerald' ? 'bg-gradient-to-br from-emerald-900 to-zinc-950' :
+                    showroomInfo?.theme_color === 'rose' ? 'bg-gradient-to-br from-rose-900 to-zinc-950' :
+                    showroomInfo?.theme_color === 'default' ? 'bg-gradient-to-br from-neutral-800 to-neutral-950' :
+                    'bg-gradient-to-br from-blue-900 to-zinc-950' // blue default
+                  }`}
+                  style={showroomInfo?.theme_color?.startsWith('#') ? { background: `linear-gradient(135deg, ${showroomInfo.theme_color}, #09090b)` } : {}}
+                >
                   <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:30px_30px]" />
                 </div>
               )}
