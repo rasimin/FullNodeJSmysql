@@ -664,7 +664,7 @@ const Vehicles = () => {
             onClose={() => {
               setIsBookingModalOpen(false);
               setIsConfirmActionModalOpen(false);
-              setEditingVehicle(null);
+              if (!isModalOpen) setEditingVehicle(null);
               setActiveBooking(null);
             }}
             vehicle={editingVehicle}

@@ -408,12 +408,6 @@ const VehicleModal = ({
                     <div className="flex-1"><Input value={displayCurrency(formData.odometer)} onChange={e => handleCurrencyChange(setFormData, formData, 'odometer', e.target.value)} readOnly={isViewOnly} /></div>
                   </div>
 
-                  {/* Harga Jual */}
-                  <div className="flex items-center gap-3 py-2">
-                    <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wide w-36 shrink-0">Harga Jual <span className="text-red-500">*</span></span>
-                    <span className="text-gray-300 dark:text-gray-700 shrink-0 text-xs">:</span>
-                    <div className="flex-1"><Input value={displayCurrency(formData.price)} onChange={e => handleCurrencyChange(setFormData, formData, 'price', e.target.value)} required readOnly={isViewOnly} /></div>
-                  </div>
 
                   {/* Status Unit */}
                   <div className="flex items-center gap-3 py-2">
@@ -434,6 +428,13 @@ const VehicleModal = ({
                   <h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Keuangan &amp; Inventaris</h4>
                 </div>
                 <div className="divide-y divide-gray-100 dark:divide-gray-800/60">
+
+                  {/* Harga Jual */}
+                  <div className="flex items-center gap-3 py-2">
+                    <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wide w-36 shrink-0">Harga Jual <span className="text-red-500">*</span></span>
+                    <span className="text-gray-300 dark:text-gray-700 shrink-0 text-xs">:</span>
+                    <div className="flex-1"><Input value={displayCurrency(formData.price)} onChange={e => handleCurrencyChange(setFormData, formData, 'price', e.target.value)} required readOnly={isViewOnly} /></div>
+                  </div>
 
                   {/* Harga Beli */}
                   <div className="flex items-center gap-3 py-2">
