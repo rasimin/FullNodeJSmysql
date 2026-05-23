@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layout, Type, AlignLeft, Save, Pipette } from 'lucide-react';
+import { Layout, Type, AlignLeft, Save, Pipette, Check } from 'lucide-react';
 import Input from '../../components/ui/Input';
 import api from '../../services/api';
 import { IMAGE_BASE_URL } from '../../config';
@@ -187,17 +187,18 @@ const BannerContentTab = ({ setting, onUpdate, notify }) => {
             <Layout size={18} />
             <h3 className="text-xs font-black uppercase tracking-widest">Tema & Tata Letak Katalog</h3>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="flex flex-col gap-3.5">
+            
             {/* Classic Dark Grid Template */}
             <div 
               onClick={() => setFormData({ ...formData, layout_template: 'classic' })}
-              className={`cursor-pointer rounded-2xl border p-4 transition-all hover:scale-[1.02] flex flex-col gap-3 relative overflow-hidden ${
+              className={`cursor-pointer rounded-2xl border p-4 transition-all hover:scale-[1.005] flex flex-col sm:flex-row items-center gap-5 relative overflow-hidden ${
                 formData.layout_template === 'classic' 
                   ? 'border-blue-500 bg-blue-500/[0.03] ring-1 ring-blue-500' 
                   : 'border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20'
               }`}
             >
-              <div className="aspect-[4/3] rounded-xl bg-[#0b0c10] border border-gray-800 relative overflow-hidden shadow-inner p-3 flex flex-col justify-between">
+              <div className="aspect-[4/3] w-full sm:w-40 h-28 rounded-xl bg-[#0b0c10] border border-gray-800 relative overflow-hidden shadow-inner p-3 flex flex-col justify-between shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="h-2 w-10 bg-white/20 rounded-full" />
                   <div className="flex gap-1">
@@ -212,25 +213,31 @@ const BannerContentTab = ({ setting, onUpdate, notify }) => {
                 </div>
                 <div className="h-2 w-full bg-white/10 rounded-full" />
               </div>
-              <div>
-                <p className="text-[11px] font-black uppercase tracking-wider text-gray-900 dark:text-white">Classic Dark Grid</p>
-                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Desain grid gelap kaca futuristik bawaan.</p>
+              <div className="flex-1 text-left">
+                <p className="text-xs md:text-sm font-black uppercase tracking-wider text-gray-900 dark:text-white">Classic Dark Grid</p>
+                <p className="text-[10px] md:text-xs text-gray-400 font-bold uppercase tracking-tight mt-1 leading-relaxed">Desain grid gelap kaca futuristik bawaan.</p>
               </div>
-              {formData.layout_template === 'classic' && (
-                <div className="absolute top-3 right-3 bg-blue-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black shadow-lg">✓</div>
+              {formData.layout_template === 'classic' ? (
+                <div className="bg-blue-500 text-white px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider shadow-md shrink-0 flex items-center gap-1.5">
+                  <Check size={11} strokeWidth={3} /> AKTIF
+                </div>
+              ) : (
+                <div className="border border-gray-200 dark:border-white/10 text-gray-400 dark:text-gray-500 px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider shrink-0">
+                  PILIH TEMA
+                </div>
               )}
             </div>
 
             {/* Minimalist Clean Light/Dark Template */}
             <div 
               onClick={() => setFormData({ ...formData, layout_template: 'minimalist' })}
-              className={`cursor-pointer rounded-2xl border p-4 transition-all hover:scale-[1.02] flex flex-col gap-3 relative overflow-hidden ${
+              className={`cursor-pointer rounded-2xl border p-4 transition-all hover:scale-[1.005] flex flex-col sm:flex-row items-center gap-5 relative overflow-hidden ${
                 formData.layout_template === 'minimalist' 
                   ? 'border-blue-500 bg-blue-500/[0.03] ring-1 ring-blue-500' 
                   : 'border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20'
               }`}
             >
-              <div className="aspect-[4/3] rounded-xl bg-gray-50 dark:bg-[#12141c] border border-gray-200 dark:border-white/5 relative overflow-hidden shadow-inner p-3 flex flex-col justify-between">
+              <div className="aspect-[4/3] w-full sm:w-40 h-28 rounded-xl bg-gray-50 dark:bg-[#12141c] border border-gray-200 dark:border-white/5 relative overflow-hidden shadow-inner p-3 flex flex-col justify-between shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="h-2 w-10 bg-gray-300 dark:bg-white/20 rounded-full" />
                   <div className="flex gap-1">
@@ -250,59 +257,79 @@ const BannerContentTab = ({ setting, onUpdate, notify }) => {
                 </div>
                 <div className="h-2 w-full bg-gray-200 dark:bg-white/10 rounded-full" />
               </div>
-              <div>
-                <p className="text-[11px] font-black uppercase tracking-wider text-gray-900 dark:text-white">Minimalist Clean</p>
-                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Desain terang/gelap minimalis modern super bersih.</p>
+              <div className="flex-1 text-left">
+                <p className="text-xs md:text-sm font-black uppercase tracking-wider text-gray-900 dark:text-white">Minimalist Clean</p>
+                <p className="text-[10px] md:text-xs text-gray-400 font-bold uppercase tracking-tight mt-1 leading-relaxed">Desain terang/gelap minimalis modern super bersih.</p>
               </div>
-              {formData.layout_template === 'minimalist' && (
-                <div className="absolute top-3 right-3 bg-blue-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black shadow-lg">✓</div>
+              {formData.layout_template === 'minimalist' ? (
+                <div className="bg-blue-500 text-white px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider shadow-md shrink-0 flex items-center gap-1.5">
+                  <Check size={11} strokeWidth={3} /> AKTIF
+                </div>
+              ) : (
+                <div className="border border-gray-200 dark:border-white/10 text-gray-400 dark:text-gray-500 px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider shrink-0">
+                  PILIH TEMA
+                </div>
               )}
             </div>
 
-            {/* Fluent Design Microsoft Template */}
+            {/* Minimalist Luxury Template */}
             <div 
               onClick={() => setFormData({ ...formData, layout_template: 'metropolis' })}
-              className={`cursor-pointer rounded-2xl border p-4 transition-all hover:scale-[1.02] flex flex-col gap-3 relative overflow-hidden ${
+              className={`cursor-pointer rounded-2xl border p-4 transition-all hover:scale-[1.005] flex flex-col sm:flex-row items-center gap-5 relative overflow-hidden ${
                 formData.layout_template === 'metropolis' 
                   ? 'border-blue-500 bg-blue-500/[0.03] ring-1 ring-blue-500' 
                   : 'border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20'
               }`}
             >
-              <div className="aspect-[4/3] rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800/80 relative overflow-hidden shadow-inner p-3 flex flex-col justify-between">
-                {/* Glowing Aurora Blobs in Preview */}
-                <div className="absolute top-0 left-0 w-8 h-8 rounded-full bg-blue-500/20 blur-[10px] pointer-events-none" />
-                <div className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-indigo-500/20 blur-[10px] pointer-events-none" />
-                
-                <div className="h-1.5 w-full bg-gradient-to-r from-blue-600 to-indigo-600 rounded-sm relative z-10" />
-                <div className="flex gap-1.5 items-end my-1 relative z-10">
-                  <div className="flex-1 h-8 bg-white/60 dark:bg-zinc-800/60 backdrop-blur-md border border-slate-200/50 dark:border-zinc-700/50 rounded-lg flex flex-col justify-end p-1 shadow-sm">
-                    <div className="h-1.5 w-4 bg-blue-500/85 rounded-sm" />
+              <div className="aspect-[4/3] w-full sm:w-40 h-28 rounded-xl bg-white dark:bg-neutral-950 border border-gray-200 dark:border-white/5 relative overflow-hidden shadow-inner p-2.5 flex flex-col justify-between shrink-0">
+                {/* Minimalist Header simulation */}
+                <div className="flex items-center justify-between border-b border-gray-100 dark:border-zinc-900 pb-1">
+                  <div className="w-2.5 h-2.5 border border-gray-300 dark:border-zinc-700 rounded-none bg-white dark:bg-zinc-950" />
+                  <div className="flex gap-1 items-center text-[4px] text-gray-400 dark:text-neutral-500 scale-90">
+                    <span>KATALOG</span>
+                    <span>✕</span>
+                    <span>ABOUT</span>
                   </div>
-                  <div className="w-4 h-8 bg-white/60 dark:bg-zinc-800/60 backdrop-blur-md border border-slate-200/50 dark:border-zinc-700/50 rounded-lg shadow-sm" />
                 </div>
-                <div className="h-2 w-full bg-white/65 dark:bg-zinc-850/65 rounded-sm border border-slate-200/40 dark:border-zinc-800/40 relative z-10" />
+                {/* Floating flat card simulation */}
+                <div className="flex gap-2 items-center flex-1 my-1.5">
+                  <div className="flex-1 h-full rounded-md bg-neutral-200 dark:bg-neutral-800 border border-gray-100 dark:border-zinc-900 flex items-center justify-center p-1.5 shadow-sm">
+                    <div className="h-full w-full bg-white dark:bg-neutral-900 border border-neutral-100/50 dark:border-neutral-800 flex items-center justify-center text-[4px] text-gray-400 font-bold uppercase rounded shadow-2xs">STUDIO</div>
+                  </div>
+                  <div className="flex-1 h-full rounded-md bg-neutral-200 dark:bg-neutral-800 border border-gray-100 dark:border-zinc-900 flex items-center justify-center p-1.5 shadow-sm">
+                    <div className="h-full w-full bg-white dark:bg-neutral-900 border border-neutral-100/50 dark:border-neutral-800 flex items-center justify-center text-[4px] text-gray-400 font-bold uppercase rounded shadow-2xs">STUDIO</div>
+                  </div>
+                </div>
+                {/* Minimalist Footer bottom line */}
+                <div className="h-1.5 w-full bg-neutral-100 dark:bg-zinc-900 rounded-[2px]" />
               </div>
-              <div>
-                <p className="text-[11px] font-black uppercase tracking-wider text-gray-900 dark:text-white">Minimalist Luxury</p>
-                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Desain studio mewah, bersih, tata letak produk melayang, & tipografi super minimalis modern.</p>
+              <div className="flex-1 text-left">
+                <p className="text-xs md:text-sm font-black uppercase tracking-wider text-gray-900 dark:text-white">Minimalist Luxury</p>
+                <p className="text-[10px] md:text-xs text-gray-400 font-bold uppercase tracking-tight mt-1 leading-relaxed">Desain studio mewah, bersih, tata letak produk melayang, & tipografi super minimalis modern.</p>
               </div>
-              {formData.layout_template === 'metropolis' && (
-                <div className="absolute top-3 right-3 bg-blue-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black shadow-lg">✓</div>
+              {formData.layout_template === 'metropolis' ? (
+                <div className="bg-blue-500 text-white px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider shadow-md shrink-0 flex items-center gap-1.5">
+                  <Check size={11} strokeWidth={3} /> AKTIF
+                </div>
+              ) : (
+                <div className="border border-gray-200 dark:border-white/10 text-gray-400 dark:text-gray-500 px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider shrink-0">
+                  PILIH TEMA
+                </div>
               )}
             </div>
 
             {/* Left Sidebar Store Template */}
             <div 
               onClick={() => setFormData({ ...formData, layout_template: 'left-sidebar' })}
-              className={`cursor-pointer rounded-2xl border p-4 transition-all hover:scale-[1.02] flex flex-col gap-3 relative overflow-hidden ${
+              className={`cursor-pointer rounded-2xl border p-4 transition-all hover:scale-[1.005] flex flex-col sm:flex-row items-center gap-5 relative overflow-hidden ${
                 formData.layout_template === 'left-sidebar' 
                   ? 'border-blue-500 bg-blue-500/[0.03] ring-1 ring-blue-500' 
                   : 'border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20'
               }`}
             >
-              <div className="aspect-[4/3] rounded-xl bg-gray-50 dark:bg-neutral-900 border border-gray-200 dark:border-white/5 relative overflow-hidden shadow-inner p-3 flex gap-2">
+              <div className="aspect-[4/3] w-full sm:w-40 h-28 rounded-xl bg-white dark:bg-neutral-950 border border-gray-200 dark:border-white/5 relative overflow-hidden shadow-inner p-2.5 flex gap-2 shrink-0">
                 {/* Simulated Left Sidebar */}
-                <div className="w-1/4 h-full bg-white dark:bg-neutral-950 border-r border-gray-200 dark:border-white/5 rounded-l flex flex-col gap-1 p-1">
+                <div className="w-1/4 h-full bg-neutral-100 dark:bg-zinc-900 border-r border-gray-200 dark:border-white/5 rounded-l flex flex-col gap-1 p-1">
                   <div className="h-1.5 w-full bg-blue-500/80 rounded-[2px]" />
                   <div className="h-1 w-full bg-gray-200 dark:bg-white/10 rounded-[2px]" />
                   <div className="h-1 w-3/4 bg-gray-200 dark:bg-white/10 rounded-[2px]" />
@@ -310,19 +337,25 @@ const BannerContentTab = ({ setting, onUpdate, notify }) => {
                 </div>
                 {/* Simulated Main Content */}
                 <div className="flex-1 h-full flex flex-col gap-1.5 justify-between">
-                  <div className="h-4 w-full bg-gray-200 dark:bg-neutral-950 rounded-[4px] relative overflow-hidden" />
+                  <div className="h-3 w-full bg-neutral-100 dark:bg-neutral-950 rounded-[4px] relative overflow-hidden" />
                   <div className="grid grid-cols-2 gap-1 flex-1">
-                    <div className="rounded-[4px] bg-white dark:bg-neutral-950 border border-gray-200 dark:border-white/5 flex items-center justify-center text-[4px] text-gray-400 font-bold">UNIT</div>
-                    <div className="rounded-[4px] bg-white dark:bg-neutral-950 border border-gray-200 dark:border-white/5 flex items-center justify-center text-[4px] text-gray-400 font-bold">UNIT</div>
+                    <div className="rounded-[4px] bg-neutral-200 dark:bg-neutral-800 border border-gray-100 dark:border-white/5 flex items-center justify-center text-[4px] text-gray-400 font-bold">UNIT</div>
+                    <div className="rounded-[4px] bg-neutral-200 dark:bg-neutral-800 border border-gray-100 dark:border-white/5 flex items-center justify-center text-[4px] text-gray-400 font-bold">UNIT</div>
                   </div>
                 </div>
               </div>
-              <div>
-                <p className="text-[11px] font-black uppercase tracking-wider text-gray-900 dark:text-white">Left Sidebar Store</p>
-                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tight">Desain e-commerce profesional dengan sidebar filter terstruktur di sebelah kiri.</p>
+              <div className="flex-1 text-left">
+                <p className="text-xs md:text-sm font-black uppercase tracking-wider text-gray-900 dark:text-white">Left Sidebar Store</p>
+                <p className="text-[10px] md:text-xs text-gray-400 font-bold uppercase tracking-tight mt-1 leading-relaxed">Desain e-commerce profesional dengan sidebar filter terstruktur di sebelah kiri.</p>
               </div>
-              {formData.layout_template === 'left-sidebar' && (
-                <div className="absolute top-3 right-3 bg-blue-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black shadow-lg">✓</div>
+              {formData.layout_template === 'left-sidebar' ? (
+                <div className="bg-blue-500 text-white px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider shadow-md shrink-0 flex items-center gap-1.5">
+                  <Check size={11} strokeWidth={3} /> AKTIF
+                </div>
+              ) : (
+                <div className="border border-gray-200 dark:border-white/10 text-gray-400 dark:text-gray-500 px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider shrink-0">
+                  PILIH TEMA
+                </div>
               )}
             </div>
           </div>
