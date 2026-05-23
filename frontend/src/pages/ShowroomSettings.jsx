@@ -67,7 +67,7 @@ const ShowroomSettings = () => {
   const publicUrl = `${window.location.origin}/c/${setting?.slug}`;
 
   const tabs = [
-    { id: 'link-status', label: 'Link & Status', icon: Globe, component: LinkStatusTab },
+    { id: 'link-status', label: 'Publish Setting', icon: Globe, component: LinkStatusTab },
     { id: 'banner-content', label: 'Banner & Katalog', icon: Layout, component: BannerContentTab },
     { id: 'about-us', label: 'Tentang Kami', icon: Info, component: AboutUsTab },
     { id: 'contact', label: 'Kontak', icon: Phone, component: ContactSettingsTab }
