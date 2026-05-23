@@ -318,65 +318,180 @@ const VehicleModal = ({
       {activeTab === 'main' ? (
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-8">
-              <div className="space-y-6">
-                <div className="flex items-center gap-3"><div className="w-1 h-5 bg-blue-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Detail Spesifikasi</h4></div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <Input label="Kode Unit" value={formData.unit_code || '-'} readOnly className="bg-blue-50/30 dark:bg-blue-900/10 text-blue-600 font-black" />
-                  <Select
-                    label="Kategori"
-                    value={formData.type}
-                    onChange={e => setFormData({ ...formData, type: e.target.value })}
-                    options={[
-                      { value: 'Mobil', label: 'Mobil' },
-                      { value: 'Motor', label: 'Motor' }
-                    ]}
-                    required
-                    disabled={isViewOnly}
-                  />
-                  <Select label="Merek" value={formData.brand} onChange={e => setFormData({ ...formData, brand: e.target.value })} options={brands.map(b => ({ value: b.name, label: b.name }))} required disabled={isViewOnly} />
-                  <Input 
-                    label="Model / Tipe" 
-                    value={formData.model} 
-                    onChange={e => setFormData({ ...formData, model: e.target.value })} 
-                    required 
-                    readOnly={isViewOnly}
-                  />
-                  <Input label="Nomor Plat" value={formData.plate_number} onChange={e => setFormData({ ...formData, plate_number: sanitizePlate(e.target.value) })} required readOnly={isViewOnly} />
-                  <Select label="Tahun" value={formData.year} onChange={e => setFormData({ ...formData, year: e.target.value })} options={Array.from({ length: 40 }, (_, i) => ({ value: (new Date().getFullYear() - i).toString(), label: (new Date().getFullYear() - i).toString() }))} required disabled={isViewOnly} />
-                  <Select label="Transmisi" value={formData.transmission} onChange={e => setFormData({ ...formData, transmission: e.target.value })} options={[{ value: 'Manual', label: 'Manual' }, { value: 'Automatic', label: 'Automatic' }, { value: 'CVT', label: 'CVT' }, { value: 'Triptonic', label: 'Triptonic' }]} disabled={isViewOnly} />
-                  <Select label="Bahan Bakar" value={formData.fuel_type} onChange={e => setFormData({ ...formData, fuel_type: e.target.value })} options={[{ value: 'Bensin', label: 'Bensin' }, { value: 'Diesel', label: 'Diesel / Solar' }, { value: 'Electric', label: 'Electric (EV)' }, { value: 'Hybrid', label: 'Hybrid' }]} disabled={isViewOnly} />
-                  <Input label="Warna" value={formData.color} onChange={e => setFormData({ ...formData, color: e.target.value })} readOnly={isViewOnly} />
-                  <Input label="Odometer (KM)" value={displayCurrency(formData.odometer)} onChange={e => handleCurrencyChange(setFormData, formData, 'odometer', e.target.value)} readOnly={isViewOnly} />
-                  <Input label="Harga Jual" value={displayCurrency(formData.price)} onChange={e => handleCurrencyChange(setFormData, formData, 'price', e.target.value)} required readOnly={isViewOnly} />
-                  <Select label="Status Unit" value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })} options={[{ value: 'Available', label: 'Tersedia' }, { value: 'Sold', label: 'Terjual' }, { value: 'Booked', label: 'Booked' }]} disabled={isViewOnly} />
+            <div className="lg:col-span-2 space-y-5">
+
+              {/* ── Detail Spesifikasi ── */}
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-1 h-5 bg-blue-600 rounded-full" />
+                  <h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Detail Spesifikasi</h4>
+                </div>
+                <div className="divide-y divide-gray-100 dark:divide-gray-800/60">
+
+                  {/* Kode Unit */}
+                  <div className="flex items-center gap-3 py-2">
+                    <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wide w-36 shrink-0">Kode Unit</span>
+                    <span className="text-gray-300 dark:text-gray-700 shrink-0 text-xs">:</span>
+                    <div className="flex-1"><Input value={formData.unit_code || '-'} readOnly className="bg-blue-50/30 dark:bg-blue-900/10 text-blue-600 font-black" /></div>
+                  </div>
+
+                  {/* Kategori */}
+                  <div className="flex items-center gap-3 py-2">
+                    <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wide w-36 shrink-0">Kategori <span className="text-red-500">*</span></span>
+                    <span className="text-gray-300 dark:text-gray-700 shrink-0 text-xs">:</span>
+                    <div className="flex-1">
+                      <Select value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value })} options={[{ value: 'Mobil', label: 'Mobil' }, { value: 'Motor', label: 'Motor' }]} required disabled={isViewOnly} />
+                    </div>
+                  </div>
+
+                  {/* Merek */}
+                  <div className="flex items-center gap-3 py-2">
+                    <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wide w-36 shrink-0">Merek <span className="text-red-500">*</span></span>
+                    <span className="text-gray-300 dark:text-gray-700 shrink-0 text-xs">:</span>
+                    <div className="flex-1">
+                      <Select value={formData.brand} onChange={e => setFormData({ ...formData, brand: e.target.value })} options={brands.map(b => ({ value: b.name, label: b.name }))} required disabled={isViewOnly} />
+                    </div>
+                  </div>
+
+                  {/* Model / Tipe */}
+                  <div className="flex items-center gap-3 py-2">
+                    <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wide w-36 shrink-0">Model / Tipe <span className="text-red-500">*</span></span>
+                    <span className="text-gray-300 dark:text-gray-700 shrink-0 text-xs">:</span>
+                    <div className="flex-1"><Input value={formData.model} onChange={e => setFormData({ ...formData, model: e.target.value })} required readOnly={isViewOnly} /></div>
+                  </div>
+
+                  {/* Nomor Plat */}
+                  <div className="flex items-center gap-3 py-2">
+                    <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wide w-36 shrink-0">Nomor Plat <span className="text-red-500">*</span></span>
+                    <span className="text-gray-300 dark:text-gray-700 shrink-0 text-xs">:</span>
+                    <div className="flex-1"><Input value={formData.plate_number} onChange={e => setFormData({ ...formData, plate_number: sanitizePlate(e.target.value) })} required readOnly={isViewOnly} /></div>
+                  </div>
+
+                  {/* Tahun */}
+                  <div className="flex items-center gap-3 py-2">
+                    <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wide w-36 shrink-0">Tahun <span className="text-red-500">*</span></span>
+                    <span className="text-gray-300 dark:text-gray-700 shrink-0 text-xs">:</span>
+                    <div className="flex-1">
+                      <Select value={formData.year} onChange={e => setFormData({ ...formData, year: e.target.value })} options={Array.from({ length: 40 }, (_, i) => ({ value: (new Date().getFullYear() - i).toString(), label: (new Date().getFullYear() - i).toString() }))} required disabled={isViewOnly} />
+                    </div>
+                  </div>
+
+                  {/* Transmisi */}
+                  <div className="flex items-center gap-3 py-2">
+                    <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wide w-36 shrink-0">Transmisi</span>
+                    <span className="text-gray-300 dark:text-gray-700 shrink-0 text-xs">:</span>
+                    <div className="flex-1">
+                      <Select value={formData.transmission} onChange={e => setFormData({ ...formData, transmission: e.target.value })} options={[{ value: 'Manual', label: 'Manual' }, { value: 'Automatic', label: 'Automatic' }, { value: 'CVT', label: 'CVT' }, { value: 'Triptonic', label: 'Triptonic' }]} disabled={isViewOnly} />
+                    </div>
+                  </div>
+
+                  {/* Bahan Bakar */}
+                  <div className="flex items-center gap-3 py-2">
+                    <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wide w-36 shrink-0">Bahan Bakar</span>
+                    <span className="text-gray-300 dark:text-gray-700 shrink-0 text-xs">:</span>
+                    <div className="flex-1">
+                      <Select value={formData.fuel_type} onChange={e => setFormData({ ...formData, fuel_type: e.target.value })} options={[{ value: 'Bensin', label: 'Bensin' }, { value: 'Diesel', label: 'Diesel / Solar' }, { value: 'Electric', label: 'Electric (EV)' }, { value: 'Hybrid', label: 'Hybrid' }]} disabled={isViewOnly} />
+                    </div>
+                  </div>
+
+                  {/* Warna */}
+                  <div className="flex items-center gap-3 py-2">
+                    <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wide w-36 shrink-0">Warna</span>
+                    <span className="text-gray-300 dark:text-gray-700 shrink-0 text-xs">:</span>
+                    <div className="flex-1"><Input value={formData.color} onChange={e => setFormData({ ...formData, color: e.target.value })} readOnly={isViewOnly} /></div>
+                  </div>
+
+                  {/* Odometer */}
+                  <div className="flex items-center gap-3 py-2">
+                    <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wide w-36 shrink-0">Odometer (KM)</span>
+                    <span className="text-gray-300 dark:text-gray-700 shrink-0 text-xs">:</span>
+                    <div className="flex-1"><Input value={displayCurrency(formData.odometer)} onChange={e => handleCurrencyChange(setFormData, formData, 'odometer', e.target.value)} readOnly={isViewOnly} /></div>
+                  </div>
+
+                  {/* Harga Jual */}
+                  <div className="flex items-center gap-3 py-2">
+                    <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wide w-36 shrink-0">Harga Jual <span className="text-red-500">*</span></span>
+                    <span className="text-gray-300 dark:text-gray-700 shrink-0 text-xs">:</span>
+                    <div className="flex-1"><Input value={displayCurrency(formData.price)} onChange={e => handleCurrencyChange(setFormData, formData, 'price', e.target.value)} required readOnly={isViewOnly} /></div>
+                  </div>
+
+                  {/* Status Unit */}
+                  <div className="flex items-center gap-3 py-2">
+                    <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wide w-36 shrink-0">Status Unit</span>
+                    <span className="text-gray-300 dark:text-gray-700 shrink-0 text-xs">:</span>
+                    <div className="flex-1">
+                      <Select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })} options={[{ value: 'Available', label: 'Tersedia' }, { value: 'Sold', label: 'Terjual' }, { value: 'Booked', label: 'Booked' }]} disabled={isViewOnly} />
+                    </div>
+                  </div>
+
                 </div>
               </div>
 
-              <div className="space-y-6">
-                <div className="flex items-center gap-3"><div className="w-1 h-5 bg-green-600 rounded-full" /><h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Keuangan & Inventaris</h4></div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <Input label="Harga Beli" icon={Wallet} value={displayCurrency(formData.purchase_price)} onChange={e => handleCurrencyChange(setFormData, formData, 'purchase_price', e.target.value)} readOnly={isViewOnly} />
-                  <Input label="Biaya Servis" icon={Wrench} value={displayCurrency(formData.service_cost)} onChange={e => handleCurrencyChange(setFormData, formData, 'service_cost', e.target.value)} readOnly={isViewOnly} />
-                  <Input label="Tanggal Masuk" type="date" value={formData.entry_date} onChange={e => setFormData({ ...formData, entry_date: e.target.value })} readOnly={isViewOnly} />
-                  {(formData.status === 'Sold' || formData.sold_date) && <Input label="Tanggal Terjual" type="date" value={formData.sold_date} onChange={e => setFormData({ ...formData, sold_date: e.target.value })} readOnly={isViewOnly} />}
-                  {isHeadOffice ? (
-                    <Select
-                      label="Kantor Cabang"
-                      value={formData.office_id}
-                      onChange={e => setFormData({ ...formData, office_id: e.target.value })}
-                      options={[
-                        { value: '', label: '-- Pilih Cabang --' },
-                        ...offices.map(o => ({ value: o.id, label: o.displayName }))
-                      ]}
-                      required
-                      disabled={isViewOnly}
-                    />
-                  ) : <div className="p-3 bg-gray-50 rounded-xl"><p className="text-[8px] text-gray-400 font-black uppercase">Cabang Saat Ini</p><p className="text-[10px] font-bold">{user?.Office?.name}</p></div>}
+              {/* ── Keuangan & Inventaris ── */}
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-1 h-5 bg-green-600 rounded-full" />
+                  <h4 className="text-[10px] font-black text-gray-900 dark:text-white uppercase tracking-widest">Keuangan &amp; Inventaris</h4>
                 </div>
-                <textarea className="input h-20 p-3 text-xs" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} placeholder="Catatan..." readOnly={isViewOnly} />
+                <div className="divide-y divide-gray-100 dark:divide-gray-800/60">
+
+                  {/* Harga Beli */}
+                  <div className="flex items-center gap-3 py-2">
+                    <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wide w-36 shrink-0">Harga Beli</span>
+                    <span className="text-gray-300 dark:text-gray-700 shrink-0 text-xs">:</span>
+                    <div className="flex-1"><Input icon={Wallet} value={displayCurrency(formData.purchase_price)} onChange={e => handleCurrencyChange(setFormData, formData, 'purchase_price', e.target.value)} readOnly={isViewOnly} /></div>
+                  </div>
+
+                  {/* Biaya Servis */}
+                  <div className="flex items-center gap-3 py-2">
+                    <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wide w-36 shrink-0">Biaya Servis</span>
+                    <span className="text-gray-300 dark:text-gray-700 shrink-0 text-xs">:</span>
+                    <div className="flex-1"><Input icon={Wrench} value={displayCurrency(formData.service_cost)} onChange={e => handleCurrencyChange(setFormData, formData, 'service_cost', e.target.value)} readOnly={isViewOnly} /></div>
+                  </div>
+
+                  {/* Tanggal Masuk */}
+                  <div className="flex items-center gap-3 py-2">
+                    <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wide w-36 shrink-0">Tanggal Masuk</span>
+                    <span className="text-gray-300 dark:text-gray-700 shrink-0 text-xs">:</span>
+                    <div className="flex-1"><Input type="date" value={formData.entry_date} onChange={e => setFormData({ ...formData, entry_date: e.target.value })} readOnly={isViewOnly} /></div>
+                  </div>
+
+                  {/* Tanggal Terjual (conditional) */}
+                  {(formData.status === 'Sold' || formData.sold_date) && (
+                    <div className="flex items-center gap-3 py-2">
+                      <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wide w-36 shrink-0">Tanggal Terjual</span>
+                      <span className="text-gray-300 dark:text-gray-700 shrink-0 text-xs">:</span>
+                      <div className="flex-1"><Input type="date" value={formData.sold_date} onChange={e => setFormData({ ...formData, sold_date: e.target.value })} readOnly={isViewOnly} /></div>
+                    </div>
+                  )}
+
+                  {/* Kantor Cabang */}
+                  <div className="flex items-center gap-3 py-2">
+                    <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wide w-36 shrink-0">Kantor Cabang {isHeadOffice && <span className="text-red-500">*</span>}</span>
+                    <span className="text-gray-300 dark:text-gray-700 shrink-0 text-xs">:</span>
+                    <div className="flex-1">
+                      {isHeadOffice ? (
+                        <Select value={formData.office_id} onChange={e => setFormData({ ...formData, office_id: e.target.value })} options={[{ value: '', label: '-- Pilih Cabang --' }, ...offices.map(o => ({ value: o.id, label: o.displayName }))]} required disabled={isViewOnly} />
+                      ) : (
+                        <p className="text-xs font-bold text-gray-700 dark:text-gray-300">{user?.Office?.name}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Catatan */}
+                  <div className="flex items-start gap-3 py-2">
+                    <span className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-wide w-36 shrink-0 pt-2">Catatan</span>
+                    <span className="text-gray-300 dark:text-gray-700 shrink-0 text-xs pt-2">:</span>
+                    <div className="flex-1">
+                      <textarea className="input h-20 p-3 text-xs w-full" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} placeholder="Catatan..." readOnly={isViewOnly} />
+                    </div>
+                  </div>
+
+                </div>
               </div>
+
             </div>
+
 
             <div className="space-y-8">
               <div className="space-y-6">
