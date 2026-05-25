@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Modal from '../components/Modal';
+import DrawerPanel from '../components/DrawerPanel';
 import DynamicIsland from '../components/DynamicIsland';
 import ViewSwitcher from '../components/ui/ViewSwitcher';
 import Pagination from '../components/ui/Pagination';
@@ -255,7 +256,21 @@ const SalesAgents = () => {
                           <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center overflow-hidden">
                             {agent.avatar_url ? <img src={`${IMAGE_BASE_URL}${agent.avatar_url}`} className="w-full h-full object-cover" /> : <Users size={14} className="text-blue-500" />}
                           </div>
-                          <span className="font-bold text-gray-900 dark:text-white">{agent.name}</span>
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-gray-900 dark:text-white">{agent.name}</span>
+                              {agent.User && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-blue-500/10 text-blue-500 border border-blue-500/20" title={`Terhubung ke User: ${agent.User.username}`}>
+                                  <Users size={8} /> Account
+                                </span>
+                              )}
+                            </div>
+                            {agent.User && (
+                              <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">
+                                User: {agent.User.username}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="px-5 py-3.5 font-mono text-[10px] font-black text-blue-600">{agent.sales_code}</td>
@@ -313,9 +328,23 @@ const SalesAgents = () => {
                         <Users size={16} />
                       )}
                     </div>
-                    <div className="min-w-0">
-                      <h3 className="text-xs md:text-sm font-bold text-gray-900 dark:text-white truncate">{agent.name}</h3>
-                      <p className="text-[9px] md:text-[10px] text-blue-600 font-black font-mono truncate uppercase tracking-tighter">{agent.sales_code}</p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <h3 className="text-xs md:text-sm font-bold text-gray-900 dark:text-white truncate" title={agent.name}>{agent.name}</h3>
+                        {agent.User && (
+                          <span className="inline-flex items-center px-1 py-0.5 rounded text-[7px] font-black uppercase tracking-widest bg-blue-500/10 text-blue-500 border border-blue-500/20 shrink-0" title={`User: ${agent.User.username}`}>
+                            User
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 truncate">
+                        <p className="text-[9px] md:text-[10px] text-blue-600 font-black font-mono truncate uppercase tracking-tighter shrink-0">{agent.sales_code}</p>
+                        {agent.User && (
+                          <span className="text-[8px] md:text-[9px] text-gray-400 font-bold uppercase tracking-wider truncate">
+                            • {agent.User.username}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="flex gap-0.5">
@@ -350,13 +379,14 @@ const SalesAgents = () => {
 
       <Pagination page={page} totalPages={totalPages} setPage={setPage} />
 
-      {/* Modal CRUD */}
-      <Modal 
+      {/* Drawer CRUD */}
+      <DrawerPanel 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         title={editingAgent ? 'Edit Agen Sales' : 'Tambah Agen Sales Baru'}
+        width="max-w-xl"
       >
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* Avatar Upload */}
           <div className="flex flex-col items-center gap-3 py-2">
             <div className="relative group">
@@ -381,12 +411,20 @@ const SalesAgents = () => {
             <div className="space-y-1">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Kantor Penempatan</label>
               <select 
-                required className="input h-12"
-                value={formData.office_id} onChange={(e) => setFormData({...formData, office_id: e.target.value})}
+                required 
+                className={`input h-12 ${editingAgent?.user_id ? 'bg-gray-50 dark:bg-gray-800/50 cursor-not-allowed text-gray-400' : ''}`}
+                value={formData.office_id} 
+                onChange={(e) => setFormData({...formData, office_id: e.target.value})}
+                disabled={!!editingAgent?.user_id}
               >
                 <option value="">Pilih Kantor</option>
                 {offices.map(o => <option key={o.id} value={o.id}>{o.displayName}</option>)}
               </select>
+              {!!editingAgent?.user_id && (
+                <p className="text-[9px] text-amber-500 font-bold uppercase tracking-wider mt-1 px-1">
+                  * Kantor disinkronkan dengan akun User. Ubah melalui menu Kelola User.
+                </p>
+              )}
             </div>
 
             <Input label="Alamat Email" icon={Mail} type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="john@example.com" />
@@ -443,7 +481,7 @@ const SalesAgents = () => {
             </button>
           </div>
         </form>
-      </Modal>
+      </DrawerPanel>
     </div>
   );
 };

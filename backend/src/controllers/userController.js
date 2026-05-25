@@ -8,7 +8,8 @@ const createUser = async (req, res) => {
   try {
     const { 
       name, email, username, password, role_id, office_id,
-      is_sales_agent, sales_code, sales_phone, sales_bio, sales_avatar_url
+      is_sales_agent, sales_code, sales_phone, sales_bio, sales_avatar_url,
+      sales_email, sales_address
     } = req.body;
     const currentUser = req.user;
     const currentOffice = await Office.findByPk(currentUser.office_id);
@@ -63,9 +64,9 @@ const createUser = async (req, res) => {
     if (is_sales_agent === true || is_sales_agent === 'true') {
       await SalesAgent.create({
         name: user.name,
-        email: user.email,
+        email: sales_email || user.email,
         phone: sales_phone || null,
-        address: null,
+        address: sales_address || null,
         bio: sales_bio || null,
         office_id: user.office_id,
         status: 'Active',
@@ -136,7 +137,7 @@ const getUsers = async (req, res) => {
       include: [
         { model: Role, attributes: ['id', 'name'] },
         { model: Office, attributes: ['id', 'name', 'type'] },
-        { model: SalesAgent, attributes: ['id', 'sales_code', 'phone'] }
+        { model: SalesAgent, attributes: ['id', 'sales_code', 'phone', 'email', 'address', 'bio'] }
       ],
       order: [['createdAt', 'DESC']]
     });
@@ -173,7 +174,8 @@ const updateUser = async (req, res) => {
     const { id } = req.params;
     const { 
       name, email, username, password, role_id, office_id, is_active,
-      is_sales_agent, sales_code, sales_phone, sales_bio, sales_avatar_url 
+      is_sales_agent, sales_code, sales_phone, sales_bio, sales_avatar_url,
+      sales_email, sales_address
     } = req.body;
     
     // Log Attempt
@@ -239,8 +241,9 @@ const updateUser = async (req, res) => {
           // Update existing sales agent profile
           await salesAgent.update({
             name: name || user.name,
-            email: email !== undefined ? (email ? email.trim() : null) : user.email,
+            email: sales_email !== undefined ? sales_email : (email !== undefined ? (email ? email.trim() : null) : user.email),
             phone: sales_phone !== undefined ? sales_phone : salesAgent.phone,
+            address: sales_address !== undefined ? sales_address : salesAgent.address,
             bio: sales_bio !== undefined ? sales_bio : salesAgent.bio,
             office_id: office_id || user.office_id,
             avatar_url: sales_avatar_url !== undefined ? sales_avatar_url : salesAgent.avatar_url,
@@ -251,9 +254,9 @@ const updateUser = async (req, res) => {
           // Create new sales agent linked to this user
           await SalesAgent.create({
             name: name || user.name,
-            email: email !== undefined ? (email ? email.trim() : null) : user.email,
+            email: sales_email !== undefined ? sales_email : (email !== undefined ? (email ? email.trim() : null) : user.email),
             phone: sales_phone || null,
-            address: null,
+            address: sales_address || null,
             bio: sales_bio || null,
             office_id: office_id || user.office_id,
             status: is_active !== undefined ? (is_active ? 'Active' : 'Inactive') : 'Active',

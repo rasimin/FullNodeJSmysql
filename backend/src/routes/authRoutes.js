@@ -8,7 +8,7 @@ router.post('/register', register);
 router.post('/login', login);
 router.post('/logout', authenticate, logout);
 router.get('/me', authenticate, getMe);
-router.put('/me', authenticate, upload.single('avatar'), updateProfile);
+router.put('/me', authenticate, upload.fields([{ name: 'avatar', maxCount: 1 }, { name: 'sales_avatar', maxCount: 1 }]), updateProfile);
 
 // Session Management
 const { getSessions, revokeSession, revokeOtherSessions, getAllActiveSessions, revokeAnySession } = require('../controllers/authController');

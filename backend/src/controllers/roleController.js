@@ -3,9 +3,13 @@ const { Role } = require('../models');
 // Create Role
 const createRole = async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, permissions } = req.body;
+    let finalPermissions = permissions;
+    if (typeof permissions === 'string') {
+      try { finalPermissions = JSON.parse(permissions); } catch (e) { console.error(e); }
+    }
     const role = await Role.create(
-      { name, description },
+      { name, description, permissions: finalPermissions },
       { userId: req.user.id } // For Audit Log
     );
     res.status(201).json(role);
@@ -28,13 +32,17 @@ const getRoles = async (req, res) => {
 const updateRole = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description } = req.body;
+    const { name, description, permissions } = req.body;
+    let finalPermissions = permissions;
+    if (typeof permissions === 'string') {
+      try { finalPermissions = JSON.parse(permissions); } catch (e) { console.error(e); }
+    }
     
     const role = await Role.findByPk(id);
     if (!role) return res.status(404).json({ message: 'Role not found' });
 
     await role.update(
-      { name, description },
+      { name, description, permissions: finalPermissions },
       { userId: req.user.id } // For Audit Log
     );
     

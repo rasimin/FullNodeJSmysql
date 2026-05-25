@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { Search, Plus, FileSpreadsheet, Trash2, Edit, User, Mail, Lock, Shield, Building2, Monitor, LogOut, XCircle, Smartphone, Clock, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, X } from 'lucide-react';
 import Modal from '../components/Modal';
+import DrawerPanel from '../components/DrawerPanel';
 import DynamicIsland from '../components/DynamicIsland';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
@@ -97,6 +98,8 @@ const UserManagement = () => {
           is_sales_agent: !!user.SalesAgent,
           sales_code: user.SalesAgent?.sales_code || '',
           sales_phone: user.SalesAgent?.phone || '',
+          sales_email: user.SalesAgent?.email || '',
+          sales_address: user.SalesAgent?.address || '',
           sales_bio: user.SalesAgent?.bio || ''
         }
       : { 
@@ -110,6 +113,8 @@ const UserManagement = () => {
           is_sales_agent: false,
           sales_code: '',
           sales_phone: '',
+          sales_email: '',
+          sales_address: '',
           sales_bio: ''
         }
     );
@@ -371,7 +376,7 @@ const UserManagement = () => {
       {/* Pagination Controls */}
       <Pagination page={page} totalPages={totalPages} setPage={setPage} />
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingUser ? 'Edit Pengguna' : 'Tambah Pengguna Baru'}>
+      <DrawerPanel isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingUser ? 'Edit Pengguna' : 'Tambah Pengguna Baru'} width="max-w-xl">
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input label="Nama Lengkap" icon={User} required value={formData.name}
             onChange={e => setFormData({...formData, name: e.target.value})} placeholder="John Doe" />
@@ -427,7 +432,6 @@ const UserManagement = () => {
                   <Smartphone size={16} className="animate-bounce" />
                   <span className="text-[10px] font-black uppercase tracking-widest">Detail Profil Sales Agent</span>
                 </div>
-                
                 <div className="grid grid-cols-2 gap-4">
                   <Input 
                     label="Kode Sales" 
@@ -448,10 +452,32 @@ const UserManagement = () => {
                   />
                 </div>
 
+                <div className="grid grid-cols-1 gap-4">
+                  <Input 
+                    label="Alamat Email Sales" 
+                    icon={Mail} 
+                    type="email"
+                    required={formData.is_sales_agent}
+                    value={formData.sales_email}
+                    onChange={e => setFormData({...formData, sales_email: e.target.value})} 
+                    placeholder="sales@example.com" 
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Alamat Sales</label>
+                  <textarea 
+                    className="input min-h-[50px] py-2 text-xs font-bold transition-all focus:border-blue-500" 
+                    placeholder="Tulis alamat sales lengkap..."
+                    value={formData.sales_address}
+                    onChange={e => setFormData({...formData, sales_address: e.target.value})}
+                  />
+                </div>
+
                 <div className="space-y-1">
                   <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Bio / Deskripsi Penjualan</label>
                   <textarea 
-                    className="input min-h-[60px] py-2 text-xs font-bold transition-all focus:border-blue-500" 
+                    className="input min-h-[50px] py-2 text-xs font-bold transition-all focus:border-blue-500" 
                     placeholder="Tulis bio singkat sales di sini..."
                     value={formData.sales_bio}
                     onChange={e => setFormData({...formData, sales_bio: e.target.value})}
@@ -463,7 +489,7 @@ const UserManagement = () => {
 
           <button type="submit" className="btn-primary w-full py-2.5 mt-2">{editingUser ? 'Simpan Perubahan' : 'Tambah Pengguna'}</button>
         </form>
-      </Modal>
+      </DrawerPanel>
 
       {/* Sessions Modal */}
       <Modal isOpen={isSessionsModalOpen} onClose={() => setIsSessionsModalOpen(false)} title="Pantau Sesi Pengguna" maxWidth="max-w-2xl">

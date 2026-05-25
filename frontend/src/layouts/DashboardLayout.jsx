@@ -52,60 +52,73 @@ const DashboardLayout = () => {
   const userRole = user?.role || user?.Role?.name;
 
   const getMenuGroups = () => {
-    const groups = [
-      {
+    const hasAccess = (menuKey, defaultVal = false) => {
+      if (userRole === 'Super Admin') return true;
+      const perms = user?.role_permissions || user?.Role?.permissions;
+      if (!perms) return defaultVal;
+      return perms[menuKey]?.access ?? defaultVal;
+    };
+
+    const groups = [];
+
+    // Group 1: LAPORAN & ANALITIK
+    const reportItems = [];
+    if (hasAccess('dashboard', true)) {
+      reportItems.push({ to: '/', icon: Activity, label: 'Dashboard Utama' });
+    }
+    if (hasAccess('sales_report')) {
+      reportItems.push({ to: '/sales-report', icon: BarChart3, label: 'Laporan Penjualan' });
+    }
+    if (hasAccess('finance_report')) {
+      reportItems.push({ to: '/finance-report', icon: DollarSign, label: 'Laporan Keuangan' });
+    }
+
+    if (reportItems.length > 0) {
+      groups.push({
         title: 'LAPORAN & ANALITIK',
-        items: [
-          { to: '/', icon: Activity, label: 'Dashboard Utama' },
-          { to: '/sales-report', icon: BarChart3, label: 'Laporan Penjualan' },
-          { to: '/finance-report', icon: DollarSign, label: 'Laporan Keuangan' },
-        ]
-      },
-      {
+        items: reportItems
+      });
+    }
+
+    // Group 2: DATA MASTER
+    const masterItems = [];
+    if (hasAccess('brands')) masterItems.push({ to: '/brands', icon: Tags, label: 'Daftar Brand' });
+    if (hasAccess('vehicles')) masterItems.push({ to: '/vehicles', icon: Car, label: 'Daftar Kendaraan' });
+    if (hasAccess('transactions')) masterItems.push({ to: '/transactions', icon: FileText, label: 'Data Transaksi' });
+    if (hasAccess('offices')) masterItems.push({ to: '/offices', icon: Building2, label: 'Daftar Kantor' });
+    if (hasAccess('sales_agents')) masterItems.push({ to: '/sales-agents', icon: Users, label: 'Tim Sales' });
+    if (hasAccess('locations')) masterItems.push({ to: '/locations', icon: MapPin, label: 'Lokasi & Wilayah' });
+    if (hasAccess('promotions')) masterItems.push({ to: '/promotions', icon: Image, label: 'Media Promosi' });
+    if (hasAccess('showroom_settings')) masterItems.push({ to: '/showroom-settings', icon: Rocket, label: 'Setelan Katalog' });
+    if (hasAccess('recycle_bin')) masterItems.push({ to: '/recycle-bin', icon: Trash2, label: 'Tempat Sampah' });
+
+    if (masterItems.length > 0) {
+      groups.push({
         title: 'DATA MASTER',
-        items: [
-          { to: '/brands', icon: Tags, label: 'Daftar Brand' },
-          { to: '/vehicles', icon: Car, label: 'Daftar Kendaraan' },
-          { to: '/transactions', icon: FileText, label: 'Data Transaksi' },
-          { to: '/offices', icon: Building2, label: 'Daftar Kantor' },
-          { to: '/sales-agents', icon: Users, label: 'Tim Sales' },
-          { to: '/locations', icon: MapPin, label: 'Lokasi & Wilayah' },
-          { to: '/promotions', icon: Image, label: 'Media Promosi' },
-          { to: '/showroom-settings', icon: Rocket, label: 'Setelan Katalog' },
-        ]
-      },
-    ];
-
-    // Add Recycle Bin if permitted
-    if (userRole === 'Super Admin' || userRole === 'Admin Pusat') {
-      groups[1].items.push({ to: '/recycle-bin', icon: Trash2, label: 'Tempat Sampah' });
+        items: masterItems
+      });
     }
 
-    groups.push({
-      title: 'ADMIN & KEAMANAN',
-      items: []
-    });
-
-    // Add Security items based on role
-    const securityItems = groups[2].items;
-    securityItems.push({ to: '/users', icon: Users, label: 'Kelola User' });
-    
-    if (userRole === 'Super Admin' || userRole === 'Admin Pusat') {
-      securityItems.push(
-        { to: '/security-settings', icon: Shield, label: 'Setelan Keamanan' },
-        { to: '/admin-sessions', icon: Users, label: 'Monitor Sesi' },
-        { to: '/roles', icon: ShieldCheck, label: 'Hak Akses (Role)' },
-        { to: '/query-runner', icon: Database, label: 'SQL Query Runner' },
-        { to: '/ui-gallery', icon: Sparkles, label: 'Katalog Komponen UI' },
-        { to: '/activities', icon: FileText, label: 'Catatan Aktivitas' },
-        { to: '/audit-trails', icon: History, label: 'Jejak Audit' }
-      );
-    } else {
-      securityItems.push(
-        { to: '/activities', icon: FileText, label: 'Aktivitas Saya' }
-      );
+    // Group 3: ADMIN & KEAMANAN
+    const securityItems = [];
+    if (hasAccess('user_management')) securityItems.push({ to: '/users', icon: Users, label: 'Kelola User' });
+    if (hasAccess('security_settings')) securityItems.push({ to: '/security-settings', icon: Shield, label: 'Setelan Keamanan' });
+    if (hasAccess('admin_sessions')) securityItems.push({ to: '/admin-sessions', icon: Users, label: 'Monitor Sesi' });
+    if (hasAccess('role_management')) securityItems.push({ to: '/roles', icon: ShieldCheck, label: 'Hak Akses (Role)' });
+    if (hasAccess('query_runner')) securityItems.push({ to: '/query-runner', icon: Database, label: 'SQL Query Runner' });
+    if (hasAccess('ui_gallery')) securityItems.push({ to: '/ui-gallery', icon: Sparkles, label: 'Katalog Komponen UI' });
+    if (hasAccess('activities', true)) {
+      securityItems.push({ to: '/activities', icon: FileText, label: userRole === 'Super Admin' || userRole === 'Admin Pusat' ? 'Catatan Aktivitas' : 'Aktivitas Saya' });
     }
-    
+    if (hasAccess('audit_trails')) securityItems.push({ to: '/audit-trails', icon: History, label: 'Jejak Audit' });
+
+    if (securityItems.length > 0) {
+      groups.push({
+        title: 'ADMIN & KEAMANAN',
+        items: securityItems
+      });
+    }
+
     return groups;
   };
 

@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 
 const { getPagination, getPagingData } = require('../utils/pagination');
+const { resolveDataScope } = require('../utils/permissionHelper');
 
 const getVehicleById = async (req, res) => {
   try {
@@ -56,51 +57,15 @@ const getVehicles = async (req, res) => {
     const { page, size, search, officeId: filterOfficeId, type, status, minPrice, maxPrice, locationId, brand, year } = req.query;
     const { limit, offset } = getPagination(page, size);
     const user = req.user;
-    const isSuperAdmin = user.Role?.name === 'Super Admin';
-    const currentOffice = await Office.findByPk(user.office_id);
-    let officeIds = [];
+    
+    const { officeIds: resolvedOfficeIds, userIdFilter } = await resolveDataScope(user, 'vehicles');
+    let officeIds = resolvedOfficeIds;
 
-    // Safety check for currentOffice
-    if (!isSuperAdmin && !currentOffice) {
-      return res.status(403).json({ message: 'User office not found' });
-    }
-
-    // Logic Hierarki Kantor: Filter sesuai mapping
-    if (isSuperAdmin) {
-      // Super Admin: Bisa lihat semua unit atau berdasarkan filter spesifik
-      if (filterOfficeId) {
-        officeIds = [filterOfficeId];
-      } else {
-        const allOffices = await Office.findAll({ attributes: ['id'] });
-        officeIds = allOffices.map(o => o.id);
+    if (filterOfficeId) {
+      const filterIdNum = parseInt(filterOfficeId);
+      if (officeIds.includes(filterIdNum)) {
+        officeIds = [filterIdNum];
       }
-    } else if (!currentOffice.parent_id) {
-       // Kantor Pusat: Bisa lihat dirinya sendiri + cabang-cabang di bawahnya
-       const allowedOffices = await Office.findAll({
-         where: {
-           [Op.or]: [
-             { id: user.office_id },
-             { parent_id: user.office_id }
-           ]
-         },
-         attributes: ['id']
-       });
-       const allowedIds = allowedOffices.map(o => o.id);
-
-       if (filterOfficeId) {
-         // Validasi apakah filterOfficeId masuk dalam mapping yang diizinkan
-         if (allowedIds.includes(parseInt(filterOfficeId))) {
-           officeIds = [filterOfficeId];
-         } else {
-           // Jika tidak punya akses ke cabang tersebut, default ke mapping miliknya
-           officeIds = allowedIds;
-         }
-       } else {
-         officeIds = allowedIds;
-       }
-    } else {
-      // Kantor Cabang: Hanya bisa melihat datanya sendiri
-      officeIds = [user.office_id];
     }
     
     // --- Added: Hierarchical Location Filter ---
@@ -130,6 +95,10 @@ const getVehicles = async (req, res) => {
       office_id: { [Op.in]: officeIds },
       is_deleted: false
     };
+
+    if (userIdFilter) {
+      condition.user_id = userIdFilter;
+    }
 
     if (search) {
       condition[Op.or] = [
@@ -219,32 +188,25 @@ const getDeletedVehicles = async (req, res) => {
     const { page, size, search, officeId: filterOfficeId, sortOrder } = req.query;
     const { limit, offset } = getPagination(page, size);
     const user = req.user;
-    const isSuperAdmin = user.Role?.name === 'Super Admin';
-    const currentOffice = await Office.findByPk(user.office_id);
-    let officeIds = [];
+    
+    const { officeIds: resolvedOfficeIds, userIdFilter } = await resolveDataScope(user, 'recycle_bin');
+    let officeIds = resolvedOfficeIds;
 
-    if (isSuperAdmin) {
-      if (filterOfficeId) {
-        officeIds = [filterOfficeId];
-      } else {
-        const allOffices = await Office.findAll({ attributes: ['id'] });
-        officeIds = allOffices.map(o => o.id);
+    if (filterOfficeId) {
+      const filterIdNum = parseInt(filterOfficeId);
+      if (officeIds.includes(filterIdNum)) {
+        officeIds = [filterIdNum];
       }
-    } else if (currentOffice && !currentOffice.parent_id) {
-      const allowed = await Office.findAll({
-        where: { [Op.or]: [{ id: user.office_id }, { parent_id: user.office_id }] },
-        attributes: ['id']
-      });
-      const allowedIds = allowed.map(o => o.id);
-      officeIds = (filterOfficeId && allowedIds.includes(parseInt(filterOfficeId))) ? [filterOfficeId] : allowedIds;
-    } else {
-      officeIds = [user.office_id];
     }
     
     const condition = {
       is_deleted: true,
       office_id: { [Op.in]: officeIds }
     };
+
+    if (userIdFilter) {
+      condition.user_id = userIdFilter;
+    }
 
     if (search) {
       condition[Op.or] = [
@@ -648,29 +610,20 @@ const deleteBrand = async (req, res) => {
 const getVehicleSummary = async (req, res) => {
   try {
     const user = req.user;
-    const isSuperAdmin = user.Role?.name === 'Super Admin';
-    const currentOffice = await Office.findByPk(user.office_id);
-    let officeIds = [];
+    
+    const { officeIds, userIdFilter } = await resolveDataScope(user, 'vehicles');
+    
+    const condition = { 
+      office_id: officeIds,
+      is_deleted: false
+    };
 
-    // Gunakan logika hierarki yang sama dengan getVehicles
-    if (isSuperAdmin) {
-      const allOffices = await Office.findAll({ attributes: ['id'] });
-      officeIds = allOffices.map(o => o.id);
-    } else if (currentOffice && !currentOffice.parent_id) {
-       const allowedOffices = await Office.findAll({
-         where: { [Op.or]: [{ id: user.office_id }, { parent_id: user.office_id }] },
-         attributes: ['id']
-       });
-       officeIds = allowedOffices.map(o => o.id);
-    } else {
-       officeIds = [user.office_id];
+    if (userIdFilter) {
+      condition.user_id = userIdFilter;
     }
 
     const summary = await Vehicle.findAll({
-      where: { 
-        office_id: officeIds,
-        is_deleted: false
-      },
+      where: condition,
       attributes: [
         'status',
         [sequelize.fn('COUNT', sequelize.col('id')), 'count']

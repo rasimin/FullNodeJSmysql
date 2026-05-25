@@ -1,4 +1,4 @@
-const { SalesAgent, Office, Vehicle, sequelize } = require('../models');
+const { SalesAgent, Office, Vehicle, User, sequelize } = require('../models');
 const { Op } = require('sequelize');
 const sharp = require('sharp');
 const path = require('path');
@@ -53,7 +53,10 @@ const getSalesAgents = async (req, res) => {
       where: condition,
       limit,
       offset,
-      include: [{ model: Office, attributes: ['name'] }],
+      include: [
+        { model: Office, attributes: ['name'] },
+        { model: User, attributes: ['username', 'email'] }
+      ],
       order: [['name', 'ASC']]
     });
 

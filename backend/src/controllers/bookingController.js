@@ -1,6 +1,7 @@
 const { Booking, Vehicle, User, Office, SalesAgent, BookingArchive } = require('../models');
 const { Op } = require('sequelize');
 const { getPagination, getPagingData } = require('../utils/pagination');
+const { resolveDataScope } = require('../utils/permissionHelper');
 const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
@@ -140,29 +141,20 @@ exports.getAllBookings = async (req, res) => {
     const finalSortOrder = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
     // --- Office Filtering Logic ---
-    const isSuperAdmin = user.Role?.name === 'Super Admin';
-    const currentOffice = await Office.findByPk(user.office_id);
-    let officeIds = [];
+    const { officeIds: resolvedOfficeIds, userIdFilter } = await resolveDataScope(user, 'transactions');
+    let officeIds = resolvedOfficeIds;
 
-    if (isSuperAdmin) {
-      if (filterOfficeId) {
-        officeIds = [filterOfficeId];
-      } else {
-        const allOffices = await Office.findAll({ attributes: ['id'] });
-        officeIds = allOffices.map(o => o.id);
+    if (filterOfficeId) {
+      const filterIdNum = parseInt(filterOfficeId);
+      if (officeIds.includes(filterIdNum)) {
+        officeIds = [filterIdNum];
       }
-    } else if (currentOffice && !currentOffice.parent_id) {
-      const allowed = await Office.findAll({
-        where: { [Op.or]: [{ id: user.office_id }, { parent_id: user.office_id }] },
-        attributes: ['id']
-      });
-      const allowedIds = allowed.map(o => o.id);
-      officeIds = (filterOfficeId && allowedIds.includes(parseInt(filterOfficeId))) ? [filterOfficeId] : allowedIds;
-    } else {
-      officeIds = [user.office_id];
     }
 
     const condition = { office_id: { [Op.in]: officeIds } };
+    if (userIdFilter) {
+      condition.user_id = userIdFilter;
+    }
     if (status) condition.status = status;
 
     if (startDate && endDate) {

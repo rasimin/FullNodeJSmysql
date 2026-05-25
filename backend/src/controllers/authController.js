@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
-const { User, Role, Office, ActivityLog, UserSession, SystemSetting } = require('../models');
+const { User, Role, Office, ActivityLog, UserSession, SystemSetting, SalesAgent } = require('../models');
 const { getSettings } = require('../utils/settings');
 
 const generateToken = (user) => {
@@ -73,7 +73,7 @@ const login = async (req, res) => {
           { username: email || '' }
         ]
       },
-      include: [{ model: Role }, { model: Office }]
+      include: [{ model: Role }, { model: Office }, { model: SalesAgent }]
     });
 
     if (!user) {
@@ -182,12 +182,14 @@ const login = async (req, res) => {
         email: user.email,
         username: user.username,
         role: user.Role.name,
+        role_permissions: user.Role.permissions,
         office: user.Office ? user.Office.name : 'N/A',
         office_id: user.office_id,
         office_type: user.Office?.type,
         parent_office_id: user.Office?.parent_id,
         office_logo: user.Office?.logo,
-        avatar: user.avatar
+        avatar: user.avatar,
+        SalesAgent: user.SalesAgent
       }
     });
   } catch (error) {
@@ -200,7 +202,7 @@ const getMe = async (req, res) => {
   try {
     const user = await User.findByPk(req.user.id, {
       attributes: { exclude: ['password_hash'] },
-      include: [{ model: Role }, { model: Office }]
+      include: [{ model: Role }, { model: Office }, { model: SalesAgent }]
     });
     res.json(user);
   } catch (error) {
@@ -225,7 +227,7 @@ const updateProfile = async (req, res) => {
       user_agent: req.headers['user-agent']
     });
 
-    const { name, email, password } = req.body;
+    const { name, email, password, sales_phone, sales_email, sales_address, sales_bio, sales_sync_avatar } = req.body;
     console.log(`[Update Profile] Processing for User ID: ${userId}`);
 
     const user = await User.findByPk(userId);
@@ -249,7 +251,10 @@ const updateProfile = async (req, res) => {
       updateData.password_hash = await bcrypt.hash(password, salt);
     }
 
-    if (req.file) {
+    const avatarFile = req.files && req.files.avatar ? req.files.avatar[0] : null;
+    const salesAvatarFile = req.files && req.files.sales_avatar ? req.files.sales_avatar[0] : null;
+
+    if (avatarFile) {
       console.log(`[Update Profile] Processing new avatar for user: ${userId}`);
       
       try {
@@ -257,13 +262,13 @@ const updateProfile = async (req, res) => {
         const outputPath = path.join(__dirname, '../../uploads', fileName);
         
         // Kompres dengan sharp
-        await sharp(req.file.path)
+        await sharp(avatarFile.path)
           .resize(300, 300, { fit: 'cover' })
           .webp({ quality: 80 })
           .toFile(outputPath);
 
         // Hapus file asli (raw)
-        if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        if (fs.existsSync(avatarFile.path)) fs.unlinkSync(avatarFile.path);
         
         // Hapus avatar lama jika ada
         if (user.avatar) {
@@ -278,8 +283,42 @@ const updateProfile = async (req, res) => {
         updateData.avatar = `/uploads/${fileName}`;
       } catch (sharpError) {
         console.error('[Update Profile] Sharp Processing Error:', sharpError);
-        // Fallback jika gagal proses tetap gunakan file asli
-        updateData.avatar = `/uploads/${req.file.filename}`;
+        updateData.avatar = `/uploads/${avatarFile.filename}`;
+      }
+    }
+
+    let salesAvatarUrl = null;
+    if (salesAvatarFile) {
+      console.log(`[Update Profile] Processing new sales avatar for user: ${userId}`);
+      
+      try {
+        const fileName = `sales-avatar-${userId}-${Date.now()}.webp`;
+        const outputPath = path.join(__dirname, '../../uploads', fileName);
+        
+        // Kompres dengan sharp
+        await sharp(salesAvatarFile.path)
+          .resize(300, 300, { fit: 'cover' })
+          .webp({ quality: 80 })
+          .toFile(outputPath);
+
+        // Hapus file asli (raw)
+        if (fs.existsSync(salesAvatarFile.path)) fs.unlinkSync(salesAvatarFile.path);
+        
+        // Fetch existing SalesAgent profile to delete old avatar
+        const salesAgent = await SalesAgent.findOne({ where: { user_id: userId } });
+        if (salesAgent && salesAgent.avatar_url) {
+          const oldRelativePath = salesAgent.avatar_url.startsWith('/') ? salesAgent.avatar_url.slice(1) : salesAgent.avatar_url;
+          const oldAvatarPath = path.join(__dirname, '../../', oldRelativePath);
+          if (fs.existsSync(oldAvatarPath)) {
+            fs.unlinkSync(oldAvatarPath);
+            console.log(`[Update Profile] Old sales avatar deleted: ${oldAvatarPath}`);
+          }
+        }
+
+        salesAvatarUrl = `/uploads/${fileName}`;
+      } catch (sharpError) {
+        console.error('[Update Profile] Sharp Sales Processing Error:', sharpError);
+        salesAvatarUrl = `/uploads/${salesAvatarFile.filename}`;
       }
     }
 
@@ -291,9 +330,30 @@ const updateProfile = async (req, res) => {
       });
     }
 
+    // Update SalesAgent details if linked
+    const salesAgent = await SalesAgent.findOne({ where: { user_id: userId } });
+    if (salesAgent) {
+      const salesUpdate = {};
+      if (sales_phone !== undefined) salesUpdate.phone = sales_phone;
+      if (sales_email !== undefined) salesUpdate.email = sales_email;
+      if (sales_address !== undefined) salesUpdate.address = sales_address;
+      if (sales_bio !== undefined) salesUpdate.bio = sales_bio;
+      
+      // Avatar sync / update logic
+      if (sales_sync_avatar === 'true' || sales_sync_avatar === true) {
+        salesUpdate.avatar_url = updateData.avatar || user.avatar;
+      } else if (salesAvatarUrl) {
+        salesUpdate.avatar_url = salesAvatarUrl;
+      }
+      
+      if (Object.keys(salesUpdate).length > 0) {
+        await salesAgent.update(salesUpdate, { userId });
+      }
+    }
+
     // Refresh data untuk dikirim balik
     const updatedUser = await User.findByPk(userId, {
-      include: [{ model: Role }, { model: Office }]
+      include: [{ model: Role }, { model: Office }, { model: SalesAgent }]
     });
 
     res.json({
@@ -305,10 +365,12 @@ const updateProfile = async (req, res) => {
         username: updatedUser.username,
         avatar: updatedUser.avatar,
         role: updatedUser.Role?.name,
+        role_permissions: updatedUser.Role?.permissions,
         office: updatedUser.Office?.name,
         office_id: updatedUser.office_id,
         office_type: updatedUser.Office?.type,
-        parent_office_id: updatedUser.Office?.parent_id
+        parent_office_id: updatedUser.Office?.parent_id,
+        SalesAgent: updatedUser.SalesAgent
       }
     });
   } catch (error) {

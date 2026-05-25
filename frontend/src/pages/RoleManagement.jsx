@@ -6,12 +6,35 @@ import DynamicIsland from '../components/DynamicIsland';
 import Input from '../components/ui/Input';
 import { motion } from 'framer-motion';
 
+const MENU_LIST = [
+  { key: 'dashboard', label: 'Dashboard Utama', hasActions: false, hasScope: true },
+  { key: 'sales_report', label: 'Laporan Penjualan', hasActions: false, hasScope: false },
+  { key: 'finance_report', label: 'Laporan Keuangan', hasActions: false, hasScope: false },
+  { key: 'brands', label: 'Daftar Brand', hasActions: true, hasScope: false },
+  { key: 'vehicles', label: 'Daftar Kendaraan', hasActions: true, hasScope: true },
+  { key: 'transactions', label: 'Data Transaksi', hasActions: true, hasScope: true },
+  { key: 'offices', label: 'Daftar Kantor', hasActions: true, hasScope: false },
+  { key: 'sales_agents', label: 'Tim Sales', hasActions: true, hasScope: false },
+  { key: 'locations', label: 'Lokasi & Wilayah', hasActions: true, hasScope: false },
+  { key: 'promotions', label: 'Media Promosi', hasActions: true, hasScope: false },
+  { key: 'showroom_settings', label: 'Setelan Katalog', hasActions: true, hasScope: false },
+  { key: 'recycle_bin', label: 'Tempat Sampah', hasActions: true, hasScope: true },
+  { key: 'user_management', label: 'Kelola User', hasActions: true, hasScope: false },
+  { key: 'role_management', label: 'Hak Akses (Role)', hasActions: true, hasScope: false },
+  { key: 'security_settings', label: 'Setelan Keamanan', hasActions: true, hasScope: false },
+  { key: 'admin_sessions', label: 'Monitor Sesi', hasActions: true, hasScope: false },
+  { key: 'query_runner', label: 'SQL Query Runner', hasActions: true, hasScope: false },
+  { key: 'ui_gallery', label: 'Katalog Komponen UI', hasActions: true, hasScope: false },
+  { key: 'activities', label: 'Catatan Aktivitas', hasActions: false, hasScope: false },
+  { key: 'audit_trails', label: 'Jejak Audit', hasActions: false, hasScope: false },
+];
+
 const RoleManagement = () => {
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
-  const [formData, setFormData] = useState({ name: '', description: '' });
+  const [formData, setFormData] = useState({ name: '', description: '', permissions: {} });
   const [notification, setNotification] = useState({ status: 'idle', message: '' });
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
@@ -22,7 +45,12 @@ const RoleManagement = () => {
 
   const fetchRoles = async () => {
     setLoading(true);
-    try { const r = await api.get('/roles'); setRoles(r.data); } catch (e) { console.error(e); }
+    try { 
+      const r = await api.get('/roles'); 
+      setRoles(r.data); 
+    } catch (e) { 
+      console.error(e); 
+    }
     setLoading(false);
   };
 
@@ -30,8 +58,49 @@ const RoleManagement = () => {
 
   const openModal = (role = null) => {
     setEditingRole(role);
-    setFormData(role ? { name: role.name, description: role.description || '' } : { name: '', description: '' });
+    
+    // Resilient parsing of permissions
+    let parsedPerms = {};
+    if (role && role.permissions) {
+      try {
+        parsedPerms = typeof role.permissions === 'string' 
+          ? JSON.parse(role.permissions) 
+          : role.permissions;
+      } catch (err) {
+        console.error('Failed to parse permissions:', err);
+      }
+    }
+
+    // Build initial permissions object matching MENU_LIST
+    const initialPermissions = {};
+    MENU_LIST.forEach(m => {
+      const existing = parsedPerms[m.key] || {};
+      initialPermissions[m.key] = {
+        access: existing.access || false,
+        scope: m.hasScope ? (existing.scope || 'branch') : undefined,
+        actions: m.hasActions ? (existing.actions || []) : undefined
+      };
+    });
+
+    setFormData(
+      role 
+        ? { name: role.name, description: role.description || '', permissions: initialPermissions } 
+        : { name: '', description: '', permissions: initialPermissions }
+    );
     setIsModalOpen(true);
+  };
+
+  const handlePermissionChange = (menuKey, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      permissions: {
+        ...prev.permissions,
+        [menuKey]: {
+          ...prev.permissions[menuKey],
+          [field]: value
+        }
+      }
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -44,14 +113,21 @@ const RoleManagement = () => {
         : await api.post('/roles', formData);
       notify('success', editingRole ? 'Role updated!' : 'Role created!');
       fetchRoles();
-    } catch (err) { notify('error', err.response?.data?.message || 'Failed'); }
+    } catch (err) { 
+      notify('error', err.response?.data?.message || 'Failed'); 
+    }
   };
 
   const handleDelete = async () => {
     notify('loading', 'Deleting...');
     setConfirmDeleteId(null);
-    try { await api.delete(`/roles/${confirmDeleteId}`); notify('success', 'Role deleted'); fetchRoles(); }
-    catch { notify('error', 'Delete failed'); }
+    try { 
+      await api.delete(`/roles/${confirmDeleteId}`); 
+      notify('success', 'Role deleted'); 
+      fetchRoles(); 
+    } catch { 
+      notify('error', 'Delete failed'); 
+    }
   };
 
   return (
@@ -64,7 +140,7 @@ const RoleManagement = () => {
 
       <div className="flex items-center justify-between">
         <h1 className="text-base font-bold text-gray-900 dark:text-white">Hak Akses (Role)</h1>
-        <button onClick={() => openModal()} className="btn-primary"><Plus size={15} /> Add Role</button>
+        <button onClick={() => openModal()} className="btn-primary flex items-center gap-1.5"><Plus size={15} /> Add Role</button>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
@@ -101,16 +177,134 @@ const RoleManagement = () => {
         )}
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingRole ? 'Edit Role' : 'New Role'}>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input label="Role Name" required value={formData.name}
-            onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Role name" />
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Description</label>
-            <textarea className="input resize-none" rows="3" value={formData.description}
-              onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Description..." />
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingRole ? 'Edit Role' : 'New Role'} maxWidth="max-w-4xl">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input label="Role Name" required value={formData.name}
+              onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Role name" />
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Description</label>
+              <textarea className="input resize-none py-1.5 px-3" rows="1" value={formData.description}
+                onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Description..." />
+            </div>
           </div>
-          <button type="submit" className="btn-primary w-full py-2.5">{editingRole ? 'Save Changes' : 'Create Role'}</button>
+
+          <div className="space-y-2">
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Konfigurasi Hak Akses Menu</label>
+            <div className="overflow-x-auto border border-gray-150 dark:border-gray-800 rounded-xl bg-gray-50/30 dark:bg-gray-900/30 max-h-[50vh]">
+              <table className="w-full text-left border-collapse min-w-[700px]">
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-gray-900 border-b border-gray-150 dark:border-gray-800 sticky top-0 z-10">
+                    <th className="px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Menu</th>
+                    <th className="px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center w-20">Akses</th>
+                    <th className="px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center w-20">Tambah</th>
+                    <th className="px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center w-20">Ubah</th>
+                    <th className="px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center w-20">Hapus</th>
+                    <th className="px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-44">Cakupan Data (Scope)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800/80 bg-white dark:bg-[#0c0d12]">
+                  {MENU_LIST.map((menu) => {
+                    const perm = formData.permissions[menu.key] || { access: false };
+                    return (
+                      <tr key={menu.key} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20 transition-all">
+                        {/* Menu Name */}
+                        <td className="px-4 py-3 text-xs font-semibold text-gray-800 dark:text-gray-200">
+                          {menu.label}
+                        </td>
+                        
+                        {/* Akses Checkbox */}
+                        <td className="px-4 py-3 text-center">
+                          <input 
+                            type="checkbox"
+                            className="rounded border-gray-300 dark:border-gray-700 text-blue-600 focus:ring-blue-500/20 w-4 h-4 cursor-pointer"
+                            checked={perm.access}
+                            onChange={(e) => handlePermissionChange(menu.key, 'access', e.target.checked)}
+                          />
+                        </td>
+
+                        {/* Tambah Checkbox */}
+                        <td className="px-4 py-3 text-center">
+                          {menu.hasActions && perm.access ? (
+                            <input
+                              type="checkbox"
+                              checked={perm.actions?.includes('create') || false}
+                              onChange={(e) => {
+                                const newActions = e.target.checked 
+                                  ? [...(perm.actions || []), 'create']
+                                  : (perm.actions || []).filter(a => a !== 'create');
+                                handlePermissionChange(menu.key, 'actions', newActions);
+                              }}
+                              className="rounded border-gray-300 dark:border-gray-700 text-blue-600 focus:ring-blue-500/20 w-4 h-4 cursor-pointer"
+                            />
+                          ) : (
+                            <span className="text-gray-300 dark:text-gray-700 text-[11px]">-</span>
+                          )}
+                        </td>
+
+                        {/* Ubah Checkbox */}
+                        <td className="px-4 py-3 text-center">
+                          {menu.hasActions && perm.access ? (
+                            <input
+                              type="checkbox"
+                              checked={perm.actions?.includes('edit') || false}
+                              onChange={(e) => {
+                                const newActions = e.target.checked 
+                                  ? [...(perm.actions || []), 'edit']
+                                  : (perm.actions || []).filter(a => a !== 'edit');
+                                handlePermissionChange(menu.key, 'actions', newActions);
+                              }}
+                              className="rounded border-gray-300 dark:border-gray-700 text-blue-600 focus:ring-blue-500/20 w-4 h-4 cursor-pointer"
+                            />
+                          ) : (
+                            <span className="text-gray-300 dark:text-gray-700 text-[11px]">-</span>
+                          )}
+                        </td>
+
+                        {/* Hapus Checkbox */}
+                        <td className="px-4 py-3 text-center">
+                          {menu.hasActions && perm.access ? (
+                            <input
+                              type="checkbox"
+                              checked={perm.actions?.includes('delete') || false}
+                              onChange={(e) => {
+                                const newActions = e.target.checked 
+                                  ? [...(perm.actions || []), 'delete']
+                                  : (perm.actions || []).filter(a => a !== 'delete');
+                                handlePermissionChange(menu.key, 'actions', newActions);
+                              }}
+                              className="rounded border-gray-300 dark:border-gray-700 text-blue-600 focus:ring-blue-500/20 w-4 h-4 cursor-pointer"
+                            />
+                          ) : (
+                            <span className="text-gray-300 dark:text-gray-700 text-[11px]">-</span>
+                          )}
+                        </td>
+
+                        {/* Scope Selection */}
+                        <td className="px-4 py-2">
+                          {menu.hasScope && perm.access ? (
+                            <select
+                              value={perm.scope || 'branch'}
+                              onChange={(e) => handlePermissionChange(menu.key, 'scope', e.target.value)}
+                              className="bg-gray-50 dark:bg-gray-800 text-[11px] text-gray-700 dark:text-gray-300 border border-gray-250 dark:border-gray-700 rounded-lg py-1 px-2 font-medium cursor-pointer focus:ring-1 focus:ring-blue-500/30 outline-none w-full max-w-[130px]"
+                            >
+                              <option value="all">Semua (Pusat)</option>
+                              <option value="branch">Cabang</option>
+                              <option value="own">Milik Sendiri</option>
+                            </select>
+                          ) : (
+                            <span className="text-gray-300 dark:text-gray-700 text-[11px]">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <button type="submit" className="btn-primary w-full py-2.5 font-semibold text-xs tracking-wider uppercase">{editingRole ? 'Save Changes' : 'Create Role'}</button>
         </form>
       </Modal>
     </div>
