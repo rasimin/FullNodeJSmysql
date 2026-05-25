@@ -432,108 +432,103 @@ const Transactions = () => {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white dark:bg-gray-900/50 p-6 rounded-[32px] border border-gray-100 dark:border-gray-800 shadow-sm space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
-          <div className="lg:col-span-6 relative">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block ml-1">Cari Transaksi</label>
-            <div className="relative group">
-              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-              <input
-                type="text" placeholder="Cari ID, nama pelanggan, nomor plat atau unit..."
-                className={`input pl-11 ${search ? 'pr-11' : ''} h-12 text-xs bg-gray-50/50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700/50 focus:bg-white dark:focus:bg-gray-800`}
-                value={search} onChange={(e) => setSearch(e.target.value)}
-              />
-              {search && (
-                <button 
-                  onClick={() => setSearch('')}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors"
-                >
-                  <X size={16} />
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="lg:col-span-3">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block ml-1">Status Transaksi</label>
-            <select
-              className="input h-12 text-xs font-bold bg-gray-50/50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700/50 focus:bg-white dark:focus:bg-gray-800"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="">Semua Status</option>
-              <option value="Active">Booking Aktif</option>
-              <option value="Sold">Terjual / Deal</option>
-              <option value="Cancelled">Dibatalkan (Non Refund)</option>
-              <option value="Refunded">Refunded</option>
-            </select>
-          </div>
-
-          <div className="lg:col-span-3">
-            {isHeadOffice ? (
-              <>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block ml-1">Cabang / Lokasi</label>
-                <Select
-                  icon={MapPin}
-                  value={selectedBranch}
-                  onChange={(e) => { setSelectedBranch(e.target.value); setPage(1); }}
-                  options={[
-                    { value: '', label: 'Semua Cabang' },
-                    ...offices.map(o => ({ value: o.id, label: o.displayName }))
-                  ]}
-                  className="h-12 text-[11px] bg-gray-50/50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700/50 focus:bg-white dark:focus:bg-gray-800"
-                />
-              </>
-            ) : (
-              <div className="h-12 flex items-end">
-                <div className="w-full px-4 py-3 bg-blue-50/30 dark:bg-blue-900/10 rounded-2xl border border-blue-100/50 dark:border-blue-800/50">
-                  <p className="text-[10px] font-black text-blue-600 uppercase tracking-tight">Kantor: {user?.Office?.name || 'Cabang Aktif'}</p>
-                </div>
-              </div>
+      {/* Filters - Single Row Compact */}
+      <div className="bg-white dark:bg-gray-900/50 px-4 py-3 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+        <div className="flex flex-wrap lg:flex-nowrap items-center gap-3">
+          {/* Search */}
+          <div className="relative group flex-1 min-w-[180px]">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+            <input
+              type="text" placeholder="Cari ID, nama, plat..."
+              className={`input pl-9 ${search ? 'pr-9' : ''} h-10 text-[11px] bg-gray-50/50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700/50 focus:bg-white dark:focus:bg-gray-800 !rounded-xl`}
+              value={search} onChange={(e) => setSearch(e.target.value)}
+            />
+            {search && (
+              <button 
+                onClick={() => setSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors"
+              >
+                <X size={14} />
+              </button>
             )}
           </div>
-        </div>
 
-        <div className="pt-2 border-t border-gray-50 dark:border-gray-800/50">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
-            <div className="lg:col-span-4">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block ml-1">Dari Tanggal</label>
-              <div className="relative group">
-                <Calendar size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-focus-within:text-blue-500 transition-colors" />
-                <input 
-                  type="date" 
-                  className="input pl-11 h-12 text-[11px] font-bold w-full cursor-pointer bg-gray-50/50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700/50" 
-                  value={dateRange.start}
-                  onClick={(e) => e.target.showPicker?.()}
-                  onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                />
-              </div>
+          {/* Divider */}
+          <div className="hidden lg:block w-px h-7 bg-gray-200 dark:bg-gray-700/50" />
+
+          {/* Status */}
+          <select
+            className="input h-10 text-[11px] font-bold bg-gray-50/50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700/50 focus:bg-white dark:focus:bg-gray-800 !rounded-xl w-auto min-w-[140px]"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="">Semua Status</option>
+            <option value="Active">Booking Aktif</option>
+            <option value="Sold">Terjual / Deal</option>
+            <option value="Cancelled">Dibatalkan</option>
+            <option value="Refunded">Refunded</option>
+          </select>
+
+          {/* Branch */}
+          {isHeadOffice ? (
+            <Select
+              icon={MapPin}
+              value={selectedBranch}
+              onChange={(e) => { setSelectedBranch(e.target.value); setPage(1); }}
+              options={[
+                { value: '', label: 'Semua Cabang' },
+                ...offices.map(o => ({ value: o.id, label: o.displayName }))
+              ]}
+              className="h-10 text-[11px] bg-gray-50/50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700/50 focus:bg-white dark:focus:bg-gray-800 !rounded-xl min-w-[150px]"
+            />
+          ) : (
+            <div className="px-3 py-2 bg-blue-50/30 dark:bg-blue-900/10 rounded-xl border border-blue-100/50 dark:border-blue-800/50 whitespace-nowrap">
+              <p className="text-[10px] font-black text-blue-600 uppercase tracking-tight">{user?.Office?.name || 'Cabang Aktif'}</p>
             </div>
-            <div className="lg:col-span-4">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block ml-1">Sampai Tanggal</label>
-              <div className="relative group">
-                <Calendar size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-focus-within:text-blue-500 transition-colors" />
-                <input 
-                  type="date" 
-                  className="input pl-11 h-12 text-[11px] font-bold w-full cursor-pointer bg-gray-50/50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700/50" 
-                  value={dateRange.end}
-                  onClick={(e) => e.target.showPicker?.()}
-                  onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                />
-              </div>
-            </div>
-            <div className="lg:col-span-4">
-              <button 
-                onClick={() => setDateRange({ start: '', end: '' })}
-                disabled={!dateRange.start && !dateRange.end}
-                className="w-full h-12 bg-white dark:bg-gray-800 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer group flex items-center justify-center gap-2"
-              >
-                <XCircle size={14} className={dateRange.start || dateRange.end ? "text-red-500" : ""} />
-                Hapus Filter Tanggal
-              </button>
-            </div>
+          )}
+
+          {/* Divider */}
+          <div className="hidden lg:block w-px h-7 bg-gray-200 dark:bg-gray-700/50" />
+
+          {/* Date From */}
+          <div className="relative group">
+            <Calendar size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-focus-within:text-blue-500 transition-colors" />
+            <input 
+              type="date" 
+              className="input pl-9 h-10 text-[11px] font-bold cursor-pointer bg-gray-50/50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700/50 !rounded-xl w-[150px]" 
+              value={dateRange.start}
+              title="Dari Tanggal"
+              onClick={(e) => e.target.showPicker?.()}
+              onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+            />
           </div>
+
+          <span className="text-[10px] font-black text-gray-400 hidden lg:block">—</span>
+
+          {/* Date To */}
+          <div className="relative group">
+            <Calendar size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-focus-within:text-blue-500 transition-colors" />
+            <input 
+              type="date" 
+              className="input pl-9 h-10 text-[11px] font-bold cursor-pointer bg-gray-50/50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700/50 !rounded-xl w-[150px]" 
+              value={dateRange.end}
+              title="Sampai Tanggal"
+              onClick={(e) => e.target.showPicker?.()}
+              onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+            />
+          </div>
+
+          {/* Clear Date Filter */}
+          {(dateRange.start || dateRange.end) && (
+            <button 
+              onClick={() => setDateRange({ start: '', end: '' })}
+              className="h-10 px-3 bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap border border-red-100 dark:border-red-800/50"
+              title="Hapus Filter Tanggal"
+            >
+              <XCircle size={14} />
+              <span className="text-[10px] font-black uppercase tracking-wide hidden xl:inline">Reset</span>
+            </button>
+          )}
         </div>
       </div>
 
