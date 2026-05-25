@@ -622,6 +622,107 @@ const AnalysisReport = () => {
         </div>
       </div>
 
+      {/* Papan Peringkat Agen Sales */}
+      <div className="card p-6 overflow-hidden">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
+            <TrendingUp size={16} className="text-blue-500" /> Papan Peringkat Agen Sales
+          </h3>
+          <span className="text-[10px] font-bold text-gray-400 uppercase">Performa Terbaik ({selectedYear === 'all' ? 'Semua Waktu' : selectedYear})</span>
+        </div>
+        
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-100 dark:border-gray-800">
+                <th className="pb-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Peringkat</th>
+                <th className="pb-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Agen</th>
+                <th className="pb-4 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Unit Terjual</th>
+                <th className="pb-4 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Nilai Jual</th>
+                <th className="pb-4 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Performa</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50 dark:divide-gray-800/50">
+              {data?.salesLeaderboard?.length > 0 ? (
+                data.salesLeaderboard.map((agent, index) => {
+                  const maxSales = Math.max(...data.salesLeaderboard.map(a => Number(a.sales_total || 0)));
+                  const percentage = (Number(agent.sales_total || 0) / Math.max(1, maxSales)) * 100;
+                  
+                  return (
+                    <tr key={agent.sales_agent_id} className="group hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-all">
+                      <td className="py-4">
+                        <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black ${
+                          index === 0 ? 'bg-amber-100 text-amber-600' : 
+                          index === 1 ? 'bg-slate-100 text-slate-500' :
+                          index === 2 ? 'bg-orange-100 text-orange-600' :
+                          'bg-gray-50 text-gray-400 dark:bg-gray-800'
+                        }`}>
+                          #{index + 1}
+                        </div>
+                      </td>
+                      <td className="py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center overflow-hidden border border-blue-200 dark:border-blue-800">
+                            {agent.salesAgent?.avatar_url ? (
+                              <img 
+                                src={agent.salesAgent.avatar_url.startsWith('http') 
+                                  ? agent.salesAgent.avatar_url 
+                                  : `${IMAGE_BASE_URL}${agent.salesAgent.avatar_url.startsWith('/') ? '' : '/'}${agent.salesAgent.avatar_url}`
+                                } 
+                                alt={agent.salesAgent?.name} 
+                                className="w-full h-full object-cover" 
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(agent.salesAgent?.name || 'SA');
+                                }}
+                              />
+                            ) : (
+                              <span className="text-[10px] font-black text-blue-600">
+                                {agent.salesAgent?.name?.substring(0, 2).toUpperCase() || 'SA'}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-tight">{agent.salesAgent?.name || 'Agen Tidak Diketahui'}</p>
+                            <p className="text-[9px] font-bold text-gray-400">ID: {agent.sales_agent_id || 'N/A'}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 text-center">
+                        <span className="px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-[10px] font-black">
+                          {agent.units_sold} UNITS
+                        </span>
+                      </td>
+                      <td className="py-4 text-right">
+                        <p className="text-xs font-black text-gray-900 dark:text-white">{displayAmount(agent.sales_total)}</p>
+                      </td>
+                      <td className="py-4 text-right min-w-[120px]">
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="text-[9px] font-black text-gray-400">{Math.round(percentage)}%</span>
+                          <div className="w-24 bg-gray-100 dark:bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                            <motion.div 
+                              initial={{ width: 0 }}
+                              animate={{ width: `${percentage}%` }}
+                              className={`h-full rounded-full ${
+                                index === 0 ? 'bg-gradient-to-r from-blue-500 to-blue-400' : 'bg-gray-400'
+                              }`}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan="5" className="py-10 text-center text-xs text-gray-400 font-bold uppercase">Tidak ada data penjualan untuk periode ini</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
 
 
 
