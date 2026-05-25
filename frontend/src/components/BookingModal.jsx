@@ -4,7 +4,7 @@ import {
   Camera, Image as ImageIcon, Bookmark, Smartphone, User as UserIcon,
   CreditCard, XCircle, Clock, Maximize2, Hash, ChevronRight, Eye, Trash2
 } from 'lucide-react';
-import Modal from './Modal';
+import DrawerPanel from './DrawerPanel';
 import Input from './ui/Input';
 import Select from './ui/Select';
 import api from '../services/api';
@@ -257,7 +257,7 @@ const BookingModal = ({
     <>
       {/* BOOKING MODAL */}
       {actionType === 'booking' && (
-        <Modal isOpen={isOpen} onClose={onClose} title="Formulir Reservasi Unit">
+        <DrawerPanel isOpen={isOpen} onClose={onClose} title="Formulir Reservasi Unit" width="max-w-2xl">
           <form onSubmit={handleBookingSubmit} className="space-y-6">
             <div className="flex gap-2 px-1">
               <div className={`h-1.5 flex-1 rounded-full transition-all ${formStep >= 1 ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-800'}`} />
@@ -434,12 +434,12 @@ const BookingModal = ({
               {formStep === 1 ? 'SIMPAN & LANJUT KE UNGGAH' : 'SELESAI'}
             </button>
           </form>
-        </Modal>
+        </DrawerPanel>
       )}
 
       {/* CONFIRM ACTION MODAL (SOLD/CANCEL) */}
       {(actionType === 'sold' || actionType === 'cancel') && (
-        <Modal isOpen={isOpen} onClose={onClose} title="Konfirmasi Transaksi">
+        <DrawerPanel isOpen={isOpen} onClose={onClose} title="Konfirmasi Transaksi" width="max-w-2xl">
           <div className="space-y-6">
             {actionType === 'sold' && (
               <div className="flex gap-2 px-1">
@@ -708,7 +708,7 @@ const BookingModal = ({
             )}
             <button onClick={onClose} className="w-full py-3 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all uppercase text-xs tracking-widest">KEMBALI KE DASHBOARD</button>
           </div>
-        </Modal>
+        </DrawerPanel>
       )}
     </>
   );
