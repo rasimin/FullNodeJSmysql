@@ -141,6 +141,100 @@ const RecycleBin = () => {
     };
   }, [currentPage, search, selectedBranch, sortOrder]);
 
+  const openDetail = (v) => {
+    setEditingVehicle(v);
+    setIsViewModalOpen(true);
+    setActiveTab('main');
+  };
+
+  useEffect(() => {
+    if (!isViewModalOpen || !editingVehicle?.id) return;
+
+    api.get(`/bookings/vehicle/${editingVehicle.id}/history`)
+      .then(r => setBookingHistory(r.data))
+      .catch(err => console.error('Fetch booking history error:', err));
+
+    if (activeTab === 'audit') {
+      setIsAuditLoading(true);
+      api.get('/logs/audits', { params: { vehicle_id: editingVehicle.id, size: 50 } })
+        .then(r => setAuditTrails(r.data.items || []))
+        .catch(err => console.error('Fetch audit trails error:', err))
+        .finally(() => setIsAuditLoading(false));
+    } else if (activeTab === 'documents') {
+      api.get(`/documents/vehicle/${editingVehicle.id}`)
+        .then(r => setVehicleDocuments(r.data))
+        .catch(err => console.error('Fetch documents error:', err));
+    }
+  }, [activeTab, editingVehicle, isViewModalOpen]);
+
+  const parseAuditValue = (val) => {
+    if (!val) return null;
+    if (typeof val === 'object') return val;
+    try { return JSON.parse(val); } catch (e) { return val; }
+  };
+
+  const getAuditDisplayValue = (key, value) => {
+    if (value === null || value === undefined || value === '') return '-';
+    
+    if (key === 'office_id') {
+      const office = offices.find(o => o.id.toString() === value.toString());
+      return office ? office.displayName || office.name : `ID: ${value}`;
+    }
+    
+    if (key === 'sales_agent_id') {
+      const agent = salesAgents.find(a => a.id.toString() === value.toString());
+      return agent ? agent.name : `ID: ${value}`;
+    }
+
+    if (key === 'document_type_id') {
+      const docType = documentTypes.find(dt => dt.id.toString() === value.toString());
+      return docType ? docType.name : `ID: ${value}`;
+    }
+
+    if (key === 'price' || key === 'purchase_price' || key === 'service_cost') {
+      return formatPrice(value);
+    }
+    
+    return value.toString();
+  };
+
+  const fieldLabels = {
+    type: 'Kategori',
+    brand: 'Merk',
+    model: 'Model',
+    year: 'Tahun',
+    plate_number: 'No. Plat',
+    price: 'Harga Jual',
+    purchase_price: 'Harga Beli',
+    service_cost: 'Biaya Servis',
+    status: 'Status',
+    office_id: 'Kantor Cabang',
+    description: 'Deskripsi',
+    color: 'Warna',
+    odometer: 'Odometer',
+    transmission: 'Transmisi',
+    fuel_type: 'Bahan Bakar',
+    sales_agent_id: 'Agen Sales',
+    sold_date: 'Tgl Terjual',
+    entry_date: 'Tgl Masuk',
+    file_name: 'Nama File',
+    document_type_id: 'Tipe Dokumen',
+    file_path: 'Lokasi File',
+    file_size: 'Ukuran File',
+    mime_type: 'Tipe File',
+    uploaded_by: 'Diunggah Oleh',
+    vehicle_id: 'ID Kendaraan',
+    booking_id: 'ID Transaksi',
+    payment_method: 'Metode Bayar'
+  };
+
+  const tableLabels = {
+    vehicles: 'Data Unit',
+    vehicle_documents: 'Dokumen',
+    vehicle_images: 'Foto Unit',
+    bookings: 'Transaksi'
+  };
+
   const handleRestore = async (id) => {
     notify('loading', 'Memulihkan kendaraan...');
     try {
