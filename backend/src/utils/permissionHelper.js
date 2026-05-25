@@ -13,7 +13,14 @@ const resolveDataScope = async (user, menuKey) => {
   if (isSuperAdmin) {
     scope = 'all';
   } else {
-    const userPermissions = user.Role?.permissions;
+    let userPermissions = user.Role?.permissions;
+    if (typeof userPermissions === 'string') {
+      try {
+        userPermissions = JSON.parse(userPermissions);
+      } catch (e) {
+        userPermissions = null;
+      }
+    }
     if (userPermissions && userPermissions[menuKey] && userPermissions[menuKey].access) {
       scope = userPermissions[menuKey].scope || 'branch';
     }

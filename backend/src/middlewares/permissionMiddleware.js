@@ -7,7 +7,14 @@ const checkPermission = (menuKey, requiredAction = 'view') => {
       return next();
     }
 
-    const permissions = req.user?.Role?.permissions;
+    let permissions = req.user?.Role?.permissions;
+    if (typeof permissions === 'string') {
+      try {
+        permissions = JSON.parse(permissions);
+      } catch (e) {
+        permissions = null;
+      }
+    }
     if (!permissions) {
       return res.status(403).json({ message: 'Akses ditolak: Hak akses belum dikonfigurasi untuk role ini' });
     }

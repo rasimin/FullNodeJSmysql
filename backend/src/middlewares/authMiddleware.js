@@ -70,4 +70,47 @@ const authorize = (allowedRoles) => {
   };
 };
 
-module.exports = { authenticate, authorize };
+const optionalAuthenticate = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    let token = '';
+    
+    if (authHeader) {
+      token = authHeader.split(' ')[1];
+    } else if (req.query.token) {
+      token = req.query.token;
+    }
+
+    if (!token) {
+      return next();
+    }
+
+    const session = await UserSession.findOne({ 
+      where: { token, is_revoked: false } 
+    });
+
+    if (!session) {
+      return next();
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    const user = await User.findByPk(decoded.id, {
+      include: [{ model: Role }],
+    });
+
+    if (user && user.is_active) {
+      req.user = user;
+      
+      // Update session last activity
+      session.last_activity = new Date();
+      await session.save();
+    }
+    
+    next();
+  } catch (error) {
+    next();
+  }
+};
+
+module.exports = { authenticate, authorize, optionalAuthenticate };

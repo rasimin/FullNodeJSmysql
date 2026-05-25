@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const promotionController = require('../controllers/promotionController');
-const { authenticate } = require('../middlewares/authMiddleware');
+const { authenticate, optionalAuthenticate } = require('../middlewares/authMiddleware');
 const multer = require('multer');
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-router.get('/', promotionController.getPromotions);
+router.get('/', optionalAuthenticate, promotionController.getPromotions);
 router.get('/:id', promotionController.getPromotionDetail);
 
 // Protected routes

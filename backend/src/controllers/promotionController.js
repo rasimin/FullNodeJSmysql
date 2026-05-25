@@ -100,6 +100,7 @@ exports.getPromotions = async (req, res) => {
       include: [
         { 
           model: Office, 
+          required: false,
           include: [{ model: Location, as: 'location' }] 
         },
         { model: User, as: 'creator', attributes: ['name'] }

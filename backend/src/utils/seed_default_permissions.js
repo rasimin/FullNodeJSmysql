@@ -7,7 +7,7 @@ const seedDefaultPermissions = async () => {
     const roles = await Role.findAll();
     
     for (const role of roles) {
-      if (role.name === 'Super Admin' || role.name === 'Admin Pusat') {
+      if (role.name === 'Super Admin') {
         const fullPerms = {};
         const MENU_KEYS = [
           'dashboard', 'sales_report', 'finance_report', 'brands', 'vehicles', 
@@ -19,6 +19,30 @@ const seedDefaultPermissions = async () => {
         MENU_KEYS.forEach(k => {
           fullPerms[k] = {
             access: true,
+            scope: ['dashboard', 'vehicles', 'transactions', 'recycle_bin'].includes(k) ? 'all' : undefined,
+            actions: ['dashboard', 'sales_report', 'finance_report', 'activities', 'audit_trails'].includes(k) ? undefined : ['create', 'edit', 'delete']
+          };
+        });
+        await role.update({ permissions: fullPerms });
+        console.log(`Updated permissions for ${role.name}`);
+      } else if (role.name === 'Admin Pusat') {
+        const fullPerms = {};
+        const MENU_KEYS = [
+          'dashboard', 'sales_report', 'finance_report', 'brands', 'vehicles', 
+          'transactions', 'offices', 'sales_agents', 'locations', 'promotions', 
+          'showroom_settings', 'recycle_bin', 'user_management', 'role_management', 
+          'security_settings', 'admin_sessions', 'query_runner', 'ui_gallery', 
+          'activities', 'audit_trails'
+        ];
+        const superAdminOnlyKeys = [
+          'brands', 'locations', 'recycle_bin', 'security_settings', 'admin_sessions', 
+          'role_management', 'query_runner', 'ui_gallery', 'activities', 'audit_trails', 
+          'showroom_settings'
+        ];
+        MENU_KEYS.forEach(k => {
+          const isRestricted = superAdminOnlyKeys.includes(k);
+          fullPerms[k] = {
+            access: !isRestricted,
             scope: ['dashboard', 'vehicles', 'transactions', 'recycle_bin'].includes(k) ? 'all' : undefined,
             actions: ['dashboard', 'sales_report', 'finance_report', 'activities', 'audit_trails'].includes(k) ? undefined : ['create', 'edit', 'delete']
           };

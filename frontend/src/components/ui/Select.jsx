@@ -18,7 +18,7 @@ const Select = ({ label, value, onChange, options, required = false, placeholder
         value={value} onChange={onChange} required={required} disabled={disabled}
         className={`input appearance-none cursor-pointer pr-8 dark:bg-gray-800 dark:text-gray-100 ${Icon ? 'pl-9' : ''} ${disabled ? 'bg-gray-50 dark:bg-gray-900/50 cursor-not-allowed' : ''} ${required && !value && !disabled ? 'border-red-500/50 bg-red-50/10 dark:bg-red-900/5' : ''}`}
       >
-        <option value="" disabled className="dark:bg-gray-800 text-gray-400">{placeholder}</option>
+        <option value="" disabled={required} className="dark:bg-gray-800 text-gray-400">{placeholder}</option>
         {options.map((opt) => (
           <option key={opt.value} value={opt.value} className="dark:bg-gray-800 dark:text-gray-100">{opt.label}</option>
         ))}

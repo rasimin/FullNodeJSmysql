@@ -54,7 +54,14 @@ const DashboardLayout = () => {
   const getMenuGroups = () => {
     const hasAccess = (menuKey, defaultVal = false) => {
       if (userRole === 'Super Admin') return true;
-      const perms = user?.role_permissions || user?.Role?.permissions;
+      let perms = user?.role_permissions || user?.Role?.permissions;
+      if (typeof perms === 'string') {
+        try {
+          perms = JSON.parse(perms);
+        } catch (e) {
+          perms = null;
+        }
+      }
       if (!perms) return defaultVal;
       return perms[menuKey]?.access ?? defaultVal;
     };
